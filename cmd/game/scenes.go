@@ -3,11 +3,11 @@ package main
 import (
 	"log"
 
-	"github.com/ben-rw/webgame/cmd/game/internal/scenes/lobby"
-	"github.com/ben-rw/webgame/cmd/game/internal/scenes/memory"
-	"github.com/ben-rw/webgame/cmd/game/internal/scenes/wizarena"
-	"github.com/ben-rw/webgame/cmd/game/internal/ws"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/scenes/lobby"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/scenes/memory"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/scenes/wizarena"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/ws"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
 func StartNewScene(sceneType protocol.SceneType, c *ws.Connection) Scene {

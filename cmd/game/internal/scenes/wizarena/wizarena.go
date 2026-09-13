@@ -6,8 +6,8 @@ import (
 	"image/color"
 	"math"
 
-	"github.com/ben-rw/webgame/cmd/game/internal/shared"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/hajimehoshi/ebiten/v2/inpututil"

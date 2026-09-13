@@ -3,9 +3,9 @@ package shared
 import (
 	"log"
 
-	"github.com/ben-rw/webgame/cmd/game/internal/shared/animations"
-	"github.com/ben-rw/webgame/cmd/game/internal/shared/spritesheet"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )

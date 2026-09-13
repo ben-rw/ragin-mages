@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ben-rw/webgame/internal/room"
+	"github.com/ben-rw/ragin-mages/internal/room"
 	"html/template"
 )
 

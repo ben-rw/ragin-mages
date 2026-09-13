@@ -1,4 +1,4 @@
-module github.com/ben-rw/webgame
+module github.com/ben-rw/ragin-mages
 
 go 1.25.1
 

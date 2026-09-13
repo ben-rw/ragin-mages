@@ -8,8 +8,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ben-rw/webgame/internal/protocol"
-	"github.com/ben-rw/webgame/internal/room"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/google/uuid"
 )
 

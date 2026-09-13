@@ -10,7 +10,7 @@
 const go = new Go();
 const overlay = document.getElementById("start-overlay");
 
-WebAssembly.instantiateStreaming(fetch("webgame.wasm"), go.importObject).then(result => {
+WebAssembly.instantiateStreaming(fetch("ragin-mages.wasm"), go.importObject).then(result => {
   go.run(result.instance);
 
   overlay.textContent = "CLICK TO JOIN!";

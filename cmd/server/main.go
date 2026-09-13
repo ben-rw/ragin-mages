@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/ben-rw/webgame/frontend"
-	"github.com/ben-rw/webgame/internal/room"
+	"github.com/ben-rw/ragin-mages/frontend"
+	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/joho/godotenv"
 )
 

@@ -2,8 +2,8 @@ package minigames
 
 import (
 	"errors"
-	"github.com/ben-rw/webgame/internal/minigames/lobby"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"math/rand"
 )
 

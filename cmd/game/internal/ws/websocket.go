@@ -5,7 +5,7 @@ import (
 	"log"
 	"syscall/js"
 
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )

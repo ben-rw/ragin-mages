@@ -3,7 +3,7 @@ package room
 import (
 	"context"
 	"errors"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/coder/websocket/wsjson"
 	"log"
 	"sync"

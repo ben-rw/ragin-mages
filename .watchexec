@@ -1,1 +1,1 @@
-watch="watchexec -e go,js,css,html -r env GOOS=js GOARCH=wasm go build -o frontend/static/webgame.wasm github.com/ben-rw/webgame/cmd/game && go run ./cmd/server/"
+watch="watchexec -e go,js,css,html -r env GOOS=js GOARCH=wasm go build -o frontend/static/ragin-mages.wasm github.com/ben-rw/ragin-mages/cmd/game && go run ./cmd/server/"

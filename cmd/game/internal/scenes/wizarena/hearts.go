@@ -1,6 +1,6 @@
 package wizarena
 
-import "github.com/ben-rw/webgame/cmd/game/internal/shared"
+import "github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 
 var HealthHeartLocations = map[int]func() (float64, float64){
 	0: shared.Heart1TopLeft,

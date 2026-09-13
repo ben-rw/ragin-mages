@@ -2,7 +2,7 @@ package shared
 
 import (
 	"errors"
-	"github.com/ben-rw/webgame/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"log"
 )
 

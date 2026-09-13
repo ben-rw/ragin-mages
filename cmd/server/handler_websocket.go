@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ben-rw/webgame/internal/minigames"
-	"github.com/ben-rw/webgame/internal/protocol"
-	"github.com/ben-rw/webgame/internal/room"
+	"github.com/ben-rw/ragin-mages/internal/minigames"
+	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 )

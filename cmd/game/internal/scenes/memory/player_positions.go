@@ -1,7 +1,7 @@
 package memory
 
 import (
-	"github.com/ben-rw/webgame/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 )
 
 // starts bottom center, to bottom left, then top left
