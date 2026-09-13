@@ -18,6 +18,7 @@ imgs/
 *.so
 *.dylib
 *.wasm
+ragin-mages-server
 
 # Test binary, built with `go test -c`
 *.test
