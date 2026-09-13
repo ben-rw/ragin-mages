@@ -1,0 +1,3 @@
+raginmages.xyz {
+    reverse_proxy server:7778
+}

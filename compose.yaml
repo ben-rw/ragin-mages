@@ -1,0 +1,28 @@
+services:
+  server:
+    image: benrw/ragin-mages-server:latest
+    restart: unless-stopped
+    networks:
+    - wiz-net
+
+  caddy:
+    image: caddy:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+    - wiz-net
+
+networks:
+  wiz-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:
