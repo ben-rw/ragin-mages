@@ -3,7 +3,7 @@ package room
 import "math/rand"
 
 func nameCollisionSolver(name string, playerList []*Player) string {
-	insults := []string{"smelly", "uggo", "stinky", "bald", "cheap", "hairy", "tiny", "pudgy", "boring", "wack", "weird", "cat owner", "train lover", "big dummy"}
+	insults := []string{"smelly", "uggo", "stinky", "bald", "cheap", "hairy", "tiny", "pudgy", "boring", "wack", "weird", "cat owner", "train fan", "big dummy"}
 	tooLong := []string{"too much", "long name", "shhh", "chill out", "relax", "try again", "y so long"}
 	//I have a cat, she's great. Trains are okay.
 
