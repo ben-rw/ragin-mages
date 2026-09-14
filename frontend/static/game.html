@@ -10,17 +10,34 @@
 const go = new Go();
 const overlay = document.getElementById("start-overlay");
 
-WebAssembly.instantiateStreaming(fetch("ragin-mages.wasm"), go.importObject).then(result => {
-  go.run(result.instance);
+function hasWebGL() {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) return false;
 
-  overlay.textContent = "CLICK TO JOIN!";
-  overlay.style.cursor = "pointer";
-  overlay.style.backdropFilter = "blur(12px)"
-  overlay.addEventListener("click", function () {
-    this.remove();
-    const canvas = document.querySelector("canvas");
-    canvas.tabIndex = -1;
-    canvas.focus();
-  }, { once: true });
-});
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+      if (debugInfo) {
+        const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+        if (/swiftshader|software/i.test(renderer)) return false;
+      }
+  return true;
+}
+
+if (!hasWebGL()) {
+    overlay.textContent = "Please enable hardware acceleration in your browser, then try again!"
+} else {
+    WebAssembly.instantiateStreaming(fetch("ragin-mages.wasm"), go.importObject).then(result => {
+      go.run(result.instance);
+
+      overlay.textContent = "CLICK TO JOIN!";
+      overlay.style.cursor = "pointer";
+      overlay.style.backdropFilter = "blur(12px)"
+      overlay.addEventListener("click", function () {
+        this.remove();
+        const canvas = document.querySelector("canvas");
+        canvas.tabIndex = 0;
+        canvas.focus();
+      }, { once: true });
+    });
+}
 </script>

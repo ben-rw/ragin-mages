@@ -2,6 +2,10 @@ html {
     overflow: auto;
 }
 
+body {
+    background-color:#13161F;
+}
+
 html,
 body,
 div,

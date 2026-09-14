@@ -33,4 +33,5 @@ canvas {
     align-items:center;
     justify-content:center;
     cursor:default;
+    background-color:rgba(15, 15, 20, 0.85);
 }
