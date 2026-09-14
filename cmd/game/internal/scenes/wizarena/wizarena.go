@@ -29,7 +29,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 			for _, player := range w.Players {
 				if _, ok := w.wizards[player.Data.Name]; !ok {
-					wizard := NewWizard(player)
+					wizard := shared.NewWizard(player)
 					wizard.JustJoined = false
 					w.wizards[wizard.Data.Name] = wizard
 				}
@@ -70,6 +70,17 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		if ebiten.IsKeyPressed(ebiten.KeyDown) {
 			w.camera.Y -= shared.FreeCamSpeed
 		}
+
+		if w.wizard.Y > -shared.HalfTile {
+			w.wizard.Y -= 3.5
+		}
+
+		if w.wizard.Alpha > 0.0 {
+			w.wizard.Alpha -= .02 //fade speed
+		} else {
+			w.wizard.Alpha = 0.0
+		}
+
 	} else {
 		if ebiten.IsKeyPressed(ebiten.KeyRight) {
 			w.wizard.Dx += 1
@@ -114,12 +125,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	for _, enemy := range w.enemies {
 		enemy.Dx = 0
 		enemy.Dy = 0
-		if enemy.FollowsPlayer {
+		if enemy.FollowsPlayer && !w.wizard.Combat.Dead {
 			dx := w.wizard.X - enemy.X
 			dy := w.wizard.Y - enemy.Y
 			dist := math.Hypot(dx, dy)
 
-			closeEnough := 2.0
+			closeEnough := 2.0 //2px
 
 			if dist > closeEnough {
 				normX := dx / dist
@@ -166,7 +177,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(cY),
 		)
 		w.projectiles = append(w.projectiles, projectile)
-		log.Println(w.projectiles)
 	}
 
 	deadProjectiles := make(map[int]struct{})
@@ -205,10 +215,9 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			int(enemy.Y)+shared.TileSize,
 		)
 
-		if rect.Overlaps(wizardRect) {
+		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
 			if enemy.Combat.Attack() {
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
-				log.Printf("wiz hp: %v\n", w.wizard.Combat.Health())
 
 				// player pushed away by enemy
 				// find vector, divide by vector length, add to player's velocity
@@ -264,7 +273,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 	if !w.wizard.Combat.Dead {
 		w.camera.FollowTarget(w.wizard.X, w.wizard.Y)
+		w.wizard.Combat.Update()
+		if w.wizard.Combat.IFrames() > 0 {
+			w.wizard.IFrameFlicker()
+		}
 	}
+
 	w.camera.Constrain(
 		float64(w.tilemapJSON.Layers[0].Width)*16.0,
 		float64(w.tilemapJSON.Layers[0].Height)*16.0,
@@ -369,6 +383,10 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
+		if wizard.Alpha < 1.0 {
+			opts.ColorScale.ScaleAlpha(wizard.Alpha)
+		}
+
 		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		screen.DrawImage(
 			wizard.Img.SubImage(
@@ -377,6 +395,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			&opts,
 		)
 
+		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 
@@ -418,6 +437,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	for i := range w.wizard.Combat.Health() {
 		opts.GeoM.Translate(HealthHeartLocations[i]())
 		screen.DrawImage(w.heartImage, &opts)
+
 		opts.GeoM.Reset()
 	}
 
@@ -429,8 +449,13 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 		textOpts.GeoM.Translate(w.camera.X, w.camera.Y)
 
+		if wizard.Alpha < 1.0 {
+			textOpts.ColorScale.ScaleAlpha(wizard.Alpha)
+		}
+
 		text.Draw(screen, wizard.Data.Name, wizard.NameTag.Face, &textOpts)
 
+		textOpts.ColorScale.Reset()
 		textOpts.GeoM.Reset()
 	}
 

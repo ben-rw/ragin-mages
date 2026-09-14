@@ -3,7 +3,6 @@ package wizarena
 import (
 	"image"
 	"log"
-	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
@@ -21,17 +20,12 @@ const (
 	introLen    = 3
 )
 
-type WizardPlayer struct {
-	*shared.Player
-	Combat *WizardCombat
-}
-
 type WizArena struct {
 	shared.Roster
 	Conn            *ws.Connection
 	Sprites         []*shared.Sprite
-	wizard          *WizardPlayer
-	wizards         map[string]*WizardPlayer
+	wizard          *shared.WizardPlayer
+	wizards         map[string]*shared.WizardPlayer
 	enemies         []*shared.Enemy
 	tilemapJSON     *shared.TilemapJSON
 	tileCache       map[int]*shared.Tile
@@ -80,7 +74,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		},
 		Conn:            c,
 		Sprites:         []*shared.Sprite{},
-		wizards:         make(map[string]*WizardPlayer, 0),
+		wizards:         make(map[string]*shared.WizardPlayer, 0),
 		enemies:         make([]*shared.Enemy, 0),
 		projectiles:     make([]*shared.Projectile, 0),
 		projectileCache: make(map[shared.ProjectileType]*ebiten.Image, 0),
@@ -112,49 +106,4 @@ func NewWizArena(c *ws.Connection) *WizArena {
 	// }
 
 	return w
-}
-
-type WizardCombat struct {
-	*shared.BasicCombat
-	attackRange float64
-	Dead        bool
-}
-
-const defaultAttackRange = 60 //determines how many ticks projectile will persist
-
-func (wc *WizardCombat) AttackRange() float64 {
-	return wc.attackRange
-}
-
-func (wc *WizardCombat) BoostAttackRange(amount float64) {
-	wc.attackRange += amount
-}
-
-func (wc *WizardCombat) RandomBoost(amount float64) {
-	boosts := map[int]func(amount float64){
-		0: wc.BoostProjectileSpeed,
-		1: wc.BoostProjectileSize,
-		2: wc.BoostKnockback,
-		3: wc.BoostAttackRange,
-	}
-
-	boosts[rand.Intn(len(boosts))](amount)
-}
-
-func NewWizard(player *shared.Player) *WizardPlayer {
-	return &WizardPlayer{
-		player,
-		&WizardCombat{
-			shared.NewBasicCombat(
-				shared.DefaultPlayerHealth,
-				shared.DefaultPlayerAttackPower,
-				shared.DefaultPlayerMoveSpeed,
-				shared.DefaultProjectileSpeed,
-				shared.DefaultProjectileSize,
-				shared.DefaultPlayerKnockback,
-			),
-			defaultAttackRange,
-			false,
-		},
-	}
 }

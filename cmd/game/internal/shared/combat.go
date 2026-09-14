@@ -1,5 +1,9 @@
 package shared
 
+import (
+	"math/rand"
+)
+
 const (
 	DefaultPlayerHealth      = 3.0
 	DefaultPlayerAttackPower = 1.0
@@ -7,6 +11,10 @@ const (
 	DefaultProjectileSpeed   = 3.0
 	DefaultProjectileSize    = 1.0
 	DefaultPlayerKnockback   = 3.0
+	DefaultAttackRange       = 60 //determines how many ticks projectile will persist
+	DefaultAttackCooldown    = 60
+	DefaultIFrames           = 90
+	DefaultFlickerFrames     = 5
 	EnemyMoveSpeed           = 1.5
 	EnemyHealth              = 1.0
 	EnemyAttackPower         = 1.0
@@ -136,5 +144,104 @@ func NewEnemyCombat(health, attackPower, attackCooldown int, moveSpeed, projecti
 		),
 		attackCooldown,
 		0,
+	}
+}
+
+type WizardCombat struct {
+	*BasicCombat
+	attackRange     float64
+	attackCooldown  int
+	timeSinceAttack int
+	Dead            bool
+	iFrames         int
+}
+
+func (wc *WizardCombat) AttackRange() float64 {
+	return wc.attackRange
+}
+
+func (wc *WizardCombat) BoostAttackRange(amount float64) {
+	wc.attackRange += amount
+}
+
+func (wc *WizardCombat) RandomBoost(amount float64) {
+	boosts := map[int]func(amount float64){
+		0: wc.BoostProjectileSpeed,
+		1: wc.BoostProjectileSize,
+		2: wc.BoostKnockback,
+		3: wc.BoostAttackRange,
+	}
+
+	boosts[rand.Intn(len(boosts))](amount)
+}
+
+func (wc *WizardCombat) Attack() bool {
+	if wc.timeSinceAttack >= wc.attackCooldown {
+		wc.attacking = true
+		wc.timeSinceAttack = 0
+		return true
+	}
+	return false
+}
+
+func (wc *WizardCombat) Update() {
+	wc.timeSinceAttack += 1
+	if wc.iFrames > 0 {
+		wc.iFrames -= 1
+	}
+}
+
+func (wc *WizardCombat) Damage(amount int) {
+	wc.health -= amount
+	wc.iFrames += DefaultIFrames
+}
+
+func (wc *WizardCombat) IFrames() int {
+	return wc.iFrames
+}
+
+type WizardPlayer struct {
+	*Player
+	Combat        *WizardCombat
+	Alpha         float32
+	FlickerFrames int
+}
+
+func (w *WizardPlayer) IFrameFlicker() {
+	w.FlickerFrames -= 1
+	if w.FlickerFrames <= 0 {
+		if w.Combat.IFrames() < DefaultFlickerFrames {
+			w.Alpha = 1.0
+			w.FlickerFrames = DefaultFlickerFrames
+		} else if w.Alpha == 0.1 {
+			w.Alpha = 0.5
+			w.FlickerFrames = DefaultFlickerFrames
+		} else {
+			w.Alpha = 0.1
+			w.FlickerFrames = DefaultFlickerFrames
+		}
+	}
+}
+
+func NewWizard(player *Player) *WizardPlayer {
+	return &WizardPlayer{
+		player,
+		&WizardCombat{
+			NewBasicCombat(
+				DefaultPlayerHealth,
+				DefaultPlayerAttackPower,
+				DefaultPlayerMoveSpeed,
+				DefaultProjectileSpeed,
+				DefaultProjectileSize,
+				DefaultPlayerKnockback,
+			),
+			DefaultAttackRange,
+			DefaultAttackCooldown,
+			0,
+			false,
+			0,
+		},
+		1.0,
+		DefaultFlickerFrames,
 	}
 }
