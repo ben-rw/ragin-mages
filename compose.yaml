@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     networks:
     - wiz-net
+    env_file: ".env"
 
   caddy:
     image: caddy:latest
