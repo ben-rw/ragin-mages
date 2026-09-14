@@ -7,11 +7,11 @@ const (
 	DefaultProjectileSpeed   = 3.0
 	DefaultProjectileSize    = 1.0
 	DefaultPlayerKnockback   = 3.0
-	EnemyMoveSpeed           = 0.5
+	EnemyMoveSpeed           = 1.5
 	EnemyHealth              = 1.0
 	EnemyAttackPower         = 1.0
 	EnemyAttackCooldown      = 60
-	EnemyKnockBack           = 1.5
+	EnemyKnockBack           = 1.2
 	KillEnemyBoost           = 1.0
 	KillPlayerBoost          = 1.0
 	ChestBoost               = 3.0
@@ -69,6 +69,10 @@ func (b *BasicCombat) Damage(amount int) {
 
 func (b *BasicCombat) MoveSpeed() float64 {
 	return b.moveSpeed
+}
+
+func (b *BasicCombat) SetMoveSpeed(newMoveSpeed float64) {
+	b.moveSpeed = newMoveSpeed
 }
 
 func (b *BasicCombat) ProjectileSpeed() float64 {

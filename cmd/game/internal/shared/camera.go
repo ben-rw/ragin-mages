@@ -16,10 +16,14 @@ func NewCamera(x, y float64) *Camera {
 }
 
 func (c *Camera) FollowTarget(targetX, targetY float64) {
-	targetX += TileSize / 2
-	targetY += TileSize / 2
-	c.X = -targetX + ScreenWidth/2.0
-	c.Y = -targetY + ScreenHeight/2.0
+	//center of the player
+	destX := -(targetX + TileSize/2.0) + ScreenWidth/2.0
+	destY := -(targetY + TileSize/2.0) + ScreenHeight/2.0
+
+	//move towards the center of the player
+	lerp := 0.1
+	c.X += (destX - c.X) * lerp
+	c.Y += (destY - c.Y) * lerp
 }
 
 func (c *Camera) Constrain(tilemapWidthPixels, tilemapHeightPixels float64) {

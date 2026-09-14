@@ -86,8 +86,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 		//normalize diagonal movement
 		if w.wizard.Dx != 0 && w.wizard.Dy != 0 {
-			w.wizard.Dx *= 0.7071
-			w.wizard.Dy *= 0.7071
+			w.wizard.Dx *= 0.70710678
+			w.wizard.Dy *= 0.70710678
 		}
 	}
 
@@ -115,30 +115,30 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		enemy.Dx = 0
 		enemy.Dy = 0
 		if enemy.FollowsPlayer {
-			tolerance := 1.0
-			if enemy.X <= w.wizard.X-tolerance {
-				enemy.Dx = 1
-			}
-			if enemy.X >= w.wizard.X+tolerance {
-				enemy.Dx = -1
-			}
-			if enemy.Y <= w.wizard.Y-tolerance {
-				enemy.Dy = 1
-			}
-			if enemy.Y >= w.wizard.Y+tolerance {
-				enemy.Dy = -1
-			}
+			dx := w.wizard.X - enemy.X
+			dy := w.wizard.Y - enemy.Y
+			dist := math.Hypot(dx, dy)
 
-			//normalize diagonal movement
-			if enemy.Dx != 0 && enemy.Dy != 0 {
-				enemy.Dx *= 0.7071
-				enemy.Dy *= 0.7071
-			}
+			closeEnough := 2.0
 
-			enemy.X += enemy.Dx * enemy.Combat.MoveSpeed()
-			shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
-			enemy.Y += enemy.Dy * enemy.Combat.MoveSpeed()
-			shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
+			if dist > closeEnough {
+				normX := dx / dist
+				normY := dy / dist
+
+				speed := enemy.Combat.MoveSpeed()
+
+				if enemy.Combat.MoveSpeed() > dist {
+					speed = dist
+				}
+
+				enemy.Dx = normX * speed
+				enemy.Dy = normY * speed
+
+				enemy.X += enemy.Dx
+				shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
+				enemy.Y += enemy.Dy
+				shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
+			}
 		}
 	}
 
