@@ -92,6 +92,10 @@ func NewWizArena(c *ws.Connection) *WizArena {
 	w.enemies = append(w.enemies, shared.NewEnemy(shared.Skeleton, true, 200, 200))
 	w.enemies = append(w.enemies, shared.NewEnemy(shared.Skeleton, true, 400, 400))
 
+	for _, e := range w.enemies {
+		log.Printf("hp: %v", e.Combat.Health())
+	}
+
 	w.projectileCache[shared.Fireball] = fireballImg
 
 	// for _, layer := range w.tilemapJSON.Layers {

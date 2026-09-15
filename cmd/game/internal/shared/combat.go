@@ -9,13 +9,14 @@ const (
 	DefaultPlayerAttackPower = 1.0
 	DefaultPlayerMoveSpeed   = 2.0
 	DefaultProjectileSpeed   = 3.0
-	DefaultProjectileSize    = 1.0
+	DefaultProjectileScale   = 1.0
 	DefaultPlayerKnockback   = 3.0
 	DefaultAttackCooldown    = 60 //determines how many ticks projectile will persist
 	DefaultIFrames           = 90
 	DefaultFlickerFrames     = 5
+	DefaultHurtboxRadius     = 8
 	EnemyMoveSpeed           = 1.5
-	EnemyHealth              = 1.0
+	EnemyHealth              = 2.0
 	EnemyAttackPower         = 1.0
 	EnemyAttackCooldown      = 60
 	EnemyKnockBack           = 1.2
@@ -35,11 +36,11 @@ type Combat interface {
 }
 
 type BasicCombat struct {
-	health          int
-	attackPower     int
+	health          float64
+	attackPower     float64
 	moveSpeed       float64
 	projectileSpeed float64
-	projectileSize  float64
+	projectileScale float64
 	knockback       float64
 	attacking       bool
 }
@@ -62,15 +63,15 @@ func (b *BasicCombat) Attacking() bool {
 	return b.attacking
 }
 
-func (b *BasicCombat) AttackPower() int {
+func (b *BasicCombat) AttackPower() float64 {
 	return b.attackPower
 }
 
-func (b *BasicCombat) Health() int {
+func (b *BasicCombat) Health() float64 {
 	return b.health
 }
 
-func (b *BasicCombat) Damage(amount int) {
+func (b *BasicCombat) Damage(amount float64) {
 	b.health -= amount
 }
 
@@ -90,12 +91,12 @@ func (b *BasicCombat) BoostProjectileSpeed(amount float64) {
 	b.projectileSpeed += amount
 }
 
-func (b *BasicCombat) ProjectileSize() float64 {
-	return b.projectileSize
+func (b *BasicCombat) ProjectileScale() float64 {
+	return b.projectileScale
 }
 
-func (b *BasicCombat) BoostProjectileSize(amount float64) {
-	b.projectileSize += amount
+func (b *BasicCombat) BoostProjectileScale(amount float64) {
+	b.projectileScale += amount
 }
 
 func (b *BasicCombat) Knockback() float64 {
@@ -106,13 +107,13 @@ func (b *BasicCombat) BoostKnockback(amount float64) {
 	b.knockback += amount
 }
 
-func NewBasicCombat(health, attackPower int, moveSpeed, projectileSpeed, projectileSize, knockback float64) *BasicCombat {
+func NewBasicCombat(health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *BasicCombat {
 	return &BasicCombat{
 		health,
 		attackPower,
 		moveSpeed,
 		projectileSpeed,
-		projectileSize,
+		projectileScale,
 		knockback,
 		false,
 	}
@@ -131,14 +132,14 @@ func (e *EnemyCombat) Update() {
 	e.timeSinceAttack += 1
 }
 
-func NewEnemyCombat(health, attackPower, attackCooldown int, moveSpeed, projectileSpeed, projectileSize, knockback float64) *EnemyCombat {
+func NewEnemyCombat(attackCooldown int, health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *EnemyCombat {
 	return &EnemyCombat{
 		NewBasicCombat(
 			health,
 			attackPower,
 			moveSpeed,
 			projectileSpeed,
-			projectileSize,
+			projectileScale,
 			knockback,
 		),
 		attackCooldown,
@@ -165,7 +166,7 @@ func (wc *WizardCombat) BoostAttackCooldown(amount int) {
 func (wc *WizardCombat) RandomBoost(amount float64) {
 	boosts := map[int]func(amount float64){
 		0: wc.BoostProjectileSpeed,
-		1: wc.BoostProjectileSize,
+		1: wc.BoostProjectileScale,
 		2: wc.BoostKnockback,
 		3: func(amount float64) {
 			wc.BoostAttackCooldown(int(amount))
@@ -191,7 +192,7 @@ func (wc *WizardCombat) Update() {
 	}
 }
 
-func (wc *WizardCombat) Damage(amount int) {
+func (wc *WizardCombat) Damage(amount float64) {
 	wc.health -= amount
 	wc.iFrames += DefaultIFrames
 }
@@ -205,12 +206,13 @@ type WizardPlayer struct {
 	Combat        *WizardCombat
 	Alpha         float32
 	FlickerFrames int
+	HurtboxRadius float64
 }
 
 func (w *WizardPlayer) IFrameFlicker() {
 	w.FlickerFrames -= 1
 	if w.FlickerFrames <= 0 {
-		if w.Combat.IFrames() < DefaultFlickerFrames {
+		if w.Combat.IFrames() < DefaultFlickerFrames*2 {
 			w.Alpha = 1.0
 			w.FlickerFrames = DefaultFlickerFrames
 		} else if w.Alpha == 0.1 {
@@ -232,7 +234,7 @@ func NewWizard(player *Player) *WizardPlayer {
 				DefaultPlayerAttackPower,
 				DefaultPlayerMoveSpeed,
 				DefaultProjectileSpeed,
-				DefaultProjectileSize,
+				DefaultProjectileScale,
 				DefaultPlayerKnockback,
 			),
 			DefaultAttackCooldown,
@@ -242,5 +244,6 @@ func NewWizard(player *Player) *WizardPlayer {
 		},
 		1.0,
 		DefaultFlickerFrames,
+		DefaultHurtboxRadius,
 	}
 }

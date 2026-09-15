@@ -35,3 +35,12 @@ func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) {
 		}
 	}
 }
+
+func CheckCollisionCircle(x1, y1, r1, x2, y2, r2 float64) bool {
+	dx := x1 - x2
+	dy := y1 - y2
+
+	rSum := r1 + r2
+
+	return (dx*dx + dy*dy) < (rSum * rSum)
+}

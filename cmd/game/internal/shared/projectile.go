@@ -16,11 +16,16 @@ const (
 
 const (
 	FireballPath          = "assets/images/warped_shooting_fx/charged/spritesheet.png"
-	FireballWidth         = 63
-	FireballHeight        = 48
+	FireballWidth         = 63.0
+	FireballHeight        = 48.0
 	FireballWidthInTiles  = 6
 	FireballHeightInTiles = 1
 	FireballAnimSpeed     = 1
+	FireballHitboxRadius  = 12.0 // exact measurement 7x14px
+	FBInnerBallX          = 47.0 // 47x24 px from top left corner to center of blast ball
+	FBInnerBallY          = 24.0
+	FBCenterX             = FireballWidth * .5
+	FBCenterY             = FireballHeight * .5
 )
 
 var projectileImgPaths = map[ProjectileType]string{
@@ -29,13 +34,22 @@ var projectileImgPaths = map[ProjectileType]string{
 
 type Projectile struct {
 	*Sprite
-	Speed       float64
-	Size        float64
-	Knockback   float64
-	Rotation    float64
-	CenterX     float64
-	CenterY     float64
-	TicksToLive int
+	Caster        *WizardPlayer
+	Damage        float64
+	Speed         float64
+	Knockback     float64
+	NormX         float64
+	NormY         float64
+	Radius        float64
+	ScaledRadius  float64
+	Scale         float64
+	HitboxOffsetX float64
+	HitboxOffsetY float64
+	Rotation      float64
+	CenterX       float64
+	CenterY       float64
+	TicksToLive   int
+	AlreadyHit    map[any]struct{}
 }
 
 func LoadProjectile(projectileType ProjectileType) (*ebiten.Image, error) {
@@ -46,9 +60,9 @@ func LoadProjectile(projectileType ProjectileType) (*ebiten.Image, error) {
 	return img, nil
 }
 
-func SpawnProjectile(img *ebiten.Image, speed, size, knockback, playerX, playerY, cursorX, cursorY float64, ticksToLive int) *Projectile {
-	vX := cursorX - playerX
-	vY := cursorY - playerY
+func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64) *Projectile {
+	vX := cursorX - w.X
+	vY := cursorY - w.Y
 	vlen := math.Hypot(vX, vY)
 	if vlen == 0 {
 		return &Projectile{}
@@ -57,29 +71,44 @@ func SpawnProjectile(img *ebiten.Image, speed, size, knockback, playerX, playerY
 	normY := vY / vlen
 	rotation := math.Atan2(vY, vX)
 
+	scaledOffsetX := (FBInnerBallX - FBCenterX) * w.Combat.ProjectileScale()
+	scaledOffsetY := (FBInnerBallY - FBCenterY) * w.Combat.ProjectileScale()
+
+	rotatedOffsetX := (scaledOffsetX * normX) - (scaledOffsetY * normY)
+	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
+
 	s := spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
 	anim := animations.NewAnimation(0, 5, 1, FireballAnimSpeed)
 
 	return &Projectile{
-		&Sprite{
+		Sprite: &Sprite{
 			Img:         img,
-			X:           playerX + HalfTile + normX*HalfTile,
-			Y:           playerY + HalfTile + normY*HalfTile,
-			Dx:          normX * speed,
-			Dy:          normY * speed,
+			X:           w.X + HalfTile + normX*HalfTile,
+			Y:           w.Y + HalfTile + normY*HalfTile,
+			Dx:          normX * w.Combat.projectileSpeed,
+			Dy:          normY * w.Combat.projectileSpeed,
 			SpriteSheet: s,
 			Animations: map[EntityState]*animations.Animation{
 				FireballFly: anim,
 			},
 			ActiveAnimation: anim,
 		},
-		speed,
-		size,
-		knockback,
-		rotation,
-		-FireballWidth / 2,
-		-FireballHeight / 2,
-		ticksToLive,
+		Caster:        w,
+		Damage:        w.Combat.AttackPower(),
+		Speed:         w.Combat.ProjectileSpeed(),
+		Knockback:     w.Combat.Knockback(),
+		NormX:         normX,
+		NormY:         normY,
+		Radius:        FireballHitboxRadius,
+		ScaledRadius:  FireballHitboxRadius * w.Combat.ProjectileScale(),
+		Scale:         w.Combat.ProjectileScale(),
+		HitboxOffsetX: rotatedOffsetX,
+		HitboxOffsetY: rotatedOffsetY,
+		Rotation:      rotation,
+		CenterX:       FireballWidth / 2,
+		CenterY:       FireballHeight / 2,
+		TicksToLive:   w.Combat.AttackCooldown(),
+		AlreadyHit:    make(map[any]struct{}),
 	}
 }
 

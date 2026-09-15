@@ -82,6 +82,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 
 	} else {
+		w.camera.FollowTarget(w.wizard.X, w.wizard.Y)
+		w.wizard.Combat.Update()
+		if w.wizard.Combat.IFrames() > 0 {
+			w.wizard.IFrameFlicker()
+		}
+
 		if ebiten.IsKeyPressed(ebiten.KeyRight) {
 			w.wizard.Dx += 1
 		}
@@ -93,6 +99,11 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyDown) {
 			w.wizard.Dy += 1
+		}
+
+		for _, wizard := range w.wizards {
+			wizard.ActiveAnimation = wizard.GetActiveAnimation()
+			wizard.ActiveAnimation.Update()
 		}
 
 		//normalize diagonal movement
@@ -117,20 +128,21 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
-	for _, wizard := range w.wizards {
-		wizard.ActiveAnimation = wizard.GetActiveAnimation()
-		wizard.ActiveAnimation.Update()
+	for _, enemy := range w.enemies {
+		enemy.Combat.Update()
+		enemy.ActiveAnimation = enemy.GetActiveAnimation()
+		enemy.ActiveAnimation.Update()
+		enemy.Dx = 0
+		enemy.Dy = 0
 	}
 
 	for _, enemy := range w.enemies {
-		enemy.Dx = 0
-		enemy.Dy = 0
 		if enemy.FollowsPlayer && !w.wizard.Combat.Dead {
 			dx := w.wizard.X - enemy.X
 			dy := w.wizard.Y - enemy.Y
 			dist := math.Hypot(dx, dy)
 
-			closeEnough := 2.0 //2px
+			closeEnough := 8.0 //2px
 
 			if dist > closeEnough {
 				normX := dx / dist
@@ -145,56 +157,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				enemy.Dx = normX * speed
 				enemy.Dy = normY * speed
 
-				enemy.X += enemy.Dx
-				shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
-				enemy.Y += enemy.Dy
-				shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
 			}
 		}
-	}
-
-	for _, enemy := range w.enemies {
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
-		enemy.ActiveAnimation.Update()
-	}
-
-	clicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-	cX, cY := ebiten.CursorPosition()
-	cX -= int(w.camera.X)
-	cY -= int(w.camera.Y)
-
-	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
-		projectile := shared.SpawnProjectile(
-			w.projectileCache[shared.Fireball],
-			w.wizard.Combat.ProjectileSpeed(),
-			w.wizard.Combat.ProjectileSize(),
-			w.wizard.Combat.Knockback(),
-			w.wizard.X,
-			w.wizard.Y,
-			float64(cX),
-			float64(cY),
-			w.wizard.Combat.AttackCooldown(),
-		)
-		w.projectiles = append(w.projectiles, projectile)
-	}
-
-	deadProjectiles := make(map[int]struct{})
-	for i, projectile := range w.projectiles {
-		projectile.Update()
-		projectile.ActiveAnimation.Update()
-		if projectile.TicksToLive < 1 {
-			deadProjectiles[i] = struct{}{}
-		}
-	}
-
-	if len(deadProjectiles) > 0 {
-		newProjectiles := make([]*shared.Projectile, 0)
-		for i, projectile := range w.projectiles {
-			if _, ok := deadProjectiles[i]; !ok {
-				newProjectiles = append(newProjectiles, projectile)
-			}
-		}
-		w.projectiles = newProjectiles
 	}
 
 	wizardRect := image.Rect(
@@ -204,9 +168,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		int(w.wizard.Y)+shared.TileSize,
 	)
 
-	deadEnemies := make(map[int]struct{})
-	for i, enemy := range w.enemies {
-		enemy.Combat.Update()
+	for _, enemy := range w.enemies {
 		rect := image.Rect(
 			int(enemy.X),
 			int(enemy.Y),
@@ -222,36 +184,107 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				// find vector, divide by vector length, add to player's velocity
 				vX := w.wizard.X - enemy.X
 				vY := w.wizard.Y - enemy.Y
-				vlen := math.Sqrt(math.Pow(vX, 2) + math.Pow(vY, 2))
+				vlen := math.Sqrt(vX*vX + vY*vY)
 				normX := vX / vlen
 				normY := vY / vlen
 
 				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
 				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
 
-				if w.wizard.Combat.Health() <= 0 {
-					w.wizard.Combat.Dead = true
-					// setting Dying to true plays death anim
-					w.wizard.Dying = true
+			}
+		}
+	}
+
+	deadEnemies := make(map[int]struct{})
+	deadProjectiles := make(map[int]struct{})
+
+	for i, projectile := range w.projectiles {
+		projectile.Update()
+		projectile.ActiveAnimation.Update()
+		for _, wizard := range w.wizards {
+			if wizard == projectile.Caster {
+				continue
+			}
+			if _, ok := projectile.AlreadyHit[wizard]; ok {
+				continue
+			}
+
+			if shared.CheckCollisionCircle(
+				projectile.X+projectile.HitboxOffsetX,
+				projectile.Y+projectile.HitboxOffsetY,
+				projectile.ScaledRadius,
+				wizard.X+shared.HalfTile,
+				wizard.Y+shared.HalfTile,
+				wizard.HurtboxRadius,
+			) {
+				wizard.Combat.Damage(projectile.Damage)
+				projectile.AlreadyHit[wizard] = struct{}{}
+
+				w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+				w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+
+				if wizard.Combat.Health() <= 0 {
+					// player who last hit the player gets a stat boost
+					projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost)
 				}
 			}
 		}
+		for i, enemy := range w.enemies {
+			if _, ok := projectile.AlreadyHit[enemy]; ok {
+				continue
+			}
 
-		if cX > rect.Min.X &&
-			cX < rect.Max.X &&
-			cY > rect.Min.Y &&
-			cY < rect.Max.Y {
-			if clicked {
-				enemy.Combat.Damage(w.wizard.Combat.AttackPower())
+			if shared.CheckCollisionCircle(
+				projectile.X+projectile.HitboxOffsetX,
+				projectile.Y+projectile.HitboxOffsetY,
+				projectile.ScaledRadius,
+				enemy.X+shared.HalfTile,
+				enemy.Y+shared.HalfTile,
+				enemy.HurtboxRadius,
+			) {
+				enemy.Combat.Damage(projectile.Damage)
+				projectile.AlreadyHit[enemy] = struct{}{}
+
+				enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+				enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
 
 				if enemy.Combat.Health() <= 0 {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
-					w.wizard.Combat.RandomBoost(shared.KillEnemyBoost)
+					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost)
 				}
 			}
 		}
+
+		if projectile.TicksToLive < 1 {
+			deadProjectiles[i] = struct{}{}
+		}
 	}
+
+	clicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+	cX, cY := ebiten.CursorPosition()
+	cX -= int(w.camera.X)
+	cY -= int(w.camera.Y)
+
+	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
+		projectile := w.wizard.ShootProjectile(
+			w.projectileCache[shared.Fireball],
+			float64(cX),
+			float64(cY),
+		)
+		w.projectiles = append(w.projectiles, projectile)
+	}
+
+	if len(deadProjectiles) > 0 {
+		newProjectiles := make([]*shared.Projectile, 0)
+		for i, projectile := range w.projectiles {
+			if _, ok := deadProjectiles[i]; !ok {
+				newProjectiles = append(newProjectiles, projectile)
+			}
+		}
+		w.projectiles = newProjectiles
+	}
+
 	if len(deadEnemies) > 0 {
 		newEnemies := make([]*shared.Enemy, 0)
 		for i, enemy := range w.enemies {
@@ -262,6 +295,19 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.enemies = newEnemies
 	}
 
+	if w.wizard.Combat.Health() <= 0 {
+		w.wizard.Combat.Dead = true
+		// setting Dying to true plays death anim
+		w.wizard.Dying = true
+	}
+
+	for _, enemy := range w.enemies {
+		enemy.X += enemy.Dx
+		shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
+		enemy.Y += enemy.Dy
+		shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
+	}
+
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
 	shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
@@ -269,14 +315,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
 	shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
-
-	if !w.wizard.Combat.Dead {
-		w.camera.FollowTarget(w.wizard.X, w.wizard.Y)
-		w.wizard.Combat.Update()
-		if w.wizard.Combat.IFrames() > 0 {
-			w.wizard.IFrameFlicker()
-		}
-	}
 
 	w.camera.Constrain(
 		float64(w.tilemapJSON.Layers[0].Width)*16.0,
@@ -415,9 +453,10 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	}
 
 	for _, projectile := range w.projectiles {
-		opts.GeoM.Translate(projectile.CenterX, projectile.CenterY)
 
-		opts.GeoM.Scale(0.5, 0.5)
+		opts.GeoM.Translate(-projectile.CenterX, -projectile.CenterY)
+
+		opts.GeoM.Scale(projectile.Scale, projectile.Scale)
 		opts.GeoM.Rotate(projectile.Rotation)
 
 		opts.GeoM.Translate(projectile.X, projectile.Y)
@@ -429,11 +468,11 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			).(*ebiten.Image),
 			&opts,
 		)
+
+		opts.GeoM.Reset()
 	}
 
-	opts.GeoM.Reset()
-
-	for i := range w.wizard.Combat.Health() {
+	for i := range int(w.wizard.Combat.Health()) {
 		opts.GeoM.Translate(HealthHeartLocations[i]())
 		screen.DrawImage(w.heartImage, &opts)
 
@@ -480,7 +519,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 	textOpts.GeoM.Reset()
 
-	stat1text := fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileSize())
+	stat1text := fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale())
 	textOpts = text.DrawOptions{
 		LayoutOptions: text.LayoutOptions{
 			PrimaryAlign: text.AlignStart,
@@ -523,4 +562,41 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Translate(shared.Center())
 		text.Draw(screen, deadText, &text.GoTextFace{Source: shared.FontSrc, Size: 24}, &textOpts)
 	}
+
+	textOpts.GeoM.Reset()
+
+	for _, projectile := range w.projectiles {
+		// vector.StrokeCircle(screen, float32(projectile.X+projectile.HitboxOffsetX+w.camera.X), float32(projectile.Y+projectile.HitboxOffsetY+w.camera.Y), float32(projectile.ScaledRadius), 1.0, color.RGBA{255, 0, 0, 255}, false)
+
+		m := ebiten.GeoM{}
+		m.Translate(-shared.FBCenterX, -shared.FBCenterY)
+		m.Scale(projectile.Scale, projectile.Scale)
+		m.Rotate(projectile.Rotation)
+		m.Translate(projectile.X, projectile.Y)
+
+		hx, hy := m.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
+		shared.CheckCollisionCircle(
+			hx,
+			hy,
+			projectile.ScaledRadius,
+			w.wizard.X+shared.HalfTile,
+			w.wizard.Y+shared.HalfTile,
+			w.wizard.HurtboxRadius,
+		)
+
+		vector.StrokeCircle(
+			screen,
+			float32(hx+w.camera.X),
+			float32(hy+w.camera.Y),
+			float32(projectile.ScaledRadius),
+			1.0,
+			color.RGBA{255, 0, 0, 255},
+			false,
+		)
+	}
+
+	for _, enemies := range w.enemies {
+		vector.StrokeCircle(screen, float32(enemies.X+shared.HalfTile+w.camera.X), float32(enemies.Y+shared.HalfTile+w.camera.Y), float32(enemies.HurtboxRadius), 1.0, color.RGBA{255, 0, 0, 255}, false)
+	}
+
 }

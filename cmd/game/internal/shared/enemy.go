@@ -13,6 +13,7 @@ type Enemy struct {
 	Combat        *EnemyCombat
 	enemyType     EnemyType
 	FollowsPlayer bool
+	HurtboxRadius float64
 }
 
 type EnemyType string
@@ -47,8 +48,9 @@ func NewEnemy(enemyType EnemyType, followsPlayer bool, x, y float64) *Enemy {
 			},
 			JustJoined: false,
 		},
-		NewEnemyCombat(EnemyHealth, EnemyAttackPower, EnemyAttackCooldown, EnemyMoveSpeed, 0, 0, EnemyKnockBack),
+		NewEnemyCombat(EnemyAttackCooldown, EnemyHealth, EnemyAttackPower, EnemyMoveSpeed, 0, 0, EnemyKnockBack),
 		Skeleton,
 		followsPlayer,
+		DefaultHurtboxRadius,
 	}
 }
