@@ -11,8 +11,7 @@ const (
 	DefaultProjectileSpeed   = 3.0
 	DefaultProjectileSize    = 1.0
 	DefaultPlayerKnockback   = 3.0
-	DefaultAttackRange       = 60 //determines how many ticks projectile will persist
-	DefaultAttackCooldown    = 60
+	DefaultAttackCooldown    = 60 //determines how many ticks projectile will persist
 	DefaultIFrames           = 90
 	DefaultFlickerFrames     = 5
 	EnemyMoveSpeed           = 1.5
@@ -149,19 +148,18 @@ func NewEnemyCombat(health, attackPower, attackCooldown int, moveSpeed, projecti
 
 type WizardCombat struct {
 	*BasicCombat
-	attackRange     float64
 	attackCooldown  int
 	timeSinceAttack int
 	Dead            bool
 	iFrames         int
 }
 
-func (wc *WizardCombat) AttackRange() float64 {
-	return wc.attackRange
+func (wc *WizardCombat) AttackCooldown() int {
+	return wc.attackCooldown
 }
 
-func (wc *WizardCombat) BoostAttackRange(amount float64) {
-	wc.attackRange += amount
+func (wc *WizardCombat) BoostAttackCooldown(amount int) {
+	wc.attackCooldown += amount
 }
 
 func (wc *WizardCombat) RandomBoost(amount float64) {
@@ -169,14 +167,16 @@ func (wc *WizardCombat) RandomBoost(amount float64) {
 		0: wc.BoostProjectileSpeed,
 		1: wc.BoostProjectileSize,
 		2: wc.BoostKnockback,
-		3: wc.BoostAttackRange,
+		3: func(amount float64) {
+			wc.BoostAttackCooldown(int(amount))
+		},
 	}
 
 	boosts[rand.Intn(len(boosts))](amount)
 }
 
 func (wc *WizardCombat) Attack() bool {
-	if wc.timeSinceAttack >= wc.attackCooldown {
+	if wc.timeSinceAttack >= int(wc.attackCooldown) {
 		wc.attacking = true
 		wc.timeSinceAttack = 0
 		return true
@@ -235,9 +235,8 @@ func NewWizard(player *Player) *WizardPlayer {
 				DefaultProjectileSize,
 				DefaultPlayerKnockback,
 			),
-			DefaultAttackRange,
 			DefaultAttackCooldown,
-			0,
+			60, // set timeSinceAttack so player can attack immediately
 			false,
 			0,
 		},

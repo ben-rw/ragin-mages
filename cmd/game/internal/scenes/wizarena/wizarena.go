@@ -162,9 +162,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	cX, cY := ebiten.CursorPosition()
 	cX -= int(w.camera.X)
 	cY -= int(w.camera.Y)
-	w.wizard.Combat.Update()
 
-	if clicked && !w.wizard.Combat.Dead {
+	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
 		projectile := shared.SpawnProjectile(
 			w.projectileCache[shared.Fireball],
 			w.wizard.Combat.ProjectileSpeed(),
