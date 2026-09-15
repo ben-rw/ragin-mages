@@ -32,10 +32,10 @@ type Projectile struct {
 	Speed       float64
 	Size        float64
 	Knockback   float64
-	TicksToLive float64
 	Rotation    float64
 	CenterX     float64
 	CenterY     float64
+	TicksToLive int
 }
 
 func LoadProjectile(projectileType ProjectileType) (*ebiten.Image, error) {
@@ -46,7 +46,7 @@ func LoadProjectile(projectileType ProjectileType) (*ebiten.Image, error) {
 	return img, nil
 }
 
-func SpawnProjectile(img *ebiten.Image, speed, size, knockback, ticksToLive, playerX, playerY, cursorX, cursorY float64) *Projectile {
+func SpawnProjectile(img *ebiten.Image, speed, size, knockback, playerX, playerY, cursorX, cursorY float64, ticksToLive int) *Projectile {
 	vX := cursorX - playerX
 	vY := cursorY - playerY
 	vlen := math.Hypot(vX, vY)
@@ -76,10 +76,10 @@ func SpawnProjectile(img *ebiten.Image, speed, size, knockback, ticksToLive, pla
 		speed,
 		size,
 		knockback,
-		ticksToLive,
 		rotation,
 		-FireballWidth / 2,
 		-FireballHeight / 2,
+		ticksToLive,
 	}
 }
 
