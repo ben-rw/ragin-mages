@@ -3,6 +3,7 @@ package wizarena
 import (
 	"image"
 	"log"
+	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
@@ -22,22 +23,25 @@ const (
 
 type WizArena struct {
 	shared.Roster
-	Conn            *ws.Connection
-	Sprites         []*shared.Sprite
-	wizard          *shared.WizardPlayer
-	wizards         map[string]*shared.WizardPlayer
-	enemies         []*shared.Enemy
-	tilemapJSON     *shared.TilemapJSON
-	tileCache       map[int]*shared.Tile
-	camera          *shared.Camera
-	colliders       []image.Rectangle
-	holes           []image.Rectangle
-	traps           []image.Rectangle
-	audioPlayer     *audio.Player
-	projectiles     []*shared.Projectile
-	projectileCache map[shared.ProjectileType]*ebiten.Image
-	heartImage      *ebiten.Image
-	debug           bool
+	Conn              *ws.Connection
+	Sprites           []*shared.Sprite
+	wizard            *shared.WizardPlayer
+	wizards           map[string]*shared.WizardPlayer
+	enemies           []*shared.Enemy
+	enemyRespawnTimer time.Time
+	roundTimer        time.Time
+	tilemapJSON       *shared.TilemapJSON
+	tileCache         map[int]*shared.Tile
+	camera            *shared.Camera
+	colliders         []image.Rectangle
+	holes             []image.Rectangle
+	traps             []image.Rectangle
+	audioPlayer       *audio.Player
+	projectiles       []*shared.Projectile
+	deadProjectiles   []*shared.Projectile
+	projectileCache   map[shared.ProjectileType]*ebiten.Image
+	heartImage        *ebiten.Image
+	debug             bool
 }
 
 func NewWizArena(c *ws.Connection) *WizArena {
@@ -75,15 +79,17 @@ func NewWizArena(c *ws.Connection) *WizArena {
 			Players: make(map[string]*shared.Player, 8),
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
-		Conn:            c,
-		Sprites:         []*shared.Sprite{},
-		wizards:         make(map[string]*shared.WizardPlayer, 0),
-		enemies:         make([]*shared.Enemy, 0),
-		projectiles:     make([]*shared.Projectile, 0),
-		projectileCache: make(map[shared.ProjectileType]*ebiten.Image, 0),
-		tilemapJSON:     tilemap,
-		tileCache:       tileCache,
-		camera:          nil,
+		Conn:              c,
+		Sprites:           []*shared.Sprite{},
+		wizards:           make(map[string]*shared.WizardPlayer, 0),
+		enemies:           make([]*shared.Enemy, 0),
+		enemyRespawnTimer: time.Time{},
+		projectiles:       make([]*shared.Projectile, 0),
+		deadProjectiles:   make([]*shared.Projectile, 0),
+		projectileCache:   make(map[shared.ProjectileType]*ebiten.Image, 0),
+		tilemapJSON:       tilemap,
+		tileCache:         tileCache,
+		camera:            nil,
 		colliders: []image.Rectangle{
 			image.Rect(100, 100, 116, 116),
 		},
@@ -92,10 +98,6 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		audioPlayer: audioPlayer,
 		heartImage:  heartImg,
 		debug:       false,
-	}
-
-	for i := range len(w.enemies) {
-		w.enemies = append(w.enemies, shared.NewEnemy(shared.Skeleton, true, shared.EnemySpawns[i].X, shared.EnemySpawns[i].Y))
 	}
 
 	w.projectileCache[shared.Fireball] = fireballImg

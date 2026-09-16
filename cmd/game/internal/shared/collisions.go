@@ -2,7 +2,8 @@ package shared
 
 import "image"
 
-func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) {
+func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool {
+	collision := false
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			int(sprite.X),
@@ -10,17 +11,21 @@ func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) {
 			int(sprite.X)+16,
 			int(sprite.Y)+16,
 		)) {
-			if sprite.Dx > 0.0 {
-				sprite.X = float64(collider.Min.X) - TileSize
-			} else if sprite.Dx < 0.0 {
-				sprite.X = float64(collider.Max.X)
+			if sprite.Noclip == false {
+				if sprite.Dx > 0.0 {
+					sprite.X = float64(collider.Min.X) - TileSize
+				} else if sprite.Dx < 0.0 {
+					sprite.X = float64(collider.Max.X)
+				}
 			}
+			collision = true
 		}
 	}
-
+	return collision
 }
 
-func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) {
+func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) bool {
+	collision := false
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			int(sprite.X),
@@ -28,13 +33,17 @@ func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) {
 			int(sprite.X)+16,
 			int(sprite.Y)+16,
 		)) {
-			if sprite.Dy > 0.0 {
-				sprite.Y = float64(collider.Min.Y) - TileSize
-			} else if sprite.Dy < 0.0 {
-				sprite.Y = float64(collider.Max.Y)
+			if sprite.Noclip == false {
+				if sprite.Dy > 0.0 {
+					sprite.Y = float64(collider.Min.Y) - TileSize
+				} else if sprite.Dy < 0.0 {
+					sprite.Y = float64(collider.Max.Y)
+				}
 			}
+			collision = true
 		}
 	}
+	return collision
 }
 
 func CheckCollisionCircle(x1, y1, r1, x2, y2, r2 float64) bool {

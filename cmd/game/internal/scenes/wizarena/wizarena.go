@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -36,12 +37,10 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			}
 
 			w.wizard = w.wizards[w.Player.Data.Name]
-			log.Printf("wiz: %v, %v", w.wizard.X, w.wizard.Y)
 			w.camera = shared.NewCamera(
 				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
 				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
 			)
-			log.Println(w.camera.X, w.camera.Y)
 
 			// playerUpdateData := protocol.PlayerUpdateData{
 			// 	PlayerData: w.wizard.Data,
@@ -77,6 +76,11 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			w.camera.Y -= shared.FreeCamSpeed
 		}
 
+		w.camera.Constrain(
+			float64(w.tilemapJSON.Layers[0].Width)*16.0,
+			float64(w.tilemapJSON.Layers[0].Height)*16.0,
+		)
+
 		if !w.wizard.Combat.Fell {
 			if w.wizard.Y > -shared.HalfTile {
 				w.wizard.Y -= 3.0
@@ -103,8 +107,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			w.wizard.Dy += 1
 		}
 
-		log.Println(w.camera.X, w.camera.Y)
-		log.Printf("wiz: %v, %v", w.wizard.X, w.wizard.Y)
 		w.camera.FollowTarget(
 			w.wizard.X,
 			w.wizard.Y,
@@ -115,8 +117,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(w.tilemapJSON.Layers[0].Width)*16.0,
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
-		log.Println(w.camera.X, w.camera.Y)
-		log.Printf("wiz: %v, %v", w.wizard.X, w.wizard.Y)
 		w.wizard.Combat.Update()
 		if w.wizard.Combat.IFrames() > 0 {
 			w.wizard.IFrameFlicker()
@@ -132,6 +132,11 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			w.wizard.Dx *= 0.70710678
 			w.wizard.Dy *= 0.70710678
 		}
+	}
+
+	if w.enemyRespawnTimer.IsZero() || time.Until(w.enemyRespawnTimer) <= 0 {
+		w.enemyRespawnTimer = time.Now().Add(shared.EnemyRespawnTimer * time.Second)
+		w.enemies = shared.SpawnEnemies(w.enemies)
 	}
 
 	for _, collider := range w.colliders {
@@ -320,10 +325,32 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	}
 
 	for _, enemy := range w.enemies {
+		// lets enemies noclip until they're fully out of the hole
+		if enemy.Noclip {
+			if !shared.CheckCollisionHorizontal(enemy.Sprite, w.holes) &&
+				!shared.CheckCollisionVertical(enemy.Sprite, w.holes) {
+				enemy.Noclip = false
+			}
+		}
+
+		if enemy.Alpha < 1.0 {
+			enemy.Alpha += 0.01
+		}
+
+		if enemy.Combat.MoveSpeed() < shared.EnemyMoveSpeed {
+			enemy.Combat.SetMoveSpeed(enemy.Combat.MoveSpeed() + shared.EnemyMoveSpeed/150)
+		}
+
 		enemy.X += enemy.Dx
 		shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
+		if !enemy.Noclip {
+			shared.CheckCollisionHorizontal(enemy.Sprite, w.holes)
+		}
 		enemy.Y += enemy.Dy
 		shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
+		if !enemy.Noclip {
+			shared.CheckCollisionVertical(enemy.Sprite, w.holes)
+		}
 	}
 
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
@@ -350,6 +377,13 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		int(w.wizard.Y+14), // puts hitbox close to feet
 		w.holes,
 	)
+	if w.wizard.X < 0 ||
+		w.wizard.Y < 0 ||
+		w.wizard.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
+		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
+		w.wizard.Combat.Fell = true
+	}
+
 	if w.wizard.Combat.Fell {
 		w.wizard.Combat.SetHealth(0)
 	}
@@ -465,6 +499,10 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Translate(enemy.X, enemy.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
+
+		if enemy.Alpha < 1.0 {
+			opts.ColorScale.ScaleAlpha(enemy.Alpha)
+		}
 
 		enemy.ActiveAnimation = enemy.GetActiveAnimation()
 		screen.DrawImage(

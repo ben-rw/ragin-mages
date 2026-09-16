@@ -101,7 +101,7 @@ func (b *BasicCombat) ProjectileScale() float64 {
 }
 
 func (b *BasicCombat) BoostProjectileScale(amount float64) {
-	b.projectileScale += amount
+	b.projectileScale += amount / 2
 }
 
 func (b *BasicCombat) Knockback() float64 {
@@ -210,7 +210,6 @@ func (wc *WizardCombat) IFrames() int {
 type WizardPlayer struct {
 	*Player
 	Combat        *WizardCombat
-	Alpha         float32
 	FlickerFrames int
 	HurtboxRadius float64
 }
@@ -253,7 +252,6 @@ func NewWizard(player *Player) *WizardPlayer {
 			false,
 			0,
 		},
-		1.0,
 		DefaultFlickerFrames,
 		DefaultHurtboxRadius,
 	}

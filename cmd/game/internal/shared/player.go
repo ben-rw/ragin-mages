@@ -77,6 +77,8 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 				Dying:  animations.NewAnimation(25, 25, 0, 10.0),
 			},
 			JustJoined: true,
+			Noclip:     false,
+			Alpha:      1.0,
 		},
 		Data: &protocol.PlayerData{
 			Name:        data.Name,

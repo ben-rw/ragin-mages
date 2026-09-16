@@ -29,6 +29,8 @@ type Sprite struct {
 	ActiveAnimation *animations.Animation
 	JustJoined      bool
 	Dying           bool
+	Noclip          bool
+	Alpha           float32
 }
 
 func (s *Sprite) GetActiveAnimation() *animations.Animation {
