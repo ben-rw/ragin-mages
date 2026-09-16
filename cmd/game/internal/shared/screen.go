@@ -5,8 +5,8 @@ import "image/color"
 var BackgroundColor = color.RGBA{0, 105, 150, 1}
 
 const (
-	defaultScreenWidth  = 320
-	defaultScreenHeight = 180
+	defaultScreenWidth  = 640
+	defaultScreenHeight = 360
 )
 
 var (
