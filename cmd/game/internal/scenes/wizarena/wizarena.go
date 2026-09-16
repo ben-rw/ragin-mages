@@ -204,6 +204,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
 			if enemy.Combat.Attack() {
+				enemy.Attacking = true //starts attack animation
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
 
 				// player pushed away by enemy
@@ -296,6 +297,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	cY -= int(w.camera.Y)
 
 	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
+		w.wizard.Attacking = true //starts attack animation
 		projectile := w.wizard.ShootProjectile(
 			w.projectileCache[shared.Fireball],
 			float64(cX),
@@ -512,6 +514,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			&opts,
 		)
 
+		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 

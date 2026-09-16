@@ -4,7 +4,6 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type EntityState int
@@ -16,7 +15,10 @@ const (
 	Left
 	Right
 	Join
-	Attack
+	AttackDown
+	AttackUp
+	AttckLeft
+	AttackRight
 	Dying
 	FireballFly
 )
@@ -29,6 +31,7 @@ type Sprite struct {
 	ActiveAnimation *animations.Animation
 	JustJoined      bool
 	Dying           bool
+	Attacking       bool
 	Noclip          bool
 	Alpha           float32
 }
@@ -50,14 +53,13 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 			return s.ActiveAnimation
 		}
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		return s.Animations[Attack]
-	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		return s.Animations[Attack]
-	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		return s.Animations[Attack]
+	if s.Attacking {
+		s.ActiveAnimation = s.Animations[AttackDown]
+		if s.ActiveAnimation.Over == true {
+			s.Attacking = false
+		} else {
+			return s.ActiveAnimation
+		}
 	}
 	if s.Dx > 0 {
 		return s.Animations[Right]
