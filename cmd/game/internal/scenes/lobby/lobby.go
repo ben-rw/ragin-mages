@@ -24,6 +24,7 @@ type Lobby struct {
 	Background    *ebiten.Image
 	audioPlayer   *audio.Player
 	sceneChanging bool
+	lobbyImage    *ebiten.Image
 }
 
 func NewLobby(c *ws.Connection) *Lobby {
@@ -37,6 +38,8 @@ func NewLobby(c *ws.Connection) *Lobby {
 		log.Printf("couldn't create audio player: %v", err)
 	}
 
+	lobbyImage := ebiten.NewImage(int(shared.ScreenWidth/2), int(shared.ScreenHeight/2))
+
 	return &Lobby{
 		Roster: shared.Roster{
 			Players: map[string]*shared.Player{},
@@ -47,6 +50,7 @@ func NewLobby(c *ws.Connection) *Lobby {
 		Background:    bg,
 		audioPlayer:   audioPlayer,
 		sceneChanging: false,
+		lobbyImage:    lobbyImage,
 	}
 }
 
@@ -106,7 +110,8 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 }
 
 func (l *Lobby) Draw(screen *ebiten.Image) {
-	screen.Fill(shared.BackgroundColor)
+	l.lobbyImage.Clear()
+	l.lobbyImage.Fill(shared.BackgroundColor)
 
 	opts := ebiten.DrawImageOptions{}
 
@@ -122,7 +127,7 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 		opts.GeoM.Translate(player.X, player.Y)
 
 		player.ActiveAnimation = player.GetActiveAnimation()
-		screen.DrawImage(
+		l.lobbyImage.DrawImage(
 			player.Img.SubImage(
 				player.SpriteSheet.Rect(player.ActiveAnimation.Frame()),
 			).(*ebiten.Image),
@@ -137,7 +142,7 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 			LayoutOptions: player.NameTag.LayoutOptions,
 		}
 		textOpts.GeoM.Translate(player.NameTag.X, player.NameTag.Y)
-		text.Draw(screen, player.Data.Name, player.NameTag.Face, &textOpts)
+		text.Draw(l.lobbyImage, player.Data.Name, player.NameTag.Face, &textOpts)
 
 		textOpts.GeoM.Reset()
 	}
@@ -148,8 +153,9 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 			PrimaryAlign: 2,
 		},
 	}
-	textOpts.GeoM.Translate(shared.TopRight())
-	text.Draw(screen, controlsText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
+	tX, tY := shared.TopRight()
+	textOpts.GeoM.Translate(tX/2, tY/2)
+	text.Draw(l.lobbyImage, controlsText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
 
 	textOpts.GeoM.Reset()
 
@@ -162,6 +168,14 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 			PrimaryAlign: 2,
 		},
 	}
-	textOpts.GeoM.Translate(shared.BottomRight())
-	text.Draw(screen, waitText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
+	tX, tY = shared.BottomRight()
+	textOpts.GeoM.Translate(tX/2, tY/2)
+	text.Draw(l.lobbyImage, waitText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
+
+	textOpts.GeoM.Reset()
+
+	opts.GeoM.Scale(2, 2)
+	screen.DrawImage(l.lobbyImage, &opts)
+
+	opts.GeoM.Reset()
 }
