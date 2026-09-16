@@ -37,12 +37,13 @@ type WizArena struct {
 	projectiles     []*shared.Projectile
 	projectileCache map[shared.ProjectileType]*ebiten.Image
 	heartImage      *ebiten.Image
+	debug           bool
 }
 
 func NewWizArena(c *ws.Connection) *WizArena {
 	log.Println("scene changed to Wizards")
-	shared.ScreenHeight = shared.ScreenHeight * 2
-	shared.ScreenWidth = shared.ScreenWidth * 2
+	// shared.ScreenHeight = shared.ScreenHeight * 2
+	// shared.ScreenWidth = shared.ScreenWidth * 2
 
 	tilemap, err := shared.NewTilemapJSON(tilemapPath)
 	if err != nil {
@@ -90,6 +91,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		traps:       []image.Rectangle{},
 		audioPlayer: audioPlayer,
 		heartImage:  heartImg,
+		debug:       false,
 	}
 
 	for i := range len(w.enemies) {

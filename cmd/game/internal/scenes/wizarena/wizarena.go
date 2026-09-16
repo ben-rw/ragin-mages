@@ -590,78 +590,80 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 	textOpts.GeoM.Reset()
 
-	for _, projectile := range w.projectiles {
+	if w.debug {
+		for _, projectile := range w.projectiles {
 
-		m := ebiten.GeoM{}
-		m.Translate(-shared.FBCenterX, -shared.FBCenterY)
-		m.Scale(projectile.Scale, projectile.Scale)
-		m.Rotate(projectile.Rotation)
-		m.Translate(projectile.X, projectile.Y)
+			m := ebiten.GeoM{}
+			m.Translate(-shared.FBCenterX, -shared.FBCenterY)
+			m.Scale(projectile.Scale, projectile.Scale)
+			m.Rotate(projectile.Rotation)
+			m.Translate(projectile.X, projectile.Y)
 
-		hx, hy := m.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
-		shared.CheckCollisionCircle(
-			hx,
-			hy,
-			projectile.ScaledRadius,
-			w.wizard.X+shared.HalfTile,
-			w.wizard.Y+shared.HalfTile,
-			w.wizard.HurtboxRadius,
-		)
+			hx, hy := m.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
+			shared.CheckCollisionCircle(
+				hx,
+				hy,
+				projectile.ScaledRadius,
+				w.wizard.X+shared.HalfTile,
+				w.wizard.Y+shared.HalfTile,
+				w.wizard.HurtboxRadius,
+			)
 
-		vector.StrokeCircle(
-			screen,
-			float32(hx+w.camera.X),
-			float32(hy+w.camera.Y),
-			float32(projectile.ScaledRadius),
-			1.0,
-			color.RGBA{255, 0, 0, 255},
-			false,
-		)
-	}
+			vector.StrokeCircle(
+				screen,
+				float32(hx+w.camera.X),
+				float32(hy+w.camera.Y),
+				float32(projectile.ScaledRadius),
+				1.0,
+				color.RGBA{255, 0, 0, 255},
+				false,
+			)
+		}
 
-	for _, enemies := range w.enemies {
-		vector.StrokeCircle(screen, float32(enemies.X+shared.HalfTile+w.camera.X), float32(enemies.Y+shared.HalfTile+w.camera.Y), float32(enemies.HurtboxRadius), 1.0, color.RGBA{255, 0, 0, 255}, false)
-	}
+		for _, enemies := range w.enemies {
+			vector.StrokeCircle(screen, float32(enemies.X+shared.HalfTile+w.camera.X), float32(enemies.Y+shared.HalfTile+w.camera.Y), float32(enemies.HurtboxRadius), 1.0, color.RGBA{255, 0, 0, 255}, false)
+		}
 
-	for _, collider := range w.colliders {
-		vector.StrokeRect(
-			screen,
-			float32(collider.Min.X)+float32(w.camera.X),
-			float32(collider.Min.Y)+float32(w.camera.Y),
-			float32(collider.Dx()),
-			float32(collider.Dy()),
-			1.0,
-			color.RGBA{255, 0, 0, 255},
-			false,
-		)
-		opts.GeoM.Reset()
-	}
+		for _, collider := range w.colliders {
+			vector.StrokeRect(
+				screen,
+				float32(collider.Min.X)+float32(w.camera.X),
+				float32(collider.Min.Y)+float32(w.camera.Y),
+				float32(collider.Dx()),
+				float32(collider.Dy()),
+				1.0,
+				color.RGBA{255, 0, 0, 255},
+				false,
+			)
+			opts.GeoM.Reset()
+		}
 
-	for _, hole := range w.holes {
-		vector.StrokeRect(
-			screen,
-			float32(hole.Min.X)+float32(w.camera.X),
-			float32(hole.Min.Y)+float32(w.camera.Y),
-			float32(hole.Dx()),
-			float32(hole.Dy()),
-			1.0,
-			color.RGBA{0, 0, 255, 255},
-			false,
-		)
-		opts.GeoM.Reset()
-	}
+		for _, hole := range w.holes {
+			vector.StrokeRect(
+				screen,
+				float32(hole.Min.X)+float32(w.camera.X),
+				float32(hole.Min.Y)+float32(w.camera.Y),
+				float32(hole.Dx()),
+				float32(hole.Dy()),
+				1.0,
+				color.RGBA{0, 0, 255, 255},
+				false,
+			)
+			opts.GeoM.Reset()
+		}
 
-	for _, spike := range w.traps {
-		vector.StrokeRect(
-			screen,
-			float32(spike.Min.X)+float32(w.camera.X),
-			float32(spike.Min.Y)+float32(w.camera.Y),
-			float32(spike.Dx()),
-			float32(spike.Dy()),
-			1.0,
-			color.RGBA{0, 255, 0, 255},
-			false,
-		)
-		opts.GeoM.Reset()
+		for _, spike := range w.traps {
+			vector.StrokeRect(
+				screen,
+				float32(spike.Min.X)+float32(w.camera.X),
+				float32(spike.Min.Y)+float32(w.camera.Y),
+				float32(spike.Dx()),
+				float32(spike.Dy()),
+				1.0,
+				color.RGBA{0, 255, 0, 255},
+				false,
+			)
+			opts.GeoM.Reset()
+		}
 	}
 }
