@@ -92,7 +92,7 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 		fadeFinished = sound.FadeOut(l.audioPlayer)
 	} else if !l.audioPlayer.IsPlaying() {
 		l.audioPlayer.SetVolume(0.2)
-		l.audioPlayer.SetBufferSize(300)
+		l.audioPlayer.SetBufferSize(500)
 		l.audioPlayer.Play()
 	}
 

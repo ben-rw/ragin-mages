@@ -9,7 +9,7 @@ const (
 	DefaultPlayerAttackPower = 1.0
 	DefaultPlayerMoveSpeed   = 2.0
 	DefaultProjectileSpeed   = 3.0
-	DefaultProjectileScale   = 1.0
+	DefaultProjectileScale   = 0.5
 	DefaultPlayerKnockback   = 3.0
 	DefaultAttackCooldown    = 60 //determines how many ticks projectile will persist
 	DefaultIFrames           = 90
@@ -24,6 +24,7 @@ const (
 	KillPlayerBoost          = 1.0
 	ChestBoost               = 3.0
 	WinRoundBoost            = 10.0
+	TrapDamage               = 1.0
 )
 
 type Combat interface {
@@ -69,6 +70,10 @@ func (b *BasicCombat) AttackPower() float64 {
 
 func (b *BasicCombat) Health() float64 {
 	return b.health
+}
+
+func (b *BasicCombat) SetHealth(amount float64) {
+	b.health = amount
 }
 
 func (b *BasicCombat) Damage(amount float64) {
@@ -152,6 +157,7 @@ type WizardCombat struct {
 	attackCooldown  int
 	timeSinceAttack int
 	Dead            bool
+	Fell            bool
 	iFrames         int
 }
 
@@ -226,6 +232,10 @@ func (w *WizardPlayer) IFrameFlicker() {
 }
 
 func NewWizard(player *Player) *WizardPlayer {
+	spawnIndex := rand.Intn(8)
+	player.X = PlayerSpawns[spawnIndex].X * TileSize
+	player.Y = PlayerSpawns[spawnIndex].Y * TileSize
+
 	return &WizardPlayer{
 		player,
 		&WizardCombat{
@@ -239,6 +249,7 @@ func NewWizard(player *Player) *WizardPlayer {
 			),
 			DefaultAttackCooldown,
 			60, // set timeSinceAttack so player can attack immediately
+			false,
 			false,
 			0,
 		},

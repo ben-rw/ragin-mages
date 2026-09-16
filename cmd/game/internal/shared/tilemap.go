@@ -35,9 +35,10 @@ type TilemapJSON struct {
 }
 
 type TilemapLayerJSON struct {
-	Data   []int `json:"data"`
-	Width  int   `json:"width"`
-	Height int   `json:"height"`
+	Data   []int  `json:"data"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Name   string `json:"name"`
 }
 
 type Tileset struct {
@@ -74,7 +75,7 @@ func NewTilemapJSON(filepath string) (*TilemapJSON, error) {
 	return &tilemapJSON, nil
 }
 
-func getTileImgIndex(id int, tilemapJSON *TilemapJSON) int {
+func GetTilemapIndex(id int, tilemapJSON *TilemapJSON) int {
 	for i := range tilemapJSON.Tilesets {
 		if id < tilemapJSON.Tilesets[i].Firstgid {
 			return i - 1
@@ -84,7 +85,7 @@ func getTileImgIndex(id int, tilemapJSON *TilemapJSON) int {
 	return len(tilemapJSON.Tilesets) - 1
 }
 
-func newTileImgList(tilemapJSON *TilemapJSON) ([]*ebiten.Image, error) {
+func newTilemapImgList(tilemapJSON *TilemapJSON) ([]*ebiten.Image, error) {
 	imgList := make([]*ebiten.Image, len(tilemapJSON.Tilesets))
 	for i := range tilemapJSON.Tilesets {
 		img, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, (fmt.Sprintf("assets%v", path.Clean("/"+tilemapJSON.Tilesets[i].Data.ImagePath))))
@@ -99,7 +100,7 @@ func newTileImgList(tilemapJSON *TilemapJSON) ([]*ebiten.Image, error) {
 
 func NewTileCache(tilemapJSON *TilemapJSON) (map[int]*Tile, error) {
 	imgMap := make(map[int]*Tile)
-	tileImgList, err := newTileImgList(tilemapJSON)
+	tilemapImgList, err := newTilemapImgList(tilemapJSON)
 	for _, layer := range tilemapJSON.Layers {
 		for _, id := range layer.Data {
 			if id == 0 {
@@ -112,15 +113,15 @@ func NewTileCache(tilemapJSON *TilemapJSON) (map[int]*Tile, error) {
 				int(FlagRotatedHexagonal120))
 
 			if _, ok := imgMap[id]; !ok {
-				tileImgIndex := getTileImgIndex(int(id), tilemapJSON)
+				tilemapImgIndex := GetTilemapIndex(int(id), tilemapJSON)
 				if err != nil {
 					return nil, err
 				}
 
-				tileImg := tileImgList[tileImgIndex]
+				tileImg := tilemapImgList[tilemapImgIndex]
 
-				srcX := (id - tilemapJSON.Tilesets[tileImgIndex].Firstgid) % tilemapJSON.Tilesets[tileImgIndex].Data.Columns
-				srcY := (id - tilemapJSON.Tilesets[tileImgIndex].Firstgid) / tilemapJSON.Tilesets[tileImgIndex].Data.Columns
+				srcX := (id - tilemapJSON.Tilesets[tilemapImgIndex].Firstgid) % tilemapJSON.Tilesets[tilemapImgIndex].Data.Columns
+				srcY := (id - tilemapJSON.Tilesets[tilemapImgIndex].Firstgid) / tilemapJSON.Tilesets[tilemapImgIndex].Data.Columns
 
 				srcX *= TileSize
 				srcY *= TileSize

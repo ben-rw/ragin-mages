@@ -17,6 +17,7 @@ func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) {
 			}
 		}
 	}
+
 }
 
 func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) {
@@ -43,4 +44,14 @@ func CheckCollisionCircle(x1, y1, r1, x2, y2, r2 float64) bool {
 	rSum := r1 + r2
 
 	return (dx*dx + dy*dy) < (rSum * rSum)
+}
+
+func CheckCollisionHazards(x, y int, holes []image.Rectangle) bool {
+	point := image.Point{x, y}
+	for _, hole := range holes {
+		if point.In(hole) {
+			return true
+		}
+	}
+	return false
 }
