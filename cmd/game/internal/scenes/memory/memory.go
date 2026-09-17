@@ -58,7 +58,7 @@ func (m *Memory) Update(messages []protocol.Message) error {
 	}
 
 	for _, player := range m.Players {
-		player.SetActiveAnimation(shared.Idle)
+		player.GetActiveAnimation()
 		player.ActiveAnimation.Update()
 	}
 

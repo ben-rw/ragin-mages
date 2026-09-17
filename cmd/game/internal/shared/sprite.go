@@ -14,12 +14,12 @@ const (
 	WalkUp
 	WalkLeft
 	WalkRight
-	JustJoined
+	Join
 	AttackingDown
 	AttackingUp
 	AttackingLeft
 	AttackingRight
-	Dying
+	Die
 	FireballFly
 )
 
@@ -29,12 +29,15 @@ type Sprite struct {
 	SpriteSheet     *spritesheet.SpriteSheet
 	Animations      map[EntityState]*animations.Animation
 	ActiveAnimation *animations.Animation
-	State           EntityState
 	Noclip          bool
 	Alpha           float32
+	JoinAnim        bool
+	DieAnim         bool
+	AttackAnim      bool
+	AttackDirection EntityState
 }
 
-func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet.SpriteSheet, animations map[EntityState]*animations.Animation, activeAnimation *animations.Animation, state EntityState, noclip bool, alpha float32) *Sprite {
+func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet.SpriteSheet, animations map[EntityState]*animations.Animation, activeAnimation *animations.Animation, noclip, joinAnim bool, alpha float32) *Sprite {
 	return &Sprite{
 		Img:             img,
 		X:               x,
@@ -44,42 +47,62 @@ func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet
 		SpriteSheet:     spritesheet,
 		Animations:      animations,
 		ActiveAnimation: activeAnimation,
-		State:           state,
 		Noclip:          noclip,
+		JoinAnim:        joinAnim,
 		Alpha:           alpha,
 	}
 }
 
-func (s *Sprite) SetActiveAnimation(state EntityState) {
-	if s.State == state {
-		return
-	}
-	s.State = state
-	switch s.State {
-	case JustJoined:
-		s.ActiveAnimation = s.Animations[JustJoined]
-	case Dying:
-		s.ActiveAnimation = s.Animations[Dying]
-	case AttackingDown:
-		s.ActiveAnimation = s.Animations[AttackingDown]
-	case WalkRight:
-		s.ActiveAnimation = s.Animations[WalkRight]
-	case WalkLeft:
-		s.ActiveAnimation = s.Animations[WalkLeft]
-	case WalkDown:
-		s.ActiveAnimation = s.Animations[WalkDown]
-	case WalkUp:
-		s.ActiveAnimation = s.Animations[WalkUp]
-	default:
-		s.ActiveAnimation = s.Animations[Idle]
-	}
-}
-
-func (s *Sprite) AnimationOver() {
-	switch s.State {
-	case JustJoined, Dying, AttackingDown, AttackingUp, AttackingLeft, AttackingRight:
-		if s.ActiveAnimation.Over {
-			s.State = Idle
+func (s *Sprite) GetActiveAnimation() *animations.Animation {
+	var anim *animations.Animation
+	if s.JoinAnim {
+		anim = s.Animations[Join]
+		if anim.Over {
+			anim.Over = false
+			s.JoinAnim = false
+			return s.Animations[Idle]
+		} else {
+			return anim
 		}
+	}
+	if s.DieAnim {
+		anim = s.Animations[Die]
+		if s.ActiveAnimation.Over {
+			anim.Over = false
+			s.DieAnim = false
+		} else {
+			return anim
+		}
+	}
+	if s.AttackAnim {
+		switch s.AttackDirection {
+		case AttackingDown:
+			anim = s.Animations[AttackingDown]
+		case AttackingUp:
+			anim = s.Animations[AttackingUp]
+		case AttackingRight:
+			anim = s.Animations[AttackingRight]
+		case AttackingLeft:
+			anim = s.Animations[AttackingLeft]
+		}
+
+		if anim.Over {
+			anim.Over = false
+			s.AttackAnim = false
+		} else {
+			return anim
+		}
+	}
+	switch {
+	case s.Dx > 0:
+		return s.Animations[WalkRight]
+	case s.Dx < 0:
+		return s.Animations[WalkLeft]
+	case s.Dy > 0:
+		return s.Animations[WalkDown]
+	case s.Dy < 0:
+		return s.Animations[WalkUp]
+	default:
+		return s.Animations[Idle]
 	}
 }

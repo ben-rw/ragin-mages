@@ -64,10 +64,6 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 				continue
 			}
 
-			for _, player := range l.Players {
-				player.SetActiveAnimation(shared.JustJoined)
-			}
-
 			playerUpdateData := protocol.PlayerUpdateData{
 				PlayerData: l.Player.Data,
 			}
@@ -86,8 +82,8 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 	}
 
 	for _, player := range l.Players {
+		player.ActiveAnimation = player.GetActiveAnimation()
 		player.ActiveAnimation.Update()
-		player.AnimationOver()
 	}
 
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) &&

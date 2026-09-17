@@ -93,7 +93,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 			s,
 			ProjectileAnimations,
 			ProjectileAnimations[FireballFly],
-			FireballFly,
+			false,
 			false,
 			1.0,
 		),
