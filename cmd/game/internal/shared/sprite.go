@@ -4,20 +4,22 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type EntityState int
 
 const (
 	Idle EntityState = iota
-	Down
-	Up
-	Left
-	Right
+	WalkDown
+	WalkUp
+	WalkLeft
+	WalkRight
 	Join
-	Attack
-	Dying
+	AttackingDown
+	AttackingUp
+	AttackingLeft
+	AttackingRight
+	Die
 	FireballFly
 )
 
@@ -27,49 +29,80 @@ type Sprite struct {
 	SpriteSheet     *spritesheet.SpriteSheet
 	Animations      map[EntityState]*animations.Animation
 	ActiveAnimation *animations.Animation
-	JustJoined      bool
-	Dying           bool
 	Noclip          bool
 	Alpha           float32
+	JoinAnim        bool
+	DieAnim         bool
+	AttackAnim      bool
+	AttackDirection EntityState
+}
+
+func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet.SpriteSheet, animations map[EntityState]*animations.Animation, activeAnimation *animations.Animation, noclip, joinAnim bool, alpha float32) *Sprite {
+	return &Sprite{
+		Img:             img,
+		X:               x,
+		Y:               y,
+		Dx:              dx,
+		Dy:              dy,
+		SpriteSheet:     spritesheet,
+		Animations:      animations,
+		ActiveAnimation: activeAnimation,
+		Noclip:          noclip,
+		JoinAnim:        joinAnim,
+		Alpha:           alpha,
+	}
 }
 
 func (s *Sprite) GetActiveAnimation() *animations.Animation {
-	if s.JustJoined {
-		s.ActiveAnimation = s.Animations[Join]
-		if s.ActiveAnimation.Over == true {
-			s.JustJoined = false
+	var anim *animations.Animation
+	if s.JoinAnim {
+		anim = s.Animations[Join]
+		if anim.Over {
+			anim.Over = false
+			s.JoinAnim = false
+			return s.Animations[Idle]
 		} else {
-			return s.ActiveAnimation
+			return anim
 		}
 	}
-	if s.Dying {
-		s.ActiveAnimation = s.Animations[Dying]
-		if s.ActiveAnimation.Over == true {
-			s.Dying = false
+	if s.DieAnim {
+		anim = s.Animations[Die]
+		if s.ActiveAnimation.Over {
+			anim.Over = false
+			s.DieAnim = false
 		} else {
-			return s.ActiveAnimation
+			return anim
 		}
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		return s.Animations[Attack]
+	if s.AttackAnim {
+		switch s.AttackDirection {
+		case AttackingDown:
+			anim = s.Animations[AttackingDown]
+		case AttackingUp:
+			anim = s.Animations[AttackingUp]
+		case AttackingRight:
+			anim = s.Animations[AttackingRight]
+		case AttackingLeft:
+			anim = s.Animations[AttackingLeft]
+		}
+
+		if anim.Over {
+			anim.Over = false
+			s.AttackAnim = false
+		} else {
+			return anim
+		}
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight) {
-		return s.Animations[Attack]
+	switch {
+	case s.Dx > 0:
+		return s.Animations[WalkRight]
+	case s.Dx < 0:
+		return s.Animations[WalkLeft]
+	case s.Dy > 0:
+		return s.Animations[WalkDown]
+	case s.Dy < 0:
+		return s.Animations[WalkUp]
+	default:
+		return s.Animations[Idle]
 	}
-	if inpututil.IsKeyJustPressed(ebiten.KeyR) {
-		return s.Animations[Attack]
-	}
-	if s.Dx > 0 {
-		return s.Animations[Right]
-	}
-	if s.Dx < 0 {
-		return s.Animations[Left]
-	}
-	if s.Dy > 0 {
-		return s.Animations[Down]
-	}
-	if s.Dy < 0 {
-		return s.Animations[Up]
-	}
-	return s.Animations[Idle]
 }

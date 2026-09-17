@@ -31,7 +31,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			for _, player := range w.Players {
 				if _, ok := w.wizards[player.Data.Name]; !ok {
 					wizard := shared.NewWizard(player)
-					wizard.JustJoined = false
+					wizard.JoinAnim = false
 					w.wizards[wizard.Data.Name] = wizard
 				}
 			}
@@ -63,6 +63,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.Dy = 0
 
 	if w.wizard.Combat.Dead {
+		// define camera behavior for dead players
 		if ebiten.IsKeyPressed(ebiten.KeyRight) {
 			w.camera.X -= shared.FreeCamSpeed
 		}
@@ -81,12 +82,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
 
+		// add a fade effect when players die
 		if !w.wizard.Combat.Fell {
 			if w.wizard.Y > -shared.HalfTile {
 				w.wizard.Y -= 3.0
 			}
 		}
-
 		if w.wizard.Alpha > 0.0 {
 			w.wizard.Alpha -= .02 //fade speed
 		} else {
@@ -94,19 +95,27 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 
 	} else {
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
-			w.wizard.Dx += 1
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-			w.wizard.Dx += -1
-		}
+		// add velocity to wizard based on player input
 		if ebiten.IsKeyPressed(ebiten.KeyUp) {
 			w.wizard.Dy += -1
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyDown) {
 			w.wizard.Dy += 1
 		}
+		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+			w.wizard.Dx += 1
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+			w.wizard.Dx += -1
+		}
 
+		//normalize diagonal movement
+		if w.wizard.Dx != 0 && w.wizard.Dy != 0 {
+			w.wizard.Dx *= 0.70710678
+			w.wizard.Dy *= 0.70710678
+		}
+
+		//define normal camera behavior
 		w.camera.FollowTarget(
 			w.wizard.X,
 			w.wizard.Y,
@@ -117,47 +126,17 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(w.tilemapJSON.Layers[0].Width)*16.0,
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
+
 		w.wizard.Combat.Update()
 		if w.wizard.Combat.IFrames() > 0 {
 			w.wizard.IFrameFlicker()
 		}
 
-		for _, wizard := range w.wizards {
-			wizard.ActiveAnimation = wizard.GetActiveAnimation()
-			wizard.ActiveAnimation.Update()
-		}
-
-		//normalize diagonal movement
-		if w.wizard.Dx != 0 && w.wizard.Dy != 0 {
-			w.wizard.Dx *= 0.70710678
-			w.wizard.Dy *= 0.70710678
-		}
 	}
 
-	if w.enemyRespawnTimer.IsZero() || time.Until(w.enemyRespawnTimer) <= 0 {
-		w.enemyRespawnTimer = time.Now().Add(shared.EnemyRespawnTimer * time.Second)
-		w.enemies = shared.SpawnEnemies(w.enemies)
-	}
-
-	for _, collider := range w.colliders {
-		if collider.Overlaps(image.Rect(
-			int(w.wizard.X),
-			int(w.wizard.Y),
-			int(w.wizard.X)+16,
-			int(w.wizard.Y)+16,
-		)) {
-			if w.wizard.Dy > 0.0 {
-				w.wizard.Y = float64(collider.Min.Y) - shared.TileSize
-			} else if w.wizard.Dy < 0.0 {
-				w.wizard.Y = float64(collider.Max.Y)
-			}
-		}
-	}
-
+	// define enemy behavior
 	for _, enemy := range w.enemies {
 		enemy.Combat.Update()
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
-		enemy.ActiveAnimation.Update()
 		enemy.Dx = 0
 		enemy.Dy = 0
 	}
@@ -187,6 +166,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
+	// check for enemies colliding with/damaging player
 	wizardRect := image.Rect(
 		int(w.wizard.X),
 		int(w.wizard.Y),
@@ -217,6 +197,19 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
 				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
 
+				if math.Abs(normX) > math.Abs(normY) {
+					if normX > 0 {
+						enemy.AttackDirection = shared.AttackingRight
+					} else {
+						enemy.AttackDirection = shared.AttackingLeft
+					}
+				} else {
+					if normY > 0 {
+						enemy.AttackDirection = shared.AttackingDown
+					} else {
+						enemy.AttackDirection = shared.AttackingUp
+					}
+				}
 			}
 		}
 	}
@@ -224,14 +217,14 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	deadEnemies := make(map[int]struct{})
 	deadProjectiles := make(map[int]struct{})
 
+	// check fireball collisions
 	for i, projectile := range w.projectiles {
 		projectile.Update()
-		projectile.ActiveAnimation.Update()
 		for _, wizard := range w.wizards {
 			if wizard == projectile.Caster {
 				continue
 			}
-			if wizard.Combat.IFrames() == 0 {
+			if wizard.Combat.IFrames() > 0 {
 				continue
 			}
 			if _, ok := projectile.AlreadyHit[wizard]; ok {
@@ -284,12 +277,52 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				}
 			}
 		}
+		for j, otherProjectile := range w.projectiles {
+			if projectile == otherProjectile {
+				continue
+			}
+
+			if shared.CheckCollisionCircle(
+				projectile.X+projectile.HitboxOffsetX,
+				projectile.Y+projectile.HitboxOffsetY,
+				projectile.ScaledRadius,
+				otherProjectile.X+otherProjectile.HitboxOffsetX,
+				otherProjectile.Y+otherProjectile.HitboxOffsetY,
+				otherProjectile.ScaledRadius,
+			) {
+				if projectile.Scale > otherProjectile.Scale {
+					deadProjectiles[j] = struct{}{}
+				} else if projectile.Scale < otherProjectile.Scale {
+					deadProjectiles[i] = struct{}{}
+				} else {
+					deadProjectiles[j] = struct{}{}
+					deadProjectiles[i] = struct{}{}
+				}
+			}
+		}
 
 		if projectile.TicksToLive < 1 {
 			deadProjectiles[i] = struct{}{}
 		}
 	}
 
+	// check collisions with walls
+	for _, collider := range w.colliders {
+		if collider.Overlaps(image.Rect(
+			int(w.wizard.X),
+			int(w.wizard.Y),
+			int(w.wizard.X)+16,
+			int(w.wizard.Y)+16,
+		)) {
+			if w.wizard.Dy > 0.0 {
+				w.wizard.Y = float64(collider.Min.Y) - shared.TileSize
+			} else if w.wizard.Dy < 0.0 {
+				w.wizard.Y = float64(collider.Max.Y)
+			}
+		}
+	}
+
+	// spawn new fireballs
 	clicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cX, cY := ebiten.CursorPosition()
 	cX -= int(w.camera.X)
@@ -302,8 +335,32 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(cY),
 		)
 		w.projectiles = append(w.projectiles, projectile)
+
+		vX := float64(cX) - w.wizard.X
+		vY := float64(cY) - w.wizard.Y
+		vlen := math.Hypot(vX, vY)
+		if vlen == 0 {
+			vlen = 0.01 // prevents division by zero
+		}
+		normX := vX / vlen
+		normY := vY / vlen
+
+		if math.Abs(normX) > math.Abs(normY) {
+			if normX > 0 {
+				w.wizard.AttackDirection = shared.AttackingRight
+			} else {
+				w.wizard.AttackDirection = shared.AttackingLeft
+			}
+		} else {
+			if normY > 0 {
+				w.wizard.AttackDirection = shared.AttackingDown
+			} else {
+				w.wizard.AttackDirection = shared.AttackingUp
+			}
+		}
 	}
 
+	// despawn dead entities
 	if len(deadProjectiles) > 0 {
 		newProjectiles := make([]*shared.Projectile, 0)
 		for i, projectile := range w.projectiles {
@@ -324,6 +381,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.enemies = newEnemies
 	}
 
+	// check enemy collisions
 	for _, enemy := range w.enemies {
 		// lets enemies noclip until they're fully out of the hole
 		if enemy.Noclip {
@@ -353,6 +411,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
+	// check player collisions
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
 	shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
@@ -388,12 +447,41 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.wizard.Combat.SetHealth(0)
 	}
 
-	if w.wizard.Combat.Health() <= 0 {
-		w.wizard.Combat.Dead = true
-		// setting Dying to true plays death anim
-		w.wizard.Dying = true
+	// determine animations
+	if w.wizard.Combat.Attacking() {
+		w.wizard.AttackAnim = true //starts attack animation
 	}
 
+	if w.wizard.Combat.Health() <= 0 {
+		w.wizard.Combat.Dead = true
+		w.wizard.DieAnim = true //starts death animation
+	}
+
+	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
+	w.wizard.ActiveAnimation.Update()
+
+	for _, enemy := range w.enemies {
+		if enemy.Combat.Attacking() {
+			enemy.AttackAnim = true
+		}
+		if enemy.Combat.Dead {
+			enemy.DieAnim = true
+		}
+		enemy.ActiveAnimation = enemy.GetActiveAnimation()
+		enemy.ActiveAnimation.Update()
+	}
+
+	for _, projectile := range w.projectiles {
+		projectile.ActiveAnimation.Update()
+	}
+
+	// spawn enemies on a timer
+	if w.enemyRespawnTimer.IsZero() || time.Until(w.enemyRespawnTimer) <= 0 {
+		w.enemyRespawnTimer = time.Now().Add(shared.EnemyRespawnTimer * time.Second)
+		w.enemies = shared.SpawnEnemies(w.enemies)
+	}
+
+	// play background music
 	if !w.audioPlayer.IsPlaying() {
 		w.audioPlayer.SetVolume(0.2)
 		w.audioPlayer.SetBufferSize(500)
@@ -483,7 +571,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
-		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		screen.DrawImage(
 			wizard.Img.SubImage(
 				wizard.SpriteSheet.Rect(wizard.ActiveAnimation.Frame()),
@@ -504,7 +591,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(enemy.Alpha)
 		}
 
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
 		screen.DrawImage(
 			enemy.Img.SubImage(
 				enemy.SpriteSheet.Rect(enemy.ActiveAnimation.Frame()),
@@ -512,6 +598,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			&opts,
 		)
 
+		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 

@@ -50,6 +50,7 @@ type EnemyCombat struct {
 	*BasicCombat
 	attackCooldown  int
 	timeSinceAttack int
+	Dead            bool
 }
 
 func (b *BasicCombat) Update() {
@@ -134,6 +135,7 @@ func (e *EnemyCombat) Attack() bool {
 }
 
 func (e *EnemyCombat) Update() {
+	e.attacking = false
 	e.timeSinceAttack += 1
 }
 
@@ -149,6 +151,7 @@ func NewEnemyCombat(attackCooldown int, health, attackPower, moveSpeed, projecti
 		),
 		attackCooldown,
 		0,
+		false,
 	}
 }
 
@@ -192,6 +195,7 @@ func (wc *WizardCombat) Attack() bool {
 }
 
 func (wc *WizardCombat) Update() {
+	wc.attacking = false
 	wc.timeSinceAttack += 1
 	if wc.iFrames > 0 {
 		wc.iFrames -= 1
