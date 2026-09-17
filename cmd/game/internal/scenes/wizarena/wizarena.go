@@ -242,7 +242,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			if wizard == projectile.Caster {
 				continue
 			}
-			if wizard.Combat.IFrames() == 0 {
+			if wizard.Combat.IFrames() > 0 {
 				continue
 			}
 			if _, ok := projectile.AlreadyHit[wizard]; ok {
@@ -292,6 +292,29 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
 					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost)
+				}
+			}
+		}
+		for j, otherProjectile := range w.projectiles {
+			if projectile == otherProjectile {
+				continue
+			}
+
+			if shared.CheckCollisionCircle(
+				projectile.X+projectile.HitboxOffsetX,
+				projectile.Y+projectile.HitboxOffsetY,
+				projectile.ScaledRadius,
+				otherProjectile.X+otherProjectile.HitboxOffsetX,
+				otherProjectile.Y+otherProjectile.HitboxOffsetY,
+				otherProjectile.ScaledRadius,
+			) {
+				if projectile.Scale > otherProjectile.Scale {
+					deadProjectiles[j] = struct{}{}
+				} else if projectile.Scale < otherProjectile.Scale {
+					deadProjectiles[i] = struct{}{}
+				} else {
+					deadProjectiles[j] = struct{}{}
+					deadProjectiles[i] = struct{}{}
 				}
 			}
 		}
