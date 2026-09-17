@@ -58,7 +58,7 @@ func (m *Memory) Update(messages []protocol.Message) error {
 	}
 
 	for _, player := range m.Players {
-		player.ActiveAnimation = player.GetActiveAnimation()
+		player.SetActiveAnimation(shared.Idle)
 		player.ActiveAnimation.Update()
 	}
 
@@ -83,7 +83,7 @@ func (m *Memory) Draw(screen *ebiten.Image) {
 	for _, player := range m.Players {
 		opts.GeoM.Translate(player.X, player.Y)
 
-		player.ActiveAnimation = player.GetActiveAnimation()
+		// player.ActiveAnimation = player.GetActiveAnimation()
 		screen.DrawImage(
 			player.Img.SubImage(
 				player.SpriteSheet.Rect(player.ActiveAnimation.Frame()),

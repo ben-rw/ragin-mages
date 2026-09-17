@@ -31,7 +31,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			for _, player := range w.Players {
 				if _, ok := w.wizards[player.Data.Name]; !ok {
 					wizard := shared.NewWizard(player)
-					wizard.JustJoined = false
+					// wizard.SetActiveAnimation(shared.Unset)
 					w.wizards[wizard.Data.Name] = wizard
 				}
 			}
@@ -94,17 +94,21 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 
 	} else {
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
-			w.wizard.Dx += 1
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
-			w.wizard.Dx += -1
-		}
 		if ebiten.IsKeyPressed(ebiten.KeyUp) {
 			w.wizard.Dy += -1
+			w.wizard.SetActiveAnimation(shared.WalkUp)
 		}
 		if ebiten.IsKeyPressed(ebiten.KeyDown) {
 			w.wizard.Dy += 1
+			w.wizard.SetActiveAnimation(shared.WalkDown)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+			w.wizard.Dx += 1
+			w.wizard.SetActiveAnimation(shared.WalkRight)
+		}
+		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+			w.wizard.Dx += -1
+			w.wizard.SetActiveAnimation(shared.WalkLeft)
 		}
 
 		w.camera.FollowTarget(
@@ -120,11 +124,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.wizard.Combat.Update()
 		if w.wizard.Combat.IFrames() > 0 {
 			w.wizard.IFrameFlicker()
-		}
-
-		for _, wizard := range w.wizards {
-			wizard.ActiveAnimation = wizard.GetActiveAnimation()
-			wizard.ActiveAnimation.Update()
 		}
 
 		//normalize diagonal movement
@@ -156,8 +155,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 	for _, enemy := range w.enemies {
 		enemy.Combat.Update()
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
-		enemy.ActiveAnimation.Update()
 		enemy.Dx = 0
 		enemy.Dy = 0
 	}
@@ -185,6 +182,19 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 			}
 		}
+		if enemy.Dy < 0 {
+			enemy.SetActiveAnimation(shared.WalkUp)
+		}
+		if enemy.Dy > 0 {
+			enemy.SetActiveAnimation(shared.WalkDown)
+		}
+		if enemy.Dx > 0 {
+			enemy.SetActiveAnimation(shared.WalkRight)
+		}
+		if enemy.Dx < 0 {
+			enemy.SetActiveAnimation(shared.WalkLeft)
+		}
+		enemy.ActiveAnimation.Update()
 	}
 
 	wizardRect := image.Rect(
@@ -204,7 +214,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
 			if enemy.Combat.Attack() {
-				enemy.Attacking = true //starts attack animation
+				enemy.SetActiveAnimation(shared.AttackingDown)
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
 
 				// player pushed away by enemy
@@ -297,7 +307,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	cY -= int(w.camera.Y)
 
 	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
-		w.wizard.Attacking = true //starts attack animation
+		w.wizard.SetActiveAnimation(shared.AttackingDown)
 		projectile := w.wizard.ShootProjectile(
 			w.projectileCache[shared.Fireball],
 			float64(cX),
@@ -393,8 +403,20 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	if w.wizard.Combat.Health() <= 0 {
 		w.wizard.Combat.Dead = true
 		// setting Dying to true plays death anim
-		w.wizard.Dying = true
+		w.wizard.SetActiveAnimation(shared.Dying)
 	}
+
+	w.wizard.ActiveAnimation.Update()
+
+	// for _, wizard := range w.wizards {
+	// 	wizard.SetActiveAnimation(shared.Unset)
+	// 	wizard.ActiveAnimation.Update()
+	// }
+
+	// for _, enemy := range w.enemies {
+	// 	enemy.SetActiveAnimation(shared.Unset)
+	// 	enemy.ActiveAnimation.Update()
+	// }
 
 	if !w.audioPlayer.IsPlaying() {
 		w.audioPlayer.SetVolume(0.2)
@@ -485,7 +507,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
-		wizard.ActiveAnimation = wizard.GetActiveAnimation()
+		// wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		screen.DrawImage(
 			wizard.Img.SubImage(
 				wizard.SpriteSheet.Rect(wizard.ActiveAnimation.Frame()),
@@ -506,7 +528,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(enemy.Alpha)
 		}
 
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
+		// enemy.ActiveAnimation = enemy.GetActiveAnimation()
 		screen.DrawImage(
 			enemy.Img.SubImage(
 				enemy.SpriteSheet.Rect(enemy.ActiveAnimation.Frame()),

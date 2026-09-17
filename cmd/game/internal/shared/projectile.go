@@ -21,8 +21,8 @@ const (
 	FireballWidthInTiles  = 6
 	FireballHeightInTiles = 1
 	FireballAnimSpeed     = 1
-	FireballHitboxRadius  = 12.0 // exact measurement 7x14px
-	FBInnerBallX          = 47.0 // 47x24 px from top left corner to center of blast ball
+	FireballHitboxRadius  = 12.0 // radius of ball at the tip of projectile
+	FBInnerBallX          = 47.0 // 47x24 px from the sprites's top left corner to center of blast ball
 	FBInnerBallY          = 24.0
 	FBCenterX             = FireballWidth * .5
 	FBCenterY             = FireballHeight * .5
@@ -78,21 +78,25 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
 
 	s := spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
-	anim := animations.NewAnimation(0, 5, 1, FireballAnimSpeed)
+
+	var ProjectileAnimations = map[EntityState]*animations.Animation{
+		FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
+	}
 
 	return &Projectile{
-		Sprite: &Sprite{
-			Img:         img,
-			X:           w.X + HalfTile + normX*HalfTile,
-			Y:           w.Y + HalfTile + normY*HalfTile,
-			Dx:          normX * w.Combat.projectileSpeed,
-			Dy:          normY * w.Combat.projectileSpeed,
-			SpriteSheet: s,
-			Animations: map[EntityState]*animations.Animation{
-				FireballFly: anim,
-			},
-			ActiveAnimation: anim,
-		},
+		Sprite: NewSprite(
+			img,
+			w.X+HalfTile+normX*HalfTile,
+			w.Y+HalfTile+normY*HalfTile,
+			normX*w.Combat.projectileSpeed,
+			normY*w.Combat.projectileSpeed,
+			s,
+			ProjectileAnimations,
+			ProjectileAnimations[FireballFly],
+			FireballFly,
+			false,
+			1.0,
+		),
 		Caster:        w,
 		Damage:        w.Combat.AttackPower(),
 		Speed:         w.Combat.ProjectileSpeed(),
