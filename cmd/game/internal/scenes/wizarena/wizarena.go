@@ -484,7 +484,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// play background music
 	if !w.audioPlayer.IsPlaying() {
 		w.audioPlayer.SetVolume(0.2)
-		w.audioPlayer.SetBufferSize(500)
+		w.audioPlayer.SetBufferSize(8192)
 		w.audioPlayer.Play()
 	}
 

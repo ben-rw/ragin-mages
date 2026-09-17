@@ -17,8 +17,8 @@ import (
 const (
 	tilemapPath = "assets/maps/ninja_dungeon.json"
 	heartPath   = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
-	songPath    = "assets/audio/music/void-construct-loop.ogg"
-	introLen    = 3
+	songPath    = "assets/audio/music/void-construct-loop-0.6.ogg"
+	introLen    = 1
 )
 
 type WizArena struct {
