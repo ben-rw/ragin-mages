@@ -36,6 +36,7 @@ type WizArena struct {
 	colliders         []image.Rectangle
 	holes             []image.Rectangle
 	traps             []image.Rectangle
+	trapsUp bool
 	audioPlayer       *audio.Player
 	projectiles       []*shared.Projectile
 	deadProjectiles   []*shared.Projectile
@@ -95,6 +96,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		},
 		holes:       []image.Rectangle{},
 		traps:       []image.Rectangle{},
+		trapsUp: false,
 		audioPlayer: audioPlayer,
 		heartImage:  heartImg,
 		debug:       false,
