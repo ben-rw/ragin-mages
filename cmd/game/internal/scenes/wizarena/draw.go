@@ -19,6 +19,12 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			if id == 0 {
 				continue
 			}
+			if layer.Name == "traps_up" && !w.trapsUp {
+				continue
+			}
+			if layer.Name == "traps_down" && w.trapsUp {
+				continue
+			}
 			x := i % layer.Width
 			y := i / layer.Width
 

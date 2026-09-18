@@ -416,7 +416,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
 	shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
 
-	if w.wizard.Combat.IFrames() == 0 {
+	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
 		trapped := shared.CheckCollisionHazards(
 			int(w.wizard.X+shared.HalfTile),
 			int(w.wizard.Y+14), // puts hitbox close to feet
@@ -426,6 +426,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			w.wizard.Combat.Damage(1.0)
 		}
 	}
+	w.UpdateTraps()
 
 	w.wizard.Combat.Fell = shared.CheckCollisionHazards(
 		int(w.wizard.X+shared.HalfTile),
@@ -477,6 +478,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.enemies = shared.SpawnEnemies(w.enemies)
 	}
 
+	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
 		w.debug = !w.debug
 	}
