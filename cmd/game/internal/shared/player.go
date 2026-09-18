@@ -77,7 +77,7 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 				AttackingUp:    animations.NewAnimation(17, 17, 1, 20.0),
 				AttackingLeft:  animations.NewAnimation(18, 18, 1, 20.0),
 				AttackingRight: animations.NewAnimation(19, 19, 1, 20.0),
-				Die:            animations.NewAnimation(25, 25, 1, 10.0),
+				Die:            animations.NewAnimation(25, 25, 1, 80.0),
 			},
 			&animations.Animation{},
 			false,

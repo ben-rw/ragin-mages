@@ -70,6 +70,7 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 		if s.ActiveAnimation.Over {
 			anim.Over = false
 			s.DieAnim = false
+			return s.Animations[Idle]
 		} else {
 			return anim
 		}

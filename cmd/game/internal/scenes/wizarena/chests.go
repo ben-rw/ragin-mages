@@ -2,7 +2,6 @@ package wizarena
 
 import (
 	"image"
-	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
@@ -23,7 +22,6 @@ func (w *WizArena) CheckChestCollisions() {
 			int(w.wizard.Y)+16,
 		)) {
 			if _, ok := w.openedChests[OpenedChest{chest.Min.X, chest.Min.Y}]; !ok {
-				log.Println("opened")
 				w.wizard.Combat.RandomBoost(shared.ChestBoost)
 				w.openedChests[OpenedChest{chest.Min.X, chest.Min.Y}] = struct{}{}
 			}
