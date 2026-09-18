@@ -31,6 +31,12 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			x *= shared.TileSize
 			y *= shared.TileSize
 
+			if layer.Name == "chests" {
+				if _, ok := w.openedChests[OpenedChest{x, y}]; ok {
+					continue
+				}
+			}
+
 			tile := shared.Tile{}
 
 			if id&int(shared.FlagFlippedHorizontally) != 0 {
@@ -267,22 +273,30 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 
 		for _, enemies := range w.enemies {
-			vector.StrokeCircle(screen, float32(enemies.X+shared.HalfTile+w.camera.X), float32(enemies.Y+shared.HalfTile+w.camera.Y), float32(enemies.HurtboxRadius), 1.0, color.RGBA{255, 0, 0, 255}, false)
-		}
-
-		for _, collider := range w.colliders {
-			vector.StrokeRect(
+			vector.StrokeCircle(
 				screen,
-				float32(collider.Min.X)+float32(w.camera.X),
-				float32(collider.Min.Y)+float32(w.camera.Y),
-				float32(collider.Dx()),
-				float32(collider.Dy()),
+				float32(enemies.X+shared.HalfTile+w.camera.X),
+				float32(enemies.Y+shared.HalfTile+w.camera.Y),
+				float32(enemies.HurtboxRadius),
 				1.0,
 				color.RGBA{255, 0, 0, 255},
 				false,
 			)
-			opts.GeoM.Reset()
 		}
+
+		// for _, collider := range w.colliders {
+		// 	vector.StrokeRect(
+		// 		screen,
+		// 		float32(collider.Min.X)+float32(w.camera.X),
+		// 		float32(collider.Min.Y)+float32(w.camera.Y),
+		// 		float32(collider.Dx()),
+		// 		float32(collider.Dy()),
+		// 		1.0,
+		// 		color.RGBA{255, 0, 0, 255},
+		// 		false,
+		// 	)
+		// 	opts.GeoM.Reset()
+		// }
 
 		for _, hole := range w.holes {
 			vector.StrokeRect(
@@ -295,7 +309,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 				color.RGBA{0, 0, 255, 255},
 				false,
 			)
-			opts.GeoM.Reset()
 		}
 
 		for _, spike := range w.traps {
@@ -309,7 +322,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 				color.RGBA{0, 255, 0, 255},
 				false,
 			)
-			opts.GeoM.Reset()
 		}
 	}
 }

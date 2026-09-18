@@ -302,22 +302,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
-	// check collisions with walls
-	for _, collider := range w.colliders {
-		if collider.Overlaps(image.Rect(
-			int(w.wizard.X),
-			int(w.wizard.Y),
-			int(w.wizard.X)+16,
-			int(w.wizard.Y)+16,
-		)) {
-			if w.wizard.Dy > 0.0 {
-				w.wizard.Y = float64(collider.Min.Y) - shared.TileSize
-			} else if w.wizard.Dy < 0.0 {
-				w.wizard.Y = float64(collider.Max.Y)
-			}
-		}
-	}
-
 	// spawn new fireballs
 	clicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	cX, cY := ebiten.CursorPosition()
@@ -387,21 +371,30 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			}
 		}
 
+		// turn noclip back on if enemy gets knocked into hole
+		if shared.CheckPointInRect(
+			int(enemy.X+shared.HalfTile),
+			int(enemy.Y+shared.HalfTile),
+			w.holes,
+		) {
+			enemy.Noclip = true
+		}
+
+		// fade in and ramp movement speed after spawn
 		if enemy.Alpha < 1.0 {
 			enemy.Alpha += 0.01
 		}
-
 		if enemy.Combat.MoveSpeed() < shared.EnemyMoveSpeed {
 			enemy.Combat.SetMoveSpeed(enemy.Combat.MoveSpeed() + shared.EnemyMoveSpeed/150)
 		}
 
 		enemy.X += enemy.Dx
-		shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
+		// shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
 		if !enemy.Noclip {
 			shared.CheckCollisionHorizontal(enemy.Sprite, w.holes)
 		}
 		enemy.Y += enemy.Dy
-		shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
+		// shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
 		if !enemy.Noclip {
 			shared.CheckCollisionVertical(enemy.Sprite, w.holes)
 		}
@@ -410,25 +403,27 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// check player collisions
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+	// shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
 
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
-	shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+	// shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+
+	w.CheckChestCollisions()
 
 	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
-		trapped := shared.CheckCollisionHazards(
+		if shared.CheckPointInRect(
 			int(w.wizard.X+shared.HalfTile),
 			int(w.wizard.Y+14), // puts hitbox close to feet
 			w.traps,
-		)
-		if trapped {
+		) {
 			w.wizard.Combat.Damage(1.0)
 		}
 	}
 	w.UpdateTraps()
 
-	w.wizard.Combat.Fell = shared.CheckCollisionHazards(
+	// check if wizard fell
+	w.wizard.Combat.Fell = shared.CheckPointInRect(
 		int(w.wizard.X+shared.HalfTile),
 		int(w.wizard.Y+14), // puts hitbox close to feet
 		w.holes,
@@ -439,7 +434,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
 		w.wizard.Combat.Fell = true
 	}
-
 	if w.wizard.Combat.Fell {
 		w.wizard.Combat.SetHealth(0)
 	}
@@ -477,6 +471,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.enemyRespawnTimer = time.Now().Add(shared.EnemyRespawnTimer * time.Second)
 		w.enemies = shared.SpawnEnemies(w.enemies)
 	}
+
+	w.ChestRespawn()
 
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {

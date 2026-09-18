@@ -34,9 +34,12 @@ type WizArena struct {
 	tileCache         map[int]*shared.Tile
 	camera            *shared.Camera
 	colliders         []image.Rectangle
+	chests            []image.Rectangle
+	chestRespawnTimer time.Time
+	openedChests      map[OpenedChest]struct{}
 	holes             []image.Rectangle
 	traps             []image.Rectangle
-	trapsUp bool
+	trapsUp           bool
 	audioPlayer       *audio.Player
 	projectiles       []*shared.Projectile
 	deadProjectiles   []*shared.Projectile
@@ -91,15 +94,15 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		tilemapJSON:       tilemap,
 		tileCache:         tileCache,
 		camera:            nil,
-		colliders: []image.Rectangle{
-			image.Rect(100, 100, 116, 116),
-		},
-		holes:       []image.Rectangle{},
-		traps:       []image.Rectangle{},
-		trapsUp: false,
-		audioPlayer: audioPlayer,
-		heartImage:  heartImg,
-		debug:       false,
+		colliders:         []image.Rectangle{},
+		chests:            []image.Rectangle{},
+		openedChests:      make(map[OpenedChest]struct{}, 0),
+		holes:             []image.Rectangle{},
+		traps:             []image.Rectangle{},
+		trapsUp:           false,
+		audioPlayer:       audioPlayer,
+		heartImage:        heartImg,
+		debug:             false,
 	}
 
 	w.projectileCache[shared.Fireball] = fireballImg
@@ -132,6 +135,13 @@ func NewWizArena(c *ws.Connection) *WizArena {
 				))
 			} else if layer.Name == "traps_up" {
 				w.traps = append(w.traps, image.Rect(
+					x,
+					y,
+					x+shared.TileSize,
+					y+shared.TileSize,
+				))
+			} else if layer.Name == "chests" {
+				w.chests = append(w.chests, image.Rect(
 					x,
 					y,
 					x+shared.TileSize,

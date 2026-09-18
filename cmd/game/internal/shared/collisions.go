@@ -3,7 +3,6 @@ package shared
 import "image"
 
 func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool {
-	collision := false
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			int(sprite.X),
@@ -18,14 +17,13 @@ func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool 
 					sprite.X = float64(collider.Max.X)
 				}
 			}
-			collision = true
+			return true
 		}
 	}
-	return collision
+	return false
 }
 
 func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) bool {
-	collision := false
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			int(sprite.X),
@@ -40,10 +38,10 @@ func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) bool {
 					sprite.Y = float64(collider.Max.Y)
 				}
 			}
-			collision = true
+			return true
 		}
 	}
-	return collision
+	return false
 }
 
 func CheckCollisionCircle(x1, y1, r1, x2, y2, r2 float64) bool {
@@ -55,10 +53,10 @@ func CheckCollisionCircle(x1, y1, r1, x2, y2, r2 float64) bool {
 	return (dx*dx + dy*dy) < (rSum * rSum)
 }
 
-func CheckCollisionHazards(x, y int, holes []image.Rectangle) bool {
+func CheckPointInRect(x, y int, rect []image.Rectangle) bool {
 	point := image.Point{x, y}
-	for _, hole := range holes {
-		if point.In(hole) {
+	for _, rect := range rect {
+		if point.In(rect) {
 			return true
 		}
 	}

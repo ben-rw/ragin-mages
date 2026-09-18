@@ -169,7 +169,7 @@ func (wc *WizardCombat) AttackCooldown() int {
 }
 
 func (wc *WizardCombat) BoostAttackCooldown(amount int) {
-	wc.attackCooldown += amount
+	wc.attackCooldown -= amount
 }
 
 func (wc *WizardCombat) RandomBoost(amount float64) {
