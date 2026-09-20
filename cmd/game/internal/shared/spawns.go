@@ -38,7 +38,7 @@ var EnemySpawns = map[int]struct{ X, Y float64 }{
 
 func SpawnEnemies(enemies []*Enemy) []*Enemy {
 	for i := range EnemySpawnCount {
-		enemies = append(enemies, NewEnemy(Skeleton, true, EnemySpawns[i].X*TileSize, EnemySpawns[i].Y*TileSize))
+		enemies[i+len(enemies)] = NewEnemy(Skeleton, true, EnemySpawns[i].X*TileSize, EnemySpawns[i].Y*TileSize)
 	}
 	return enemies
 }

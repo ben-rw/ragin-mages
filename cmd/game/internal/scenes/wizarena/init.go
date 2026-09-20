@@ -18,7 +18,7 @@ const (
 	tilemapPath = "assets/maps/ninja_dungeon.json"
 	heartPath   = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
 	songPath    = "assets/audio/music/void-construct-loop-0.6.ogg"
-	introLen    = 1
+	introLen    = 1 // 1 second song intro
 )
 
 type WizArena struct {
@@ -80,24 +80,24 @@ func NewWizArena(c *ws.Connection) *WizArena {
 
 	w := &WizArena{
 		Roster: shared.Roster{
-			Players: make(map[string]*shared.Player, 8),
+			Players: make(map[string]*shared.Player, 8), // max 8 players
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
 		Conn:              c,
 		Sprites:           []*shared.Sprite{},
-		wizards:           make(map[string]*shared.WizardPlayer, 0),
-		enemies:           make([]*shared.Enemy, 0),
+		wizards:           make(map[string]*shared.WizardPlayer, 8), // max 8 wizards
+		enemies:           make([]*shared.Enemy, 32),                //16 enemies spawn at at time, doubled for headroom
 		enemyRespawnTimer: time.Time{},
-		projectiles:       make([]*shared.Projectile, 0),
-		deadProjectiles:   make([]*shared.Projectile, 0),
-		projectileCache:   make(map[shared.ProjectileType]*ebiten.Image, 0),
+		projectiles:       make([]*shared.Projectile, 16),                   // there shouldn't ever be more than 16 projectiles
+		deadProjectiles:   make([]*shared.Projectile, 16),                   // alive or dead at one time
+		projectileCache:   make(map[shared.ProjectileType]*ebiten.Image, 1), // number of projectile types
 		tilemapJSON:       tilemap,
 		tileCache:         tileCache,
 		camera:            nil,
 		colliders:         []image.Rectangle{},
-		chests:            []image.Rectangle{},
-		openedChests:      make(map[OpenedChest]struct{}, 0),
-		holes:             []image.Rectangle{},
+		chests:            make([]image.Rectangle, 8), // 8 chests on the map
+		openedChests:      make(map[OpenedChest]struct{}, 8),
+		holes:             []image.Rectangle{}, //TODO: count holes and traps to preallocate slices
 		traps:             []image.Rectangle{},
 		trapsUp:           false,
 		audioPlayer:       audioPlayer,
