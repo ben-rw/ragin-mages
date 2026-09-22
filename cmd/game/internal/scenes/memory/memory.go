@@ -43,7 +43,7 @@ func (m *Memory) Update(messages []protocol.Message) error {
 				PlayerData: m.Player.Data,
 			}
 
-			getInLine(m.Player, len(m.Players), 0)
+			m.getInLine(len(m.Players), 0)
 			m.Conn.WriteMsg(protocol.PlayerUpdate, playerUpdateData)
 
 		case protocol.PlayerUpdate:

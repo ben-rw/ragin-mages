@@ -26,28 +26,7 @@ type NameTag struct {
 	LayoutOptions text.LayoutOptions
 }
 
-// walks player from one place to another at speed proportionate
-// to the initial distance between the player's location and the
-// destination with no input from the player
-func (p *Player) ScriptedWalk(destX, destY float64) {
-	distX := destX - p.X
-	stepX := distX / 100000
-	distY := destY - p.Y
-	stepY := distY / 100000
-	for destX != p.X || destY != p.Y {
-		if destX-p.X > stepX {
-			p.X = destX
-		} else {
-			p.X += stepX
-		}
-		if destY-p.Y > stepY {
-			p.Y = destY
-		} else {
-			p.Y += stepY
-		}
-		log.Println(p.X, p.Y)
-	}
-}
+var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize)
 
 func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 	imgPath := PlayerSpriteIndex[data.SpriteIndex]
@@ -65,7 +44,7 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 			startPosition.Y,
 			0,
 			0,
-			spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize),
+			PlayerSpriteSheet,
 			map[EntityState]*animations.Animation{
 				WalkDown:       animations.NewAnimation(4, 12, 4, 20.0),
 				WalkUp:         animations.NewAnimation(5, 13, 4, 20.0),

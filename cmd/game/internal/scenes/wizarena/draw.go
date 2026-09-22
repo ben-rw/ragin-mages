@@ -55,9 +55,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 
 		screen.DrawImage(
-			wizard.Img.SubImage(
-				wizard.SpriteSheet.Rect(wizard.ActiveAnimation.Frame()),
-			).(*ebiten.Image),
+			w.wizardFrameCache[w.wizard.Data.SpriteIndex][w.wizard.ActiveAnimation.Frame()],
 			&opts,
 		)
 
@@ -75,9 +73,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 
 		screen.DrawImage(
-			enemy.Img.SubImage(
-				enemy.SpriteSheet.Rect(enemy.ActiveAnimation.Frame()),
-			).(*ebiten.Image),
+			w.enemyFrameCache[enemy.Type][enemy.ActiveAnimation.Frame()],
 			&opts,
 		)
 
@@ -96,9 +92,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
 		screen.DrawImage(
-			projectile.Img.SubImage(
-				projectile.SpriteSheet.Rect(projectile.ActiveAnimation.Frame()),
-			).(*ebiten.Image),
+			w.projectileFrameCache[projectile.Type][projectile.ActiveAnimation.Frame()],
 			&opts,
 		)
 

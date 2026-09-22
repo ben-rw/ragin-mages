@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/profiling"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -57,7 +58,20 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
 
-	if w.wizard.Combat.Dead {
+	if w.wizard.DieAnim {
+		// add a fade effect when players die
+		if !w.wizard.Combat.Fell {
+			if w.wizard.Y > -shared.HalfTile {
+				w.wizard.Y -= 3.0
+			}
+		}
+		if w.wizard.Alpha > 0.0 {
+			w.wizard.Alpha -= .02 //fade speed
+		} else {
+			w.wizard.Alpha = 0.0
+		}
+
+	} else if w.wizard.Combat.Dead {
 		// define camera behavior for dead players
 		if ebiten.IsKeyPressed(ebiten.KeyRight) {
 			w.camera.X -= shared.FreeCamSpeed
@@ -76,18 +90,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			float64(w.tilemapJSON.Layers[0].Width)*16.0,
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
-
-		// add a fade effect when players die
-		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -shared.HalfTile {
-				w.wizard.Y -= 3.0
-			}
-		}
-		if w.wizard.Alpha > 0.0 {
-			w.wizard.Alpha -= .02 //fade speed
-		} else {
-			w.wizard.Alpha = 0.0
-		}
 
 	} else {
 		// add velocity to wizard based on player input
@@ -312,6 +314,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			w.projectileImageCache[shared.Fireball],
 			float64(cX),
 			float64(cY),
+			shared.Fireball,
 		)
 		w.projectiles = append(w.projectiles, projectile)
 
@@ -442,7 +445,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.wizard.AttackAnim = true //starts attack animation
 	}
 
-	if w.wizard.Combat.Health() <= 0 {
+	if w.wizard.Combat.Health() <= 0 && !w.wizard.Combat.Dead {
 		w.wizard.Combat.Dead = true
 		w.wizard.DieAnim = true //starts death animation
 	}
@@ -472,6 +475,21 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
 		w.debug = !w.debug
+	}
+
+	// toggle profile recording
+	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
+		if !w.profiling {
+			profiling.StartCPUProfile()
+			w.profiling = true
+		} else {
+			profiling.StopCPUProfileAndDownload()
+			w.profiling = false
+		}
+	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeyF5) {
+		profiling.DumpHeapProfile()
 	}
 
 	// play background music

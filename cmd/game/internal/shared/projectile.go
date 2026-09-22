@@ -50,6 +50,7 @@ type Projectile struct {
 	CenterY       float64
 	TicksToLive   int
 	AlreadyHit    map[any]struct{}
+	Type          ProjectileType
 }
 
 func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
@@ -64,7 +65,13 @@ func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileTy
 	return imgs, nil
 }
 
-func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64) *Projectile {
+var ProjectileAnimations = map[EntityState]*animations.Animation{
+	FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
+}
+
+var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
+
+func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
 	vX := cursorX - w.X
 	vY := cursorY - w.Y
 	vlen := math.Hypot(vX, vY)
@@ -81,12 +88,6 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 	rotatedOffsetX := (scaledOffsetX * normX) - (scaledOffsetY * normY)
 	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
 
-	s := spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
-
-	var ProjectileAnimations = map[EntityState]*animations.Animation{
-		FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
-	}
-
 	return &Projectile{
 		Sprite: NewSprite(
 			img,
@@ -94,7 +95,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 			w.Y+HalfTile+normY*HalfTile,
 			normX*w.Combat.projectileSpeed,
 			normY*w.Combat.projectileSpeed,
-			s,
+			ProjectileSpriteSheet,
 			ProjectileAnimations,
 			ProjectileAnimations[FireballFly],
 			false,
@@ -117,6 +118,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 		CenterY:       FireballHeight / 2,
 		TicksToLive:   w.Combat.AttackCooldown(),
 		AlreadyHit:    make(map[any]struct{}),
+		Type:          projectileType,
 	}
 }
 

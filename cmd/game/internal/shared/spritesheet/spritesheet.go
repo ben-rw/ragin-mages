@@ -2,6 +2,8 @@ package spritesheet
 
 import (
 	"image"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type SpriteSheet struct {
@@ -22,4 +24,15 @@ func (s *SpriteSheet) Rect(index int) image.Rectangle {
 	y := (index / s.WidthInTiles) * s.TileHeight
 
 	return image.Rect(x, y, x+s.TileWidth, y+s.TileHeight)
+}
+
+func LoadFrames(s *SpriteSheet, img *ebiten.Image) []*ebiten.Image {
+	frames := make([]*ebiten.Image, s.WidthInTiles*s.HeightInTiles)
+	for i := range s.WidthInTiles * s.HeightInTiles {
+		frame := img.SubImage(
+			s.Rect(i),
+		).(*ebiten.Image)
+		frames[i] = frame
+	}
+	return frames
 }

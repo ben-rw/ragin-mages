@@ -10,7 +10,7 @@ import (
 type Enemy struct {
 	*Sprite
 	Combat        *EnemyCombat
-	enemyType     EnemyType
+	Type          EnemyType
 	FollowsPlayer bool
 	HurtboxRadius float64
 }
@@ -20,6 +20,8 @@ type EnemyType int
 const (
 	Skeleton EnemyType = iota
 )
+
+var EnemySpriteSheet = spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize)
 
 func NewEnemyImageCache(enemyTypes []EnemyType) (map[EnemyType]*ebiten.Image, error) {
 	imgs := make(map[EnemyType]*ebiten.Image, len(enemyTypes))
@@ -35,15 +37,14 @@ func NewEnemyImageCache(enemyTypes []EnemyType) (map[EnemyType]*ebiten.Image, er
 }
 
 func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y float64) *Enemy {
-
 	return &Enemy{
-		NewSprite(
+		Sprite: NewSprite(
 			img,
 			x,
 			y,
 			0,
 			0,
-			spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize),
+			EnemySpriteSheet,
 			map[EntityState]*animations.Animation{
 				WalkDown:       animations.NewAnimation(4, 12, 4, 20.0),
 				WalkUp:         animations.NewAnimation(5, 13, 4, 20.0),
@@ -61,9 +62,9 @@ func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y f
 			false,
 			0.0,
 		),
-		NewEnemyCombat(EnemyAttackCooldown, EnemyHealth, EnemyAttackPower, 0, 0, 0, EnemyKnockBack),
-		Skeleton,
-		followsPlayer,
-		DefaultHurtboxRadius,
+		Combat:        NewEnemyCombat(EnemyAttackCooldown, EnemyHealth, EnemyAttackPower, 0, 0, 0, EnemyKnockBack),
+		Type:          Skeleton,
+		FollowsPlayer: followsPlayer,
+		HurtboxRadius: DefaultHurtboxRadius,
 	}
 }

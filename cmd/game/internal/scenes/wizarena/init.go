@@ -7,6 +7,7 @@ import (
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/ws"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -27,6 +28,10 @@ type WizArena struct {
 	Sprites              []*shared.Sprite
 	wizard               *shared.WizardPlayer
 	wizards              map[string]*shared.WizardPlayer
+	wizardImgCache       map[int]*ebiten.Image
+	wizardFrameCache     map[int][]*ebiten.Image
+	enemyFrameCache      map[shared.EnemyType][]*ebiten.Image
+	projectileFrameCache map[shared.ProjectileType][]*ebiten.Image
 	enemies              []*shared.Enemy
 	enemyRespawnTimer    time.Time
 	roundTimer           time.Time
@@ -47,6 +52,7 @@ type WizArena struct {
 	enemyImageCache      map[shared.EnemyType]*ebiten.Image
 	heartImage           *ebiten.Image
 	debug                bool
+	profiling            bool
 }
 
 func NewWizArena(c *ws.Connection) *WizArena {
@@ -93,6 +99,10 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		Sprites:              []*shared.Sprite{},
 		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
 		enemies:              make([]*shared.Enemy, 0, 32),                                   //16 enemies spawn at at time, doubled for headroom
+		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
+		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
+		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
+		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             //1 projectile type
 		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles
 		deadProjectiles:      make([]*shared.Projectile, 0, 16),                              // alive or dead at one time
@@ -110,6 +120,24 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		audioPlayer:          audioPlayer,
 		heartImage:           heartImg,
 		debug:                false,
+		profiling:            false,
+	}
+
+	w.enemyFrameCache[shared.Skeleton] = spritesheet.LoadFrames(
+		shared.EnemySpriteSheet,
+		enemyImgCache[shared.Skeleton],
+	)
+	w.projectileFrameCache[shared.Fireball] = spritesheet.LoadFrames(
+		shared.ProjectileSpriteSheet,
+		projectileImgCache[shared.Fireball],
+	)
+	for i, path := range shared.PlayerSpriteIndex {
+		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, path)
+		if err != nil {
+			log.Printf("wizarena init: couldnt' create wizard subimage: %v", err)
+		}
+		w.wizardImgCache[i] = img
+		w.wizardFrameCache[i] = spritesheet.LoadFrames(shared.PlayerSpriteSheet, w.wizardImgCache[i])
 	}
 
 	w.TileBounds()
