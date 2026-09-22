@@ -1,7 +1,6 @@
 package wizarena
 
 import (
-	"fmt"
 	"image/color"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
@@ -10,8 +9,23 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+var (
+	// explicity initialized as text.Face to avoid interface boxing
+	fontFace8  text.Face = &text.GoTextFace{Source: shared.FontSrc, Size: 8}
+	fontFace24 text.Face = &text.GoTextFace{Source: shared.FontSrc, Size: 24}
+)
+
+var ()
+
+var (
+	instructionText1 = "You need more POWER!"
+	instructionText2 = "Get boosts from chests, skeletons, and your friends!"
+	deadText         = "YOU DIED"
+)
+
 func (w *WizArena) Draw(screen *ebiten.Image) {
-	opts := ebiten.DrawImageOptions{}
+	var opts ebiten.DrawImageOptions
+	var textOpts text.DrawOptions
 
 	for _, layer := range w.tilemapJSON.Layers {
 		if layer.Name == "traps_up" && !w.trapsUp {
@@ -107,11 +121,9 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	}
 
 	for _, wizard := range w.wizards {
-		textOpts := text.DrawOptions{
-			LayoutOptions: wizard.NameTag.LayoutOptions,
-		}
-		textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
+		textOpts.PrimaryAlign = wizard.NameTag.LayoutOptions.PrimaryAlign
 
+		textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
 		textOpts.GeoM.Translate(w.camera.X, w.camera.Y)
 
 		if wizard.Alpha < 1.0 {
@@ -124,84 +136,46 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Reset()
 	}
 
-	instructionText1 := "You need more POWER!"
-	textOpts := text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: text.AlignEnd,
-		},
-	}
+	textOpts.PrimaryAlign = text.AlignEnd
 	textOpts.GeoM.Translate(shared.TopRightFurther())
-	text.Draw(screen, instructionText1, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	text.Draw(screen, instructionText1, fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
-	instructionText2 := "Get boosts from chests, skeletons, and your friends!"
-	textOpts = text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: text.AlignEnd,
-		},
-	}
+	textOpts.PrimaryAlign = text.AlignEnd
 	textOpts.GeoM.Translate(shared.BottomRightFurther())
-	text.Draw(screen, instructionText2, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	text.Draw(screen, instructionText2, fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
-	stat1text := fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale())
-	textOpts = text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: text.AlignStart,
-		},
-	}
+	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.GeoM.Translate(shared.Stat1BottomLeft())
-	text.Draw(screen, stat1text, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	text.Draw(screen, w.statText[ProjectileScale], fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
-	stat2text := fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed())
-	textOpts = text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: text.AlignStart,
-		},
-	}
+	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.GeoM.Translate(shared.Stat2BottomLeft())
-	text.Draw(screen, stat2text, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	text.Draw(screen, w.statText[ProjectileSpeed], fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
-	stat3text := fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback())
-	textOpts = text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: text.AlignStart,
-		},
-	}
+	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.GeoM.Translate(shared.Stat3BottomLeft())
-	text.Draw(screen, stat3text, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	text.Draw(screen, w.statText[Knockback], fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
 	if w.wizard.Combat.Dead {
-		deadText := "YOU DIED"
-		textOpts = text.DrawOptions{
-			LayoutOptions: text.LayoutOptions{
-				PrimaryAlign: text.AlignCenter,
-			},
-		}
+		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.GeoM.Translate(shared.Center())
-		text.Draw(screen, deadText, &text.GoTextFace{Source: shared.FontSrc, Size: 24}, &textOpts)
+		text.Draw(screen, deadText, fontFace24, &textOpts)
+		textOpts.GeoM.Reset()
 	}
-
-	textOpts.GeoM.Reset()
 
 	if w.debug {
 		for _, projectile := range w.projectiles {
+			opts.GeoM.Translate(-shared.FBCenterX, -shared.FBCenterY)
+			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
+			opts.GeoM.Rotate(projectile.Rotation)
+			opts.GeoM.Translate(projectile.X, projectile.Y)
 
-			m := ebiten.GeoM{}
-			m.Translate(-shared.FBCenterX, -shared.FBCenterY)
-			m.Scale(projectile.Scale, projectile.Scale)
-			m.Rotate(projectile.Rotation)
-			m.Translate(projectile.X, projectile.Y)
-
-			hx, hy := m.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
+			hx, hy := opts.GeoM.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
 			shared.CheckCollisionCircle(
 				hx,
 				hy,
@@ -220,6 +194,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 				color.RGBA{255, 0, 0, 255},
 				false,
 			)
+			opts.GeoM.Reset()
 		}
 
 		for _, enemies := range w.enemies {
@@ -233,20 +208,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 				false,
 			)
 		}
-
-		// for _, collider := range w.colliders {
-		// 	vector.StrokeRect(
-		// 		screen,
-		// 		float32(collider.Min.X)+float32(w.camera.X),
-		// 		float32(collider.Min.Y)+float32(w.camera.Y),
-		// 		float32(collider.Dx()),
-		// 		float32(collider.Dy()),
-		// 		1.0,
-		// 		color.RGBA{255, 0, 0, 255},
-		// 		false,
-		// 	)
-		// 	opts.GeoM.Reset()
-		// }
 
 		for _, hole := range w.holes {
 			vector.StrokeRect(
@@ -273,5 +234,19 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 				false,
 			)
 		}
+
+		// for _, collider := range w.colliders {
+		// 	vector.StrokeRect(
+		// 		screen,
+		// 		float32(collider.Min.X)+float32(w.camera.X),
+		// 		float32(collider.Min.Y)+float32(w.camera.Y),
+		// 		float32(collider.Dx()),
+		// 		float32(collider.Dy()),
+		// 		1.0,
+		// 		color.RGBA{255, 0, 0, 255},
+		// 		false,
+		// 	)
+		// 	opts.GeoM.Reset()
+		// }
 	}
 }

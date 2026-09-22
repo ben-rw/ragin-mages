@@ -24,6 +24,7 @@ func (w *WizArena) CheckChestCollisions() {
 			if _, ok := w.openedChests[OpenedChest{chest.Min.X, chest.Min.Y}]; !ok {
 				w.wizard.Combat.RandomBoost(shared.ChestBoost)
 				w.openedChests[OpenedChest{chest.Min.X, chest.Min.Y}] = struct{}{}
+				w.statText = w.NewStatText()
 			}
 		}
 	}

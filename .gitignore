@@ -5,6 +5,7 @@
 *.tsx
 *.tmx
 *.tiled-session
+*.prof
 
 css_color_options/
 images/

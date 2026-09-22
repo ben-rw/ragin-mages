@@ -8,12 +8,17 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/ws"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+// wrap ws.Connection to allow for testing by avoiding importing syscall/js
+type MessageConn interface {
+	Check() []protocol.Message
+	WriteMsg(mt protocol.MessageType, data any)
+}
 
 const (
 	tilemapPath = "assets/maps/ninja_dungeon.json"
@@ -24,7 +29,7 @@ const (
 
 type WizArena struct {
 	shared.Roster
-	Conn                 *ws.Connection
+	Conn                 *MessageConn
 	Sprites              []*shared.Sprite
 	wizard               *shared.WizardPlayer
 	wizards              map[string]*shared.WizardPlayer
@@ -35,6 +40,7 @@ type WizArena struct {
 	enemies              []*shared.Enemy
 	enemyRespawnTimer    time.Time
 	roundTimer           time.Time
+	statText             map[Stat]string
 	tilemapJSON          *shared.TilemapJSON
 	tiles                map[string][]*shared.Tile
 	camera               *shared.Camera
@@ -52,13 +58,10 @@ type WizArena struct {
 	enemyImageCache      map[shared.EnemyType]*ebiten.Image
 	heartImage           *ebiten.Image
 	debug                bool
-	profiling            bool
 }
 
-func NewWizArena(c *ws.Connection) *WizArena {
+func NewWizArena(c *MessageConn) *WizArena {
 	log.Println("scene changed to Wizards")
-	// shared.ScreenHeight = shared.ScreenHeight * 2
-	// shared.ScreenWidth = shared.ScreenWidth * 2
 
 	tilemap, err := shared.NewTilemapJSON(tilemapPath)
 	if err != nil {
@@ -120,7 +123,6 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		audioPlayer:          audioPlayer,
 		heartImage:           heartImg,
 		debug:                false,
-		profiling:            false,
 	}
 
 	w.enemyFrameCache[shared.Skeleton] = spritesheet.LoadFrames(

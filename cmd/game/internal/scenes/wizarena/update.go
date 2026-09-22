@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/profiling"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -29,6 +28,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					wizard := shared.NewWizard(player)
 					wizard.JoinAnim = false
 					w.wizards[wizard.Data.Name] = wizard
+					w.statText = w.NewStatText()
 				}
 			}
 
@@ -245,6 +245,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				if wizard.Combat.Health() <= 0 {
 					// player who last hit the player gets a stat boost
 					projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost)
+					w.statText = w.NewStatText()
 				}
 			}
 		}
@@ -271,6 +272,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
 					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost)
+					w.statText = w.NewStatText()
 				}
 			}
 		}
@@ -475,21 +477,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
 		w.debug = !w.debug
-	}
-
-	// toggle profile recording
-	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
-		if !w.profiling {
-			profiling.StartCPUProfile()
-			w.profiling = true
-		} else {
-			profiling.StopCPUProfileAndDownload()
-			w.profiling = false
-		}
-	}
-
-	if inpututil.IsKeyJustPressed(ebiten.KeyF5) {
-		profiling.DumpHeapProfile()
 	}
 
 	// play background music
