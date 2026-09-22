@@ -83,10 +83,10 @@
         },
         "ninja_dungeon.json": {
             "scale": 1,
-            "selectedLayer": 2,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 8,
-                "y": 540.5
+                "x": -44,
+                "y": -54
             }
         },
         "ninja_dungeon.tmx": {

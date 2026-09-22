@@ -1,10 +1,9 @@
 package shared
 
 import (
-	"log"
-
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
@@ -16,22 +15,30 @@ type Enemy struct {
 	HurtboxRadius float64
 }
 
-type EnemyType string
+type EnemyType int
 
 const (
-	Skeleton EnemyType = "skeleton"
+	Skeleton EnemyType = iota
 )
 
-func NewEnemy(enemyType EnemyType, followsPlayer bool, x, y float64) *Enemy {
-	imgPath := EnemySpriteIndex[0]
-	enemyImg, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, imgPath)
-	if err != nil {
-		log.Fatal(err)
+func NewEnemyImageCache(enemyTypes []EnemyType) (map[EnemyType]*ebiten.Image, error) {
+	imgs := make(map[EnemyType]*ebiten.Image, len(enemyTypes))
+	for _, enemyType := range enemyTypes {
+		enemyImg, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, EnemySpriteIndex[enemyType])
+		if err != nil {
+			return nil, err
+		}
+		imgs[enemyType] = enemyImg
+
 	}
+	return imgs, nil
+}
+
+func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y float64) *Enemy {
 
 	return &Enemy{
 		NewSprite(
-			enemyImg,
+			img,
 			x,
 			y,
 			0,

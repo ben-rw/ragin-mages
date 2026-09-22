@@ -11,8 +11,11 @@ var PlayerSpawns = map[int]struct{ X, Y float64 }{
 	7: {X: 20, Y: 9},
 }
 
-const EnemyRespawnTimer = 20
-const EnemySpawnCount = 16
+const (
+	EnemyRespawnTimer         = 20
+	EnemySpawnCount           = 16
+	RoundStartEnemySpawnTimer = 5
+)
 
 var EnemySpawns = map[int]struct{ X, Y float64 }{
 	0: {X: 0, Y: 9},
@@ -34,11 +37,4 @@ var EnemySpawns = map[int]struct{ X, Y float64 }{
 	13: {X: 90, Y: 59},
 	14: {X: 66, Y: 45},
 	15: {X: 66, Y: 34},
-}
-
-func SpawnEnemies(enemies []*Enemy) []*Enemy {
-	for i := range EnemySpawnCount {
-		enemies[i+len(enemies)] = NewEnemy(Skeleton, true, EnemySpawns[i].X*TileSize, EnemySpawns[i].Y*TileSize)
-	}
-	return enemies
 }

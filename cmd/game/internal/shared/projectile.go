@@ -52,12 +52,16 @@ type Projectile struct {
 	AlreadyHit    map[any]struct{}
 }
 
-func LoadProjectile(projectileType ProjectileType) (*ebiten.Image, error) {
-	img, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, projectileImgPaths[projectileType])
-	if err != nil {
-		return nil, err
+func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
+	imgs := make(map[ProjectileType]*ebiten.Image, len(projectileTypes))
+	for _, projectileType := range projectileTypes {
+		img, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, projectileImgPaths[projectileType])
+		if err != nil {
+			return nil, err
+		}
+		imgs[projectileType] = img
 	}
-	return img, nil
+	return imgs, nil
 }
 
 func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64) *Projectile {

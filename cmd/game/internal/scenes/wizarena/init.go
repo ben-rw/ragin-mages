@@ -23,29 +23,30 @@ const (
 
 type WizArena struct {
 	shared.Roster
-	Conn              *ws.Connection
-	Sprites           []*shared.Sprite
-	wizard            *shared.WizardPlayer
-	wizards           map[string]*shared.WizardPlayer
-	enemies           []*shared.Enemy
-	enemyRespawnTimer time.Time
-	roundTimer        time.Time
-	tilemapJSON       *shared.TilemapJSON
-	tileCache         map[int]*shared.Tile
-	camera            *shared.Camera
-	colliders         []image.Rectangle
-	chests            []image.Rectangle
-	chestRespawnTimer time.Time
-	openedChests      map[OpenedChest]struct{}
-	holes             []image.Rectangle
-	traps             []image.Rectangle
-	trapsUp           bool
-	audioPlayer       *audio.Player
-	projectiles       []*shared.Projectile
-	deadProjectiles   []*shared.Projectile
-	projectileCache   map[shared.ProjectileType]*ebiten.Image
-	heartImage        *ebiten.Image
-	debug             bool
+	Conn                 *ws.Connection
+	Sprites              []*shared.Sprite
+	wizard               *shared.WizardPlayer
+	wizards              map[string]*shared.WizardPlayer
+	enemies              []*shared.Enemy
+	enemyRespawnTimer    time.Time
+	roundTimer           time.Time
+	tilemapJSON          *shared.TilemapJSON
+	tiles                map[string][]*shared.Tile
+	camera               *shared.Camera
+	colliders            []image.Rectangle
+	chests               []image.Rectangle
+	chestRespawnTimer    time.Time
+	openedChests         map[OpenedChest]struct{}
+	holes                []image.Rectangle
+	traps                []image.Rectangle
+	trapsUp              bool
+	audioPlayer          *audio.Player
+	projectiles          []*shared.Projectile
+	deadProjectiles      []*shared.Projectile
+	projectileImageCache map[shared.ProjectileType]*ebiten.Image
+	enemyImageCache      map[shared.EnemyType]*ebiten.Image
+	heartImage           *ebiten.Image
+	debug                bool
 }
 
 func NewWizArena(c *ws.Connection) *WizArena {
@@ -58,7 +59,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		log.Printf("couldn't load tilemap: %v", err)
 	}
 
-	tileCache, err := shared.NewTileCache(tilemap)
+	tiles, err := shared.NewOrderedTileList(tilemap)
 	if err != nil {
 		log.Printf("couldn't build tile cache: %v", err)
 	}
@@ -68,7 +69,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		log.Printf("couldn't create audio player: %v", err)
 	}
 
-	fireballImg, err := shared.LoadProjectile(shared.Fireball)
+	projectileImgCache, err := shared.NewProjectileImageCache([]shared.ProjectileType{shared.Fireball})
 	if err != nil {
 		log.Printf("couldn't load projectile image: %v", err)
 	}
@@ -78,35 +79,44 @@ func NewWizArena(c *ws.Connection) *WizArena {
 		log.Printf("couldn't load image: %v", err)
 	}
 
+	enemyImgCache, err := shared.NewEnemyImageCache([]shared.EnemyType{shared.Skeleton})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	w := &WizArena{
 		Roster: shared.Roster{
 			Players: make(map[string]*shared.Player, 8), // max 8 players
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
-		Conn:              c,
-		Sprites:           []*shared.Sprite{},
-		wizards:           make(map[string]*shared.WizardPlayer, 8), // max 8 wizards
-		enemies:           make([]*shared.Enemy, 32),                //16 enemies spawn at at time, doubled for headroom
-		enemyRespawnTimer: time.Time{},
-		projectiles:       make([]*shared.Projectile, 16),                   // there shouldn't ever be more than 16 projectiles
-		deadProjectiles:   make([]*shared.Projectile, 16),                   // alive or dead at one time
-		projectileCache:   make(map[shared.ProjectileType]*ebiten.Image, 1), // number of projectile types
-		tilemapJSON:       tilemap,
-		tileCache:         tileCache,
-		camera:            nil,
-		colliders:         []image.Rectangle{},
-		chests:            make([]image.Rectangle, 8), // 8 chests on the map
-		openedChests:      make(map[OpenedChest]struct{}, 8),
-		holes:             []image.Rectangle{}, //TODO: count holes and traps to preallocate slices
-		traps:             []image.Rectangle{},
-		trapsUp:           false,
-		audioPlayer:       audioPlayer,
-		heartImage:        heartImg,
-		debug:             false,
+		Conn:                 c,
+		Sprites:              []*shared.Sprite{},
+		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
+		enemies:              make([]*shared.Enemy, 0, 32),                                   //16 enemies spawn at at time, doubled for headroom
+		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
+		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles
+		deadProjectiles:      make([]*shared.Projectile, 0, 16),                              // alive or dead at one time
+		projectileImageCache: projectileImgCache,
+		enemyImageCache:      enemyImgCache,
+		tilemapJSON:          tilemap,
+		tiles:                tiles,
+		camera:               nil,
+		colliders:            []image.Rectangle{},
+		chests:               make([]image.Rectangle, 8), // 8 chests on the map
+		openedChests:         make(map[OpenedChest]struct{}, 8),
+		holes:                make([]image.Rectangle, 2092), //2091 holes on map
+		traps:                make([]image.Rectangle, 84),   //traps on map
+		trapsUp:              false,
+		audioPlayer:          audioPlayer,
+		heartImage:           heartImg,
+		debug:                false,
 	}
 
-	w.projectileCache[shared.Fireball] = fireballImg
+	w.TileBounds()
+	return w
+}
 
+func (w *WizArena) TileBounds() {
 	for _, layer := range w.tilemapJSON.Layers {
 		for i, id := range layer.Data {
 			if id == 0 {
@@ -123,7 +133,7 @@ func NewWizArena(c *ws.Connection) *WizArena {
 				int(shared.FlagFlippedDiagonally) |
 				int(shared.FlagRotatedHexagonal120))
 
-			tilemapIndex := shared.GetTilemapIndex(id, w.tilemapJSON)
+			tilemapIndex := shared.GetTilesetIndex(id, w.tilemapJSON)
 			src := w.tilemapJSON.Tilesets[tilemapIndex].Source
 
 			if src == "TilesetHole.json" {
@@ -150,6 +160,4 @@ func NewWizArena(c *ws.Connection) *WizArena {
 			}
 		}
 	}
-
-	return w
 }

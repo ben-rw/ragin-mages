@@ -25,6 +25,6 @@ var StartingPositions = map[int]struct{ X, Y float64 }{
 	7: {X: 60, Y: 140},
 }
 
-var EnemySpriteIndex map[int]string = map[int]string{
-	0: imgRootPath + "Skeleton" + imgPathEnd,
+var EnemySpriteIndex map[EnemyType]string = map[EnemyType]string{
+	Skeleton: imgRootPath + "Skeleton" + imgPathEnd,
 }

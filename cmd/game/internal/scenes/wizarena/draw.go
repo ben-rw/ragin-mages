@@ -3,7 +3,6 @@ package wizarena
 import (
 	"fmt"
 	"image/color"
-	"math"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,73 +14,30 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	opts := ebiten.DrawImageOptions{}
 
 	for _, layer := range w.tilemapJSON.Layers {
-		for i, id := range layer.Data {
-			if id == 0 {
-				continue
-			}
-			if layer.Name == "traps_up" && !w.trapsUp {
-				continue
-			}
-			if layer.Name == "traps_down" && w.trapsUp {
-				continue
-			}
-			x := i % layer.Width
-			y := i / layer.Width
-
-			x *= shared.TileSize
-			y *= shared.TileSize
-
+		if layer.Name == "traps_up" && !w.trapsUp {
+			continue
+		}
+		if layer.Name == "traps_down" && w.trapsUp {
+			continue
+		}
+		for _, tile := range w.tiles[layer.Name] {
 			if layer.Name == "chests" {
-				if _, ok := w.openedChests[OpenedChest{x, y}]; ok {
+				if _, ok := w.openedChests[OpenedChest{tile.X, tile.Y}]; ok {
 					continue
 				}
 			}
 
-			tile := shared.Tile{}
-
-			if id&int(shared.FlagFlippedHorizontally) != 0 {
-				tile.Flips.HorizontalFlip = true
-			}
-			if id&int(shared.FlagFlippedVertically) != 0 {
-				tile.Flips.VerticalFlip = true
-			}
-			if id&int(shared.FlagFlippedDiagonally) != 0 {
-				tile.Flips.DiagonalFlip = true
+			if tile.Flips.HorizontalFlip ||
+				tile.Flips.VerticalFlip ||
+				tile.Flips.DiagonalFlip {
+				shared.FixRotatedTile(tile, &opts)
 			}
 
-			id &= ^(int(shared.FlagFlippedHorizontally) |
-				int(shared.FlagFlippedVertically) |
-				int(shared.FlagFlippedDiagonally) |
-				int(shared.FlagRotatedHexagonal120))
-
-			switch {
-			case tile.Flips.HorizontalFlip && tile.Flips.VerticalFlip:
-				opts.GeoM.Scale(-1, -1)
-				x += 16
-				y += 16
-			case tile.Flips.DiagonalFlip && tile.Flips.HorizontalFlip:
-				opts.GeoM.Translate(-shared.TileSize/2, -shared.TileSize/2)
-				opts.GeoM.Rotate(math.Pi / 2)
-				opts.GeoM.Translate(shared.TileSize/2, shared.TileSize/2)
-			case tile.Flips.HorizontalFlip:
-				opts.GeoM.Scale(-1, 1)
-				x += 16
-			case tile.Flips.DiagonalFlip && tile.Flips.VerticalFlip:
-				opts.GeoM.Translate(-shared.TileSize/2, -shared.TileSize/2)
-				opts.GeoM.Rotate(3 * math.Pi / 2)
-				opts.GeoM.Translate(shared.TileSize/2, shared.TileSize/2)
-			case tile.Flips.VerticalFlip:
-				opts.GeoM.Scale(1, -1)
-				y += 16
-			default:
-			}
-
-			opts.GeoM.Translate(float64(x), float64(y))
-
+			opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
 			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
 			screen.DrawImage(
-				w.tileCache[id].Img,
+				tile.Img,
 				&opts,
 			)
 

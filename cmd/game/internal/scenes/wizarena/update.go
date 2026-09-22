@@ -3,7 +3,6 @@ package wizarena
 import (
 	"image"
 	"math"
-	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -310,7 +309,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
 		projectile := w.wizard.ShootProjectile(
-			w.projectileCache[shared.Fireball],
+			w.projectileImageCache[shared.Fireball],
 			float64(cX),
 			float64(cY),
 		)
@@ -466,12 +465,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		projectile.ActiveAnimation.Update()
 	}
 
-	// spawn enemies on a timer
-	if w.enemyRespawnTimer.IsZero() || time.Until(w.enemyRespawnTimer) <= 0 {
-		w.enemyRespawnTimer = time.Now().Add(shared.EnemyRespawnTimer * time.Second)
-		w.enemies = shared.SpawnEnemies(w.enemies)
-	}
-
+	// spawn timers
+	w.EnemyRespawn()
 	w.ChestRespawn()
 
 	// toggle hitbox indicators
