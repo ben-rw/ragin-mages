@@ -9,54 +9,38 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-var (
-	// explicity initialized as text.Face to avoid interface boxing
-	fontFace8  text.Face = &text.GoTextFace{Source: shared.FontSrc, Size: 8}
-	fontFace24 text.Face = &text.GoTextFace{Source: shared.FontSrc, Size: 24}
-)
-
-var ()
-
-var (
-	instructionText1 = "You need more POWER!"
-	instructionText2 = "Get boosts from chests, skeletons, and your friends!"
-	deadText         = "YOU DIED"
-)
-
 func (w *WizArena) Draw(screen *ebiten.Image) {
 	var opts ebiten.DrawImageOptions
 	var textOpts text.DrawOptions
 
-	for _, layer := range w.tilemapJSON.Layers {
-		if layer.Name == "traps_up" && !w.trapsUp {
+	opts.GeoM.Translate(w.camera.X, w.camera.Y)
+	if !w.trapsUp {
+		screen.DrawImage(w.staticTilemapTrapsDown, &opts)
+	} else {
+		screen.DrawImage(w.staticTilemapTrapsUp, &opts)
+	}
+	opts.GeoM.Reset()
+
+	for _, tile := range w.tiles["chests"] {
+		if _, ok := w.openedChests[OpenedChest{tile.X, tile.Y}]; ok {
 			continue
 		}
-		if layer.Name == "traps_down" && w.trapsUp {
-			continue
+
+		if tile.Flips.HorizontalFlip ||
+			tile.Flips.VerticalFlip ||
+			tile.Flips.DiagonalFlip {
+			shared.FixRotatedTile(tile, &opts)
 		}
-		for _, tile := range w.tiles[layer.Name] {
-			if layer.Name == "chests" {
-				if _, ok := w.openedChests[OpenedChest{tile.X, tile.Y}]; ok {
-					continue
-				}
-			}
 
-			if tile.Flips.HorizontalFlip ||
-				tile.Flips.VerticalFlip ||
-				tile.Flips.DiagonalFlip {
-				shared.FixRotatedTile(tile, &opts)
-			}
+		opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
+		opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
-			opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
-			opts.GeoM.Translate(w.camera.X, w.camera.Y)
+		screen.DrawImage(
+			tile.Img,
+			&opts,
+		)
 
-			screen.DrawImage(
-				tile.Img,
-				&opts,
-			)
-
-			opts.GeoM.Reset()
-		}
+		opts.GeoM.Reset()
 	}
 
 	for _, wizard := range w.wizards {
@@ -136,16 +120,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Reset()
 	}
 
-	textOpts.PrimaryAlign = text.AlignEnd
-	textOpts.GeoM.Translate(shared.TopRightFurther())
-	text.Draw(screen, instructionText1, fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
-
-	textOpts.PrimaryAlign = text.AlignEnd
-	textOpts.GeoM.Translate(shared.BottomRightFurther())
-	text.Draw(screen, instructionText2, fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
-
 	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.GeoM.Translate(shared.Stat1BottomLeft())
 	text.Draw(screen, w.statText[ProjectileScale], fontFace8, &textOpts)
@@ -161,11 +135,21 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	text.Draw(screen, w.statText[Knockback], fontFace8, &textOpts)
 	textOpts.GeoM.Reset()
 
+	opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
+	opts.GeoM.Translate(shared.TopRightFurther())
+	screen.DrawImage(StaticTextMap[instructionText1], &opts)
+	opts.GeoM.Reset()
+
+	opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
+	opts.GeoM.Translate(shared.BottomRightFurther())
+	screen.DrawImage(StaticTextMap[instructionText2], &opts)
+	opts.GeoM.Reset()
+
 	if w.wizard.Combat.Dead {
-		textOpts.PrimaryAlign = text.AlignCenter
-		textOpts.GeoM.Translate(shared.Center())
-		text.Draw(screen, deadText, fontFace24, &textOpts)
-		textOpts.GeoM.Reset()
+		opts.GeoM.Translate(shared.Center())
+		opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
+		screen.DrawImage(StaticTextMap[deadText], &opts)
+		opts.GeoM.Reset()
 	}
 
 	if w.debug {

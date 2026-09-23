@@ -29,38 +29,41 @@ const (
 
 type WizArena struct {
 	shared.Roster
-	Conn                 *MessageConn
-	Sprites              []*shared.Sprite
-	wizard               *shared.WizardPlayer
-	wizards              map[string]*shared.WizardPlayer
-	wizardImgCache       map[int]*ebiten.Image
-	wizardFrameCache     map[int][]*ebiten.Image
-	enemyFrameCache      map[shared.EnemyType][]*ebiten.Image
-	projectileFrameCache map[shared.ProjectileType][]*ebiten.Image
-	enemies              []*shared.Enemy
-	enemyRespawnTimer    time.Time
-	roundTimer           time.Time
-	statText             map[Stat]string
-	tilemapJSON          *shared.TilemapJSON
-	tiles                map[string][]*shared.Tile
-	camera               *shared.Camera
-	colliders            []image.Rectangle
-	chests               []image.Rectangle
-	chestRespawnTimer    time.Time
-	openedChests         map[OpenedChest]struct{}
-	holes                []image.Rectangle
-	traps                []image.Rectangle
-	trapsUp              bool
-	audioPlayer          *audio.Player
-	projectiles          []*shared.Projectile
-	deadProjectiles      []*shared.Projectile
-	projectileImageCache map[shared.ProjectileType]*ebiten.Image
-	enemyImageCache      map[shared.EnemyType]*ebiten.Image
-	heartImage           *ebiten.Image
-	debug                bool
+	Conn                   MessageConn
+	Sprites                []*shared.Sprite
+	wizard                 *shared.WizardPlayer
+	wizards                map[string]*shared.WizardPlayer
+	wizardImgCache         map[int]*ebiten.Image
+	wizardFrameCache       map[int][]*ebiten.Image
+	enemyFrameCache        map[shared.EnemyType][]*ebiten.Image
+	projectileFrameCache   map[shared.ProjectileType][]*ebiten.Image
+	enemies                []*shared.Enemy
+	enemyRespawnTimer      time.Time
+	roundTimer             time.Time
+	statText               map[Stat]string
+	statTextImageCache     map[Stat]*ebiten.Image
+	tilemapJSON            *shared.TilemapJSON
+	tiles                  map[string][]*shared.Tile
+	staticTilemapTrapsUp   *ebiten.Image
+	staticTilemapTrapsDown *ebiten.Image
+	camera                 *shared.Camera
+	colliders              []image.Rectangle
+	chests                 []image.Rectangle
+	chestRespawnTimer      time.Time
+	openedChests           map[OpenedChest]struct{}
+	holes                  []image.Rectangle
+	traps                  []image.Rectangle
+	trapsUp                bool
+	audioPlayer            *audio.Player
+	projectiles            []*shared.Projectile
+	deadProjectiles        []*shared.Projectile
+	projectileImageCache   map[shared.ProjectileType]*ebiten.Image
+	enemyImageCache        map[shared.EnemyType]*ebiten.Image
+	heartImage             *ebiten.Image
+	debug                  bool
 }
 
-func NewWizArena(c *MessageConn) *WizArena {
+func NewWizArena(c MessageConn) *WizArena {
 	log.Println("scene changed to Wizards")
 
 	tilemap, err := shared.NewTilemapJSON(tilemapPath)
@@ -143,7 +146,81 @@ func NewWizArena(c *MessageConn) *WizArena {
 	}
 
 	w.TileBounds()
+
+	w.staticTilemapTrapsUp = w.NewStaticTilemapTrapsUp()
+	w.staticTilemapTrapsDown = w.NewStaticTilemapTrapsDown()
+
 	return w
+}
+
+func (w *WizArena) NewStaticTilemapTrapsUp() *ebiten.Image {
+	var opts ebiten.DrawImageOptions
+	img := ebiten.NewImage(
+		w.tilemapJSON.Layers[0].Width*16.0,
+		w.tilemapJSON.Layers[0].Height*16.0,
+	)
+
+	for _, layer := range w.tilemapJSON.Layers {
+		if layer.Name == "traps_down" {
+			continue
+		}
+		if layer.Name == "chests" {
+			continue
+		}
+
+		for _, tile := range w.tiles[layer.Name] {
+			if tile.Flips.HorizontalFlip ||
+				tile.Flips.VerticalFlip ||
+				tile.Flips.DiagonalFlip {
+				shared.FixRotatedTile(tile, &opts)
+			}
+
+			opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
+
+			img.DrawImage(
+				tile.Img,
+				&opts,
+			)
+
+			opts.GeoM.Reset()
+		}
+	}
+	return img
+}
+
+func (w *WizArena) NewStaticTilemapTrapsDown() *ebiten.Image {
+	var opts ebiten.DrawImageOptions
+	img := ebiten.NewImage(
+		w.tilemapJSON.Layers[0].Width*16.0,
+		w.tilemapJSON.Layers[0].Height*16.0,
+	)
+
+	for _, layer := range w.tilemapJSON.Layers {
+		if layer.Name == "traps_up" {
+			continue
+		}
+		if layer.Name == "chests" {
+			continue
+		}
+
+		for _, tile := range w.tiles[layer.Name] {
+			if tile.Flips.HorizontalFlip ||
+				tile.Flips.VerticalFlip ||
+				tile.Flips.DiagonalFlip {
+				shared.FixRotatedTile(tile, &opts)
+			}
+
+			opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
+
+			img.DrawImage(
+				tile.Img,
+				&opts,
+			)
+
+			opts.GeoM.Reset()
+		}
+	}
+	return img
 }
 
 func (w *WizArena) TileBounds() {

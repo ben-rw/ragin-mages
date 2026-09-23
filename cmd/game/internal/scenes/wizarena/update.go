@@ -28,11 +28,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					wizard := shared.NewWizard(player)
 					wizard.JoinAnim = false
 					w.wizards[wizard.Data.Name] = wizard
-					w.statText = w.NewStatText()
 				}
 			}
 
 			w.wizard = w.wizards[w.Player.Data.Name]
+			w.statText = w.NewStatText()
+
 			w.camera = shared.NewCamera(
 				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
 				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
