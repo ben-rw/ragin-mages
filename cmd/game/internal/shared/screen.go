@@ -46,6 +46,10 @@ func TopRightFurther() (float64, float64) {
 	return ScreenWidth * 0.99, ScreenHeight * 0.01
 }
 
+func TopCenterRight() (float64, float64) {
+	return ScreenWidth * 0.81, ScreenHeight * 0.07
+}
+
 func TopLeftFurther() (float64, float64) {
 	return ScreenWidth * 0.01, ScreenHeight * 0.01
 }

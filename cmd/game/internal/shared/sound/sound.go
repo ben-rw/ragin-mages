@@ -3,12 +3,14 @@ package sound
 import (
 	"bytes"
 	"io"
+	"log"
+
+	"path/filepath"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
-	"path/filepath"
 )
 
 const sampleRate = 48000
@@ -63,11 +65,15 @@ func NewAudioPlayer(path string, loop bool, introLen int64) (*audio.Player, erro
 }
 
 func FadeOut(audioPlayer *audio.Player) bool {
-	if audioPlayer.Volume() > 0.05 {
-		audioPlayer.SetVolume(audioPlayer.Volume() - 0.01)
-		return false
-	} else {
-		audioPlayer.Close()
-		return true
+	if audioPlayer.Volume() > 0.001 {
+		audioPlayer.SetVolume(audioPlayer.Volume() - 0.004)
+		if audioPlayer.Volume() > 0 {
+			return false
+		}
 	}
+	err := audioPlayer.Close()
+	if err != nil {
+		log.Println("audio player already closed: %v", err)
+	}
+	return true
 }
