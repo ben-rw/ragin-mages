@@ -22,14 +22,29 @@ type Player struct {
 
 type NameTag struct {
 	Face          *text.GoTextFace
-	X, Y          float64
 	LayoutOptions text.LayoutOptions
+	X, Y          float64
+}
+
+func NewNameTag(x, y float64) *NameTag {
+	return &NameTag{
+		Face: &text.GoTextFace{
+			Source: FontSrc,
+			Size:   nameTagSize,
+		},
+		X: x + TileSize/2,
+		Y: y + TileSize + 2,
+		LayoutOptions: text.LayoutOptions{
+			PrimaryAlign: 1,
+		},
+	}
 }
 
 var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize)
 
 func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
-	imgPath := PlayerSpriteIndex[data.SpriteIndex]
+	// imgPath := PlayerSpriteIndex[data.SpriteIndex]
+	imgPath := PlayerSpriteIndex[joinOrder]
 	playerImg, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, imgPath)
 	if err != nil {
 		log.Fatal(err)
@@ -69,16 +84,6 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 			Host:        data.Host,
 			SpriteIndex: data.SpriteIndex,
 		},
-		NameTag: &NameTag{
-			Face: &text.GoTextFace{
-				Source: FontSrc,
-				Size:   nameTagSize,
-			},
-			X: startPosition.X + TileSize/2,
-			Y: startPosition.Y + TileSize + 2,
-			LayoutOptions: text.LayoutOptions{
-				PrimaryAlign: 1,
-			},
-		},
+		NameTag: NewNameTag(startPosition.X, startPosition.Y),
 	}
 }

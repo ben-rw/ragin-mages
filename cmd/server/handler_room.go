@@ -164,6 +164,16 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 	}
 
 	currentRoom, ok := cfg.RoomReg.Get(roomID)
+
+	if len(currentRoom.Players) >= room.MaxPlayers {
+		err := cfg.templates.ExecuteTemplate(w, "landing.html", LandingPageError{JoinRoomFullError: "room is full"})
+		if err != nil {
+			http.Error(w, "unable to serve room page with error message", http.StatusInternalServerError)
+			log.Printf("unable to serve room page with error message: %v\n", err)
+		}
+		return
+	}
+
 	if !ok {
 		psi := room.NewPlayerSpriteIndex()
 		newRoom := &room.Room{

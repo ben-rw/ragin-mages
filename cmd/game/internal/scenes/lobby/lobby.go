@@ -14,23 +14,33 @@ import (
 	"log"
 )
 
-const backgroundPath = "assets/images/center_background.png"
+const backgroundPath = "assets/images/ninja_adventure/Backgrounds/ninja_actor_background.png"
 const songPath = "assets/audio/music/amalfi-coast-loop.ogg"
+
+type Background struct {
+	img   *ebiten.Image
+	alpha float32
+}
 
 type Lobby struct {
 	shared.Roster
 	Conn          *ws.Connection
 	Sprites       []*shared.Sprite
-	Background    *ebiten.Image
+	Background    *Background
 	audioPlayer   *audio.Player
 	sceneChanging bool
 	lobbyImage    *ebiten.Image
+	fadeInAlpha   float32
 }
 
 func NewLobby(c *ws.Connection) *Lobby {
-	bg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, backgroundPath)
+	bgImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, backgroundPath)
 	if err != nil {
 		log.Printf("couldn't load background: %v")
+	}
+	bg := &Background{
+		img:   bgImg,
+		alpha: 1.0,
 	}
 
 	audioPlayer, err := sound.NewAudioPlayer(songPath, true, 0)
@@ -51,6 +61,7 @@ func NewLobby(c *ws.Connection) *Lobby {
 		audioPlayer:   audioPlayer,
 		sceneChanging: false,
 		lobbyImage:    lobbyImage,
+		fadeInAlpha:   0,
 	}
 }
 
@@ -91,6 +102,17 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 		l.sceneChanging = true
 	}
 
+	// fade background after join
+	if l.Background.alpha > 0.3 {
+		l.Background.alpha -= 0.005
+	}
+
+	// fade everything else in after the background fades out
+	if l.Background.alpha <= 0.3 && l.fadeInAlpha < 1.0 {
+		l.fadeInAlpha += 0.01
+	}
+
+	// fade music out
 	var fadeFinished = false
 	if l.sceneChanging == true {
 		fadeFinished = sound.FadeOut(l.audioPlayer)
@@ -111,17 +133,19 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 
 func (l *Lobby) Draw(screen *ebiten.Image) {
 	l.lobbyImage.Clear()
-	l.lobbyImage.Fill(shared.BackgroundColor)
+	// l.lobbyImage.Fill(shared.BackgroundColor)
 
 	opts := ebiten.DrawImageOptions{}
+	textOpts := text.DrawOptions{}
 
-	// s := l.Background.Bounds().Size()
-	// scaleX := shared.ScreenWidth / float64(s.X)
-	// scaleY := shared.ScreenHeight / float64(s.Y)
-	// opts.GeoM.Scale(scaleX, scaleY)
-	// screen.DrawImage(l.Background, &opts)
-	//
-	// opts.GeoM.Reset()
+	opts.ColorScale.ScaleAlpha(l.Background.alpha)
+	l.lobbyImage.DrawImage(l.Background.img, &opts)
+	opts.ColorScale.Reset()
+
+	if l.fadeInAlpha < 1.0 {
+		opts.ColorScale.ScaleAlpha(l.fadeInAlpha)
+		textOpts.ColorScale.ScaleAlpha(l.fadeInAlpha)
+	}
 
 	for _, player := range l.Players {
 		opts.GeoM.Translate(player.X, player.Y)
@@ -133,46 +157,35 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 			).(*ebiten.Image),
 			&opts,
 		)
-
 		opts.GeoM.Reset()
 	}
 
 	for _, player := range l.Players {
-		textOpts := text.DrawOptions{
-			LayoutOptions: player.NameTag.LayoutOptions,
-		}
+		textOpts.LayoutOptions = player.NameTag.LayoutOptions
 		textOpts.GeoM.Translate(player.NameTag.X, player.NameTag.Y)
 		text.Draw(l.lobbyImage, player.Data.Name, player.NameTag.Face, &textOpts)
-
 		textOpts.GeoM.Reset()
 	}
 
-	controlsText := "Controls: 'Left Click' to Attack, 'Right Click' to Reflect, 'Q' to Repel"
-	textOpts := text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: 2,
-		},
-	}
+	// controlsText := "Controls: 'Left Click' to Attack, 'Right Click' to Reflect, 'Q' to Repel"
+	textOpts.PrimaryAlign = 2
 	tX, tY := shared.TopRight()
 	textOpts.GeoM.Translate(tX/2, tY/2)
-	text.Draw(l.lobbyImage, controlsText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
+	// text.Draw(l.lobbyImage, controlsText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
 	textOpts.GeoM.Reset()
 
 	waitText := "Waiting for host..."
 	if l.Player.Data.Host == true {
 		waitText = "Press ENTER to start!"
 	}
-	textOpts = text.DrawOptions{
-		LayoutOptions: text.LayoutOptions{
-			PrimaryAlign: 2,
-		},
-	}
+	textOpts.PrimaryAlign = 2
 	tX, tY = shared.BottomRight()
 	textOpts.GeoM.Translate(tX/2, tY/2)
 	text.Draw(l.lobbyImage, waitText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
-
 	textOpts.GeoM.Reset()
+
+	opts.ColorScale.Reset()
+	textOpts.ColorScale.Reset()
 
 	opts.GeoM.Scale(2, 2)
 	screen.DrawImage(l.lobbyImage, &opts)

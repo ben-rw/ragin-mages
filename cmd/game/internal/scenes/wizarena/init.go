@@ -14,7 +14,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-// wrap ws.Connection to allow for testing by avoiding importing syscall/js
+// wrap ws.Connection to avoid syscall/js import
+// this allows for benchmarking with go test -bench
 type MessageConn interface {
 	Check() []protocol.Message
 	WriteMsg(mt protocol.MessageType, data any)
@@ -104,7 +105,7 @@ func NewWizArena(c MessageConn) *WizArena {
 		Conn:                 c,
 		Sprites:              []*shared.Sprite{},
 		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
-		enemies:              make([]*shared.Enemy, 0, 32),                                   //16 enemies spawn at at time, doubled for headroom
+		enemies:              make([]*shared.Enemy, 0, 32),                                   // 16 enemies spawn at at time, doubled for headroom
 		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
 		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
 		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
