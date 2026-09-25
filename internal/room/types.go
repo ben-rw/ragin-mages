@@ -5,14 +5,14 @@ import (
 )
 
 type Player struct {
+	Room        *Room
+	Client      *Client
 	ID          string
 	Name        string
 	Score       int
-	Host        bool
 	SpriteIndex int
-	Room        *Room
-	Client      *Client
 	X, Y        float64
+	Host        bool
 }
 
 type Client struct {

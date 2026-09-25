@@ -14,11 +14,11 @@ const (
 )
 
 type Room struct {
+	PlayerSpriteIndex *[]int
+	Mu                *sync.RWMutex
 	ID                string
 	Players           []*Player
-	PlayerSpriteIndex *[]int
 	Scene             protocol.SceneType
-	Mu                *sync.RWMutex
 }
 
 // check for username collisions, set player.Room, add player to Room

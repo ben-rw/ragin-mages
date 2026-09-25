@@ -25,16 +25,16 @@ const (
 
 type Sprite struct {
 	Img             *ebiten.Image
-	X, Y, Dx, Dy    float64
 	SpriteSheet     *spritesheet.SpriteSheet
 	Animations      map[EntityState]*animations.Animation
 	ActiveAnimation *animations.Animation
-	Noclip          bool
+	X, Y, Dx, Dy    float64
+	AttackDirection EntityState
 	Alpha           float32
+	Noclip          bool
 	JoinAnim        bool
 	DieAnim         bool
 	AttackAnim      bool
-	AttackDirection EntityState
 }
 
 func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet.SpriteSheet, animations map[EntityState]*animations.Animation, activeAnimation *animations.Animation, noclip, joinAnim bool, alpha float32) *Sprite {

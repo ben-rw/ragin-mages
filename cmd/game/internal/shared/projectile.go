@@ -35,6 +35,7 @@ var projectileImgPaths = map[ProjectileType]string{
 type Projectile struct {
 	*Sprite
 	Caster        *WizardPlayer
+	AlreadyHit    map[any]struct{}
 	Damage        float64
 	Speed         float64
 	Knockback     float64
@@ -49,7 +50,6 @@ type Projectile struct {
 	CenterX       float64
 	CenterY       float64
 	TicksToLive   int
-	AlreadyHit    map[any]struct{}
 	Type          ProjectileType
 }
 

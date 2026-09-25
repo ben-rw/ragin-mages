@@ -6,9 +6,9 @@ import (
 )
 
 type config struct {
+	RoomReg      room.RoomRegistry
+	templates    *template.Template
 	Port         string
 	FilepathRoot string
 	URLRoot      string
-	RoomReg      room.RoomRegistry
-	templates    *template.Template
 }

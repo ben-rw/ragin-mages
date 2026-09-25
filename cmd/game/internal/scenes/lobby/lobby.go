@@ -38,7 +38,6 @@ type Background struct {
 type Lobby struct {
 	shared.Roster
 	Conn               *ws.Connection
-	Sprites            []*shared.Sprite
 	Background         *Background
 	lobbyImage         *ebiten.Image
 	mouseLeftImage     *ebiten.Image
@@ -83,7 +82,6 @@ func NewLobby(c *ws.Connection) *Lobby {
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
 		Conn:               c,
-		Sprites:            []*shared.Sprite{},
 		Background:         bg,
 		lobbyImage:         lobbyImage,
 		mouseLeftImage:     mlImg,

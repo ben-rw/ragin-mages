@@ -29,18 +29,17 @@ const (
 )
 
 type WizArena struct {
+	enemyRespawnTimer time.Time
+	roundTimer        time.Time
+	chestRespawnTimer time.Time
 	shared.Roster
 	Conn                   MessageConn
-	Sprites                []*shared.Sprite
 	wizard                 *shared.WizardPlayer
 	wizards                map[string]*shared.WizardPlayer
 	wizardImgCache         map[int]*ebiten.Image
 	wizardFrameCache       map[int][]*ebiten.Image
 	enemyFrameCache        map[shared.EnemyType][]*ebiten.Image
 	projectileFrameCache   map[shared.ProjectileType][]*ebiten.Image
-	enemies                []*shared.Enemy
-	enemyRespawnTimer      time.Time
-	roundTimer             time.Time
 	statText               map[Stat]string
 	statTextImageCache     map[Stat]*ebiten.Image
 	tilemapJSON            *shared.TilemapJSON
@@ -48,19 +47,20 @@ type WizArena struct {
 	staticTilemapTrapsUp   *ebiten.Image
 	staticTilemapTrapsDown *ebiten.Image
 	camera                 *shared.Camera
-	colliders              []image.Rectangle
-	chests                 []image.Rectangle
-	chestRespawnTimer      time.Time
 	openedChests           map[OpenedChest]struct{}
-	holes                  []image.Rectangle
-	traps                  []image.Rectangle
-	trapsUp                bool
 	audioPlayer            *audio.Player
-	projectiles            []*shared.Projectile
-	deadProjectiles        []*shared.Projectile
 	projectileImageCache   map[shared.ProjectileType]*ebiten.Image
 	enemyImageCache        map[shared.EnemyType]*ebiten.Image
 	heartImage             *ebiten.Image
+	Sprites                []*shared.Sprite
+	enemies                []*shared.Enemy
+	colliders              []image.Rectangle
+	chests                 []image.Rectangle
+	holes                  []image.Rectangle
+	traps                  []image.Rectangle
+	projectiles            []*shared.Projectile
+	deadProjectiles        []*shared.Projectile
+	trapsUp                bool
 	debug                  bool
 }
 
