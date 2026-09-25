@@ -137,24 +137,35 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		enemy.Combat.Update()
 		enemy.Dx = 0
 		enemy.Dy = 0
-	}
+		if enemy.FollowsPlayer {
+			// make enemy follow nearest living player
+			var dx, dy, dist float64
+			var minDx, minDy float64
+			var minDist = 10000.0 // arbitrary big number
+			for _, w := range w.wizards {
+				if w.Combat.Dead {
+					continue
+				}
+				dx = w.X - enemy.X
+				dy = w.Y - enemy.Y
+				dist = math.Hypot(dx, dy)
+				if dist < minDist {
+					minDist = dist
+					minDx = dx
+					minDy = dy
+				}
+			}
 
-	for _, enemy := range w.enemies {
-		if enemy.FollowsPlayer && !w.wizard.Combat.Dead {
-			dx := w.wizard.X - enemy.X
-			dy := w.wizard.Y - enemy.Y
-			dist := math.Hypot(dx, dy)
+			closeEnough := 8.0 //8px
 
-			closeEnough := 8.0 //2px
-
-			if dist > closeEnough {
-				normX := dx / dist
-				normY := dy / dist
+			if minDist > closeEnough {
+				normX := minDx / minDist
+				normY := minDy / minDist
 
 				speed := enemy.Combat.MoveSpeed()
 
-				if enemy.Combat.MoveSpeed() > dist {
-					speed = dist
+				if enemy.Combat.MoveSpeed() > minDist {
+					speed = minDist
 				}
 
 				enemy.Dx = normX * speed
