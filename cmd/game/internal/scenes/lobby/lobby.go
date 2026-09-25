@@ -43,13 +43,14 @@ type Lobby struct {
 	mouseLeftImage     *ebiten.Image
 	mouseRightImage    *ebiten.Image
 	audioPlayer        *audio.Player
+	roomIDText         string
 	foregroundAlpha    float32
 	sceneChanging      bool
 	musicFadeFinished  bool
 	screenFadeFinished bool
 }
 
-func NewLobby(c *ws.Connection) *Lobby {
+func NewLobby(c *ws.Connection, roomID string) *Lobby {
 	bgImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, backgroundPath)
 	if err != nil {
 		log.Printf("couldn't load background: %v")
@@ -87,6 +88,7 @@ func NewLobby(c *ws.Connection) *Lobby {
 		mouseLeftImage:     mlImg,
 		mouseRightImage:    mrImg,
 		audioPlayer:        audioPlayer,
+		roomIDText:         fmt.Sprintf("Room Code: %v", roomID),
 		foregroundAlpha:    0,
 		sceneChanging:      false,
 		musicFadeFinished:  false,
@@ -243,6 +245,12 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 	textOpts.LineSpacing = 24
 	textOpts.GeoM.Translate(x/2, y/2-20)
 	text.Draw(l.lobbyImage, titleText, &text.GoTextFace{Source: shared.FontSrc, Size: 18}, &textOpts)
+	textOpts.GeoM.Reset()
+
+	x, y = shared.Stat3BottomLeft()
+	textOpts.PrimaryAlign = text.AlignStart
+	textOpts.GeoM.Translate(x/2, y/2)
+	text.Draw(l.lobbyImage, l.roomIDText, &text.GoTextFace{Source: shared.FontSrc, Size: 4}, &textOpts)
 	textOpts.GeoM.Reset()
 
 	opts.ColorScale.Reset()

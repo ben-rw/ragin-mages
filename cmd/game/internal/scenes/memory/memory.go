@@ -13,19 +13,19 @@ import (
 
 type Memory struct {
 	shared.Roster
-	Conn    *ws.Connection
-	Sprites []*shared.Sprite
+	Conn   *ws.Connection
+	roomID string
 }
 
-func NewMemory(c *ws.Connection) *Memory {
+func NewMemory(c *ws.Connection, roomID string) *Memory {
 	log.Println("scene changed to Memory")
 	return &Memory{
 		Roster: shared.Roster{
 			Players: map[string]*shared.Player{},
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
-		Conn:    c,
-		Sprites: []*shared.Sprite{},
+		Conn:   c,
+		roomID: roomID,
 	}
 }
 

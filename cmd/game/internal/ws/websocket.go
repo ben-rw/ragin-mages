@@ -91,7 +91,7 @@ func (c *Connection) readLoop() {
 }
 
 // set up websocket connection, send roomID to server, start read loop
-func ConnectToWebsocket() (*Connection, error) {
+func ConnectToWebsocket() (*Connection, string, error) {
 	ctx := context.Background()
 
 	prot, host, roomID := getClientInfo()
@@ -99,7 +99,7 @@ func ConnectToWebsocket() (*Connection, error) {
 
 	conn, _, err := websocket.Dial(ctx, wsURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	joinData := protocol.JoinRequestData{
@@ -108,12 +108,12 @@ func ConnectToWebsocket() (*Connection, error) {
 
 	msg, err := protocol.MarshalToMessage(protocol.JoinRequest, joinData)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	err = wsjson.Write(ctx, conn, msg)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	incMsgs := make(chan protocol.Message, 20)
@@ -127,7 +127,7 @@ func ConnectToWebsocket() (*Connection, error) {
 	go c.readLoop()
 	go c.writeLoop()
 
-	return c, nil
+	return c, roomID, nil
 }
 
 // use syscall/js to get url info and roomID

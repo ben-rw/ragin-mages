@@ -60,11 +60,12 @@ type WizArena struct {
 	traps                  []image.Rectangle
 	projectiles            []*shared.Projectile
 	deadProjectiles        []*shared.Projectile
+	roomID                 string
 	trapsUp                bool
 	debug                  bool
 }
 
-func NewWizArena(c MessageConn) *WizArena {
+func NewWizArena(c MessageConn, roomID string) *WizArena {
 	log.Println("scene changed to Wizards")
 
 	tilemap, err := shared.NewTilemapJSON(tilemapPath)
@@ -126,6 +127,7 @@ func NewWizArena(c MessageConn) *WizArena {
 		trapsUp:              false,
 		audioPlayer:          audioPlayer,
 		heartImage:           heartImg,
+		roomID:               roomID,
 		debug:                false,
 	}
 

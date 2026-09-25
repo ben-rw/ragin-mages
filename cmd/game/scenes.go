@@ -10,14 +10,14 @@ import (
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
-func StartNewScene(sceneType protocol.SceneType, c *ws.Connection) Scene {
+func StartNewScene(sceneType protocol.SceneType, c *ws.Connection, roomID string) Scene {
 	switch sceneType {
 	case protocol.LobbyScene:
-		return lobby.NewLobby(c)
+		return lobby.NewLobby(c, roomID)
 	case protocol.MemoryScene:
-		return memory.NewMemory(c)
+		return memory.NewMemory(c, roomID)
 	case protocol.WizardsScene:
-		return wizarena.NewWizArena(c)
+		return wizarena.NewWizArena(c, roomID)
 	default:
 		log.Println("invalid scene name")
 		return nil

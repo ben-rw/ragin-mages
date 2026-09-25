@@ -17,8 +17,9 @@ type Scene interface {
 }
 
 type Game struct {
-	Conn  *ws.Connection
-	Scene Scene
+	Conn   *ws.Connection
+	Scene  Scene
+	roomID string
 }
 
 func (g *Game) Update() error {
@@ -35,7 +36,7 @@ func (g *Game) Update() error {
 				log.Println("failed type assertion")
 				continue
 			}
-			g.Scene = StartNewScene(data.SceneType, g.Conn)
+			g.Scene = StartNewScene(data.SceneType, g.Conn, g.roomID)
 		}
 	}
 
@@ -51,14 +52,15 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 }
 
 func main() {
-	conn, err := ws.ConnectToWebsocket()
+	conn, roomID, err := ws.ConnectToWebsocket()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	game := &Game{
-		Conn:  conn,
-		Scene: lobby.NewLobby(conn),
+		Conn:   conn,
+		Scene:  lobby.NewLobby(conn, roomID),
+		roomID: roomID,
 	}
 
 	if err := ebiten.RunGame(game); err != nil {
