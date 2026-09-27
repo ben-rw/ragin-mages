@@ -125,8 +125,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		tilemapJSON:          tilemap,
 		tiles:                tiles,
 		camera:               nil,
-		colliders:            []image.Rectangle{},
-		chests:               make([]image.Rectangle, 8), // 8 chests on the map
+		colliders:            make([]image.Rectangle, 2092), //2091 holes on map
+		chests:               make([]image.Rectangle, 8),    // 8 chests on the map
 		openedChests:         make(map[OpenedChest]struct{}, 8),
 		holes:                make([]image.Rectangle, 2092), //2091 holes on map
 		traps:                make([]image.Rectangle, 84),   //traps on map
@@ -170,8 +170,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 func (w *WizArena) NewStaticTilemapTrapsUp() *ebiten.Image {
 	var opts ebiten.DrawImageOptions
 	img := ebiten.NewImage(
-		w.tilemapJSON.Layers[0].Width*16.0,
-		w.tilemapJSON.Layers[0].Height*16.0,
+		w.tilemapJSON.Layers[0].Width*shared.TileSize,
+		w.tilemapJSON.Layers[0].Height*shared.TileSize,
 	)
 
 	for _, layer := range w.tilemapJSON.Layers {
@@ -205,8 +205,8 @@ func (w *WizArena) NewStaticTilemapTrapsUp() *ebiten.Image {
 func (w *WizArena) NewStaticTilemapTrapsDown() *ebiten.Image {
 	var opts ebiten.DrawImageOptions
 	img := ebiten.NewImage(
-		w.tilemapJSON.Layers[0].Width*16.0,
-		w.tilemapJSON.Layers[0].Height*16.0,
+		w.tilemapJSON.Layers[0].Width*shared.TileSize,
+		w.tilemapJSON.Layers[0].Height*shared.TileSize,
 	)
 
 	for _, layer := range w.tilemapJSON.Layers {
@@ -264,6 +264,14 @@ func (w *WizArena) TileBounds() {
 					x+shared.TileSize,
 					y+shared.TileSize,
 				))
+				if id != 387 {
+					w.colliders = append(w.colliders, image.Rect(
+						x,
+						y,
+						x+shared.TileSize,
+						y+shared.TileSize,
+					))
+				}
 			} else if layer.Name == "traps_up" {
 				w.traps = append(w.traps, image.Rect(
 					x,

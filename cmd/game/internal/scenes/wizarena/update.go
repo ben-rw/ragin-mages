@@ -134,6 +134,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		if w.wizard.Combat.IFrames() > 0 {
 			w.wizard.IFrameFlicker()
 		}
+		w.wizard.Noclip = false
 
 	}
 
@@ -210,6 +211,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
 				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
+				w.wizard.Noclip = true
 
 				if math.Abs(normX) > math.Abs(normY) {
 					if normX > 0 {
@@ -317,6 +319,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 					w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
 					w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+					w.wizard.Noclip = true
 
 					if wizard.Combat.Health() <= 0 {
 						// player who last hit the player gets a stat boost
@@ -432,12 +435,10 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 
 		enemy.X += enemy.Dx
-		// shared.CheckCollisionHorizontal(enemy.Sprite, w.colliders)
 		if !enemy.Noclip {
 			shared.CheckCollisionHorizontal(enemy.Sprite, w.holes)
 		}
 		enemy.Y += enemy.Dy
-		// shared.CheckCollisionVertical(enemy.Sprite, w.colliders)
 		if !enemy.Noclip {
 			shared.CheckCollisionVertical(enemy.Sprite, w.holes)
 		}
@@ -446,11 +447,15 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// check player collisions
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	// shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+	if !w.wizard.Noclip {
+		shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+	}
 
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
-	// shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+	if !w.wizard.Noclip {
+		shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+	}
 
 	w.CheckChestCollisions()
 

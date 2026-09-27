@@ -208,18 +208,18 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			)
 		}
 
-		for _, hole := range w.holes {
-			vector.StrokeRect(
-				screen,
-				float32(hole.Min.X)+float32(w.camera.X),
-				float32(hole.Min.Y)+float32(w.camera.Y),
-				float32(hole.Dx()),
-				float32(hole.Dy()),
-				1.0,
-				color.RGBA{0, 0, 255, 255},
-				false,
-			)
-		}
+		// for _, hole := range w.holes {
+		// 	vector.StrokeRect(
+		// 		screen,
+		// 		float32(hole.Min.X)+float32(w.camera.X),
+		// 		float32(hole.Min.Y)+float32(w.camera.Y),
+		// 		float32(hole.Dx()),
+		// 		float32(hole.Dy()),
+		// 		1.0,
+		// 		color.RGBA{0, 0, 255, 255},
+		// 		false,
+		// 	)
+		// }
 
 		for _, spike := range w.traps {
 			vector.StrokeRect(
@@ -234,18 +234,18 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			)
 		}
 
-		// for _, collider := range w.colliders {
-		// 	vector.StrokeRect(
-		// 		screen,
-		// 		float32(collider.Min.X)+float32(w.camera.X),
-		// 		float32(collider.Min.Y)+float32(w.camera.Y),
-		// 		float32(collider.Dx()),
-		// 		float32(collider.Dy()),
-		// 		1.0,
-		// 		color.RGBA{255, 0, 0, 255},
-		// 		false,
-		// 	)
-		// 	opts.GeoM.Reset()
-		// }
+		for _, collider := range w.colliders {
+			vector.StrokeRect(
+				screen,
+				float32(collider.Min.X)+float32(w.camera.X),
+				float32(collider.Min.Y)+float32(w.camera.Y),
+				float32(collider.Dx()),
+				float32(collider.Dy()),
+				1.0,
+				color.RGBA{255, 0, 0, 255},
+				false,
+			)
+			opts.GeoM.Reset()
+		}
 	}
 }
