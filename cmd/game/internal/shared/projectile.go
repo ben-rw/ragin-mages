@@ -50,6 +50,7 @@ type Projectile struct {
 	CenterX       float64
 	CenterY       float64
 	TicksToLive   int
+	ReflectCount  int
 	Type          ProjectileType
 }
 
@@ -65,13 +66,14 @@ func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileTy
 	return imgs, nil
 }
 
-var ProjectileAnimations = map[EntityState]*animations.Animation{
-	FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
-}
-
 var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
 
 func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
+
+	ProjectileAnimations := map[EntityState]*animations.Animation{
+		FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
+	}
+
 	vX := cursorX - w.X
 	vY := cursorY - w.Y
 	vlen := math.Hypot(vX, vY)
@@ -93,8 +95,8 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 			img,
 			w.X+HalfTile+normX*HalfTile-normX*HalfTile*w.Combat.ProjectileScale(),
 			w.Y+HalfTile+normY*HalfTile-normY*HalfTile*w.Combat.ProjectileScale(),
-			normX*w.Combat.projectileSpeed,
-			normY*w.Combat.projectileSpeed,
+			normX*w.Combat.ProjectileSpeed(),
+			normY*w.Combat.ProjectileSpeed(),
 			ProjectileSpriteSheet,
 			ProjectileAnimations,
 			ProjectileAnimations[FireballFly],
@@ -117,6 +119,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 		CenterX:       FireballWidth / 2,
 		CenterY:       FireballHeight / 2,
 		TicksToLive:   w.Combat.AttackCooldown(),
+		ReflectCount:  0,
 		AlreadyHit:    make(map[any]struct{}),
 		Type:          projectileType,
 	}
@@ -126,4 +129,8 @@ func (p *Projectile) Update() {
 	p.X += p.Dx
 	p.Y += p.Dy
 	p.TicksToLive -= 1
+}
+
+func (p *Projectile) Despawn() {
+	p.TicksToLive = 0
 }

@@ -61,6 +61,21 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
+	for _, wizard := range w.wizards {
+		if wizard.Reflect.ActiveAnimation != nil {
+			opts.GeoM.Translate(-shared.ReflectWidth/2, -shared.ReflectHeight/2)
+			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
+			opts.GeoM.Translate(w.camera.X, w.camera.Y)
+
+			screen.DrawImage(
+				w.reflectFrameCache[0][wizard.Reflect.ActiveAnimation.Frame()],
+				&opts,
+			)
+
+			opts.GeoM.Reset()
+		}
+	}
+
 	for _, enemy := range w.enemies {
 		opts.GeoM.Translate(enemy.X, enemy.Y)
 
