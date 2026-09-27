@@ -238,7 +238,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	cY -= int(w.camera.Y)
 
 	// spawn new fireballs
-	if leftClicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
+	if leftClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Attack() {
 		projectile := w.wizard.ShootProjectile(
 			w.projectileImageCache[shared.Fireball],
 			float64(cX),
@@ -272,9 +272,16 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
+	// spawn new reflects
+	if rightClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Reflect() {
+		w.wizard.ReflectAnim = true
+		w.wizard.Reflect.Active = true
+	}
+
 	// check fireball collisions
 	for i, projectile := range w.projectiles {
 		projectile.Update()
+		log.Println(projectile.Caster.Data.Name)
 		for _, wizard := range w.wizards {
 			if wizard == projectile.Caster {
 				continue
@@ -286,9 +293,9 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				continue
 			}
 
-			var wizardRadius float64
-			if wizard.Combat.Reflect() {
-				wizardRadius = wizard.HurtboxRadius * 2
+			var wizardRadius = w.wizard.HurtboxRadius
+			if wizard.Combat.Reflecting() {
+				wizardRadius *= 2
 			}
 
 			if shared.CheckCollisionCircle(
@@ -299,11 +306,11 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				wizard.Y+shared.HalfTile,
 				wizardRadius,
 			) {
-				if rightClicked && wizard.Combat.Reflecting() && !wizard.Combat.Dead {
+				if wizard.Combat.Reflecting() {
 					wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
 					wizard.Combat.ResetReflectCooldown()
 				} else if wizard.Data.Name == "CPU" {
-					wizard.ReflectProjectile(projectile, 0, 0)
+					wizard.ReflectProjectile(projectile, 200, 100)
 				} else {
 					wizard.Combat.Damage(projectile.Damage)
 					projectile.AlreadyHit[wizard] = struct{}{}
@@ -488,15 +495,12 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.ActiveAnimation.Update()
 
 	for _, wizard := range w.wizards {
-		if wizard.Combat.Reflecting() {
-			wizard.Reflect.ActiveAnimation = shared.ReflectAnimations[shared.ReflectCircle]
-		}
-		if wizard.Reflect.ActiveAnimation == shared.ReflectAnimations[shared.ReflectCircle] {
-			wizard.Reflect.CheckReflectAnimation()
-			log.Println(wizard.Reflect.ActiveAnimation, wizard.Reflect.ActiveAnimation.Over)
+		log.Println(w.wizard.Data.Name, w.wizard.Combat.Reflecting())
+		wizard.Reflect.ActiveAnimation = wizard.Reflect.GetActiveAnimation()
+
+		if wizard.Reflect.ActiveAnimation != nil {
 			wizard.Reflect.ActiveAnimation.Update()
-		}
-		if wizard.Reflect.ActiveAnimation != nil && !wizard.Reflect.ActiveAnimation.Over {
+
 			wizard.Reflect.X = wizard.X + shared.HalfTile
 			wizard.Reflect.Y = wizard.Y + shared.HalfTile
 		}

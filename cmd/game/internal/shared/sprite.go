@@ -70,7 +70,7 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 	}
 	if s.DieAnim {
 		anim = s.Animations[Die]
-		if s.ActiveAnimation.Over {
+		if anim.Over {
 			anim.Over = false
 			s.DieAnim = false
 			return &animations.Animation{}
@@ -80,9 +80,9 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 	}
 	if s.ReflectAnim {
 		anim = s.Animations[Reflecting]
-		if s.ActiveAnimation.Over {
+		if anim.Over {
 			anim.Over = false
-			s.DieAnim = false
+			s.ReflectAnim = false
 			return &animations.Animation{}
 		} else {
 			return anim

@@ -16,6 +16,7 @@ const (
 	DefaultIFrames           = 90
 	DefaultFlickerFrames     = 5
 	DefaultHurtboxRadius     = 8
+	ReflectFrames            = 15
 	EnemyMoveSpeed           = 1.5
 	EnemyHealth              = 2.0
 	EnemyAttackPower         = 1.0
@@ -23,6 +24,7 @@ const (
 	EnemyKnockBack           = 1.2
 	KillEnemyBoost           = 1.0
 	KillPlayerBoost          = 1.0
+	ReflectBoost             = 1.0
 	ChestBoost               = 3.0
 	WinRoundBoost            = 10.0
 	TrapDamage               = 1.0
@@ -163,6 +165,7 @@ type WizardCombat struct {
 	timeSinceAttack  int
 	timeSinceReflect int
 	iFrames          int
+	reflectFrames    int
 	Dead             bool
 	Fell             bool
 	reflecting       bool
@@ -201,6 +204,7 @@ func (wc *WizardCombat) Attack() bool {
 func (wc *WizardCombat) Reflect() bool {
 	if wc.timeSinceReflect >= int(wc.reflectCooldown) {
 		wc.reflecting = true
+		wc.reflectFrames = ReflectFrames
 		wc.timeSinceReflect = 0
 		return true
 	}
@@ -220,6 +224,12 @@ func (wc *WizardCombat) Update() {
 	wc.attacking = false
 	wc.timeSinceAttack += 1
 	wc.timeSinceReflect += 1
+	if wc.reflectFrames > 0 {
+		wc.reflectFrames -= 1
+		if wc.reflectFrames <= 0 {
+			wc.reflecting = false
+		}
+	}
 	if wc.iFrames > 0 {
 		wc.iFrames -= 1
 	}
@@ -279,6 +289,7 @@ func NewWizard(player *Player) *WizardPlayer {
 			timeSinceAttack:  DefaultAttackCooldown,  // set timeSinceAttack so player can attack immediately
 			timeSinceReflect: DefaultReflectCooldown, // set timeSinceReflect so player can reflect immediately
 			iFrames:          0,
+			reflectFrames:    0,
 			Dead:             false,
 			Fell:             false,
 			reflecting:       false,

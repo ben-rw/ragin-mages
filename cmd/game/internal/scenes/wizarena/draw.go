@@ -63,6 +63,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 	for _, wizard := range w.wizards {
 		if wizard.Reflect.ActiveAnimation != nil {
+			opts.GeoM.Translate(-shared.ReflectWidth/2, -shared.ReflectHeight/2)
 			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
 			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
