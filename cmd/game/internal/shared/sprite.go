@@ -19,6 +19,8 @@ const (
 	AttackingUp
 	AttackingLeft
 	AttackingRight
+	Reflecting
+	ReflectCircle
 	Die
 	FireballFly
 )
@@ -34,6 +36,7 @@ type Sprite struct {
 	Noclip          bool
 	JoinAnim        bool
 	DieAnim         bool
+	ReflectAnim     bool
 	AttackAnim      bool
 }
 
@@ -60,13 +63,23 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 		if anim.Over {
 			anim.Over = false
 			s.JoinAnim = false
-			return s.Animations[Idle]
+			return &animations.Animation{}
 		} else {
 			return anim
 		}
 	}
 	if s.DieAnim {
 		anim = s.Animations[Die]
+		if s.ActiveAnimation.Over {
+			anim.Over = false
+			s.DieAnim = false
+			return &animations.Animation{}
+		} else {
+			return anim
+		}
+	}
+	if s.ReflectAnim {
+		anim = s.Animations[Reflecting]
 		if s.ActiveAnimation.Over {
 			anim.Over = false
 			s.DieAnim = false

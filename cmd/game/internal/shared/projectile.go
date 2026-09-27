@@ -93,8 +93,8 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 			img,
 			w.X+HalfTile+normX*HalfTile-normX*HalfTile*w.Combat.ProjectileScale(),
 			w.Y+HalfTile+normY*HalfTile-normY*HalfTile*w.Combat.ProjectileScale(),
-			normX*w.Combat.projectileSpeed,
-			normY*w.Combat.projectileSpeed,
+			normX*w.Combat.ProjectileSpeed(),
+			normY*w.Combat.ProjectileSpeed(),
 			ProjectileSpriteSheet,
 			ProjectileAnimations,
 			ProjectileAnimations[FireballFly],
@@ -126,4 +126,8 @@ func (p *Projectile) Update() {
 	p.X += p.Dx
 	p.Y += p.Dy
 	p.TicksToLive -= 1
+}
+
+func (p *Projectile) Despawn() {
+	p.TicksToLive = 0
 }

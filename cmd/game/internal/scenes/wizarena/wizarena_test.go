@@ -9,7 +9,7 @@ import (
 )
 
 func testSceneInit() *WizArena {
-	w := NewWizArena(nil)
+	w := NewWizArena(nil, "test")
 	w.wizard = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{}, 0))
 
 	pCount := 12

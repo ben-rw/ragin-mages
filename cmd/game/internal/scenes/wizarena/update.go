@@ -31,6 +31,11 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				}
 			}
 
+			// dummy test player
+			w.wizards["CPU"] = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{Name: "CPU"}, 7))
+			w.wizards["CPU"].X = 100
+			w.wizards["CPU"].Y = 100
+
 			w.wizard = w.wizards[w.Player.Data.Name]
 			w.statText = w.NewStatText()
 
@@ -226,6 +231,47 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	deadEnemies := make(map[int]struct{})
 	deadProjectiles := make(map[int]struct{})
 
+	leftClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
+	rightClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
+	cX, cY := ebiten.CursorPosition()
+	cX -= int(w.camera.X)
+	cY -= int(w.camera.Y)
+
+	// spawn new fireballs
+	if leftClicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
+		projectile := w.wizard.ShootProjectile(
+			w.projectileImageCache[shared.Fireball],
+			float64(cX),
+			float64(cY),
+			shared.Fireball,
+		)
+		w.projectiles = append(w.projectiles, projectile)
+
+		// figure out attack direction for animation
+		vX := float64(cX) - w.wizard.X
+		vY := float64(cY) - w.wizard.Y
+		vlen := math.Hypot(vX, vY)
+		if vlen == 0 {
+			projectile.Despawn() // prevents division by zero
+		}
+		normX := vX / vlen
+		normY := vY / vlen
+
+		if math.Abs(normX) > math.Abs(normY) {
+			if normX > 0 {
+				w.wizard.AttackDirection = shared.AttackingRight
+			} else {
+				w.wizard.AttackDirection = shared.AttackingLeft
+			}
+		} else {
+			if normY > 0 {
+				w.wizard.AttackDirection = shared.AttackingDown
+			} else {
+				w.wizard.AttackDirection = shared.AttackingUp
+			}
+		}
+	}
+
 	// check fireball collisions
 	for i, projectile := range w.projectiles {
 		projectile.Update()
@@ -240,25 +286,38 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				continue
 			}
 
+			var wizardRadius float64
+			if wizard.Combat.Reflect() {
+				wizardRadius = wizard.HurtboxRadius * 2
+			}
+
 			if shared.CheckCollisionCircle(
 				projectile.X+projectile.HitboxOffsetX,
 				projectile.Y+projectile.HitboxOffsetY,
 				projectile.ScaledRadius,
 				wizard.X+shared.HalfTile,
 				wizard.Y+shared.HalfTile,
-				wizard.HurtboxRadius,
+				wizardRadius,
 			) {
-				wizard.Combat.Damage(projectile.Damage)
-				projectile.AlreadyHit[wizard] = struct{}{}
+				if rightClicked && wizard.Combat.Reflecting() && !wizard.Combat.Dead {
+					wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
+					wizard.Combat.ResetReflectCooldown()
+				} else if wizard.Data.Name == "CPU" {
+					wizard.ReflectProjectile(projectile, 0, 0)
+				} else {
+					wizard.Combat.Damage(projectile.Damage)
+					projectile.AlreadyHit[wizard] = struct{}{}
 
-				w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-				w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+					w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+					w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
 
-				if wizard.Combat.Health() <= 0 {
-					// player who last hit the player gets a stat boost
-					projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost)
-					w.statText = w.NewStatText()
+					if wizard.Combat.Health() <= 0 {
+						// player who last hit the player gets a stat boost
+						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost)
+						w.statText = w.NewStatText()
+					}
 				}
+
 			}
 		}
 		for i, enemy := range w.enemies {
@@ -314,45 +373,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 		if projectile.TicksToLive < 1 {
 			deadProjectiles[i] = struct{}{}
-		}
-	}
-
-	// spawn new fireballs
-	clicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-	cX, cY := ebiten.CursorPosition()
-	cX -= int(w.camera.X)
-	cY -= int(w.camera.Y)
-
-	if clicked && w.wizard.Combat.Attack() && !w.wizard.Combat.Dead {
-		projectile := w.wizard.ShootProjectile(
-			w.projectileImageCache[shared.Fireball],
-			float64(cX),
-			float64(cY),
-			shared.Fireball,
-		)
-		w.projectiles = append(w.projectiles, projectile)
-
-		vX := float64(cX) - w.wizard.X
-		vY := float64(cY) - w.wizard.Y
-		vlen := math.Hypot(vX, vY)
-		if vlen == 0 {
-			vlen = 0.01 // prevents division by zero
-		}
-		normX := vX / vlen
-		normY := vY / vlen
-
-		if math.Abs(normX) > math.Abs(normY) {
-			if normX > 0 {
-				w.wizard.AttackDirection = shared.AttackingRight
-			} else {
-				w.wizard.AttackDirection = shared.AttackingLeft
-			}
-		} else {
-			if normY > 0 {
-				w.wizard.AttackDirection = shared.AttackingDown
-			} else {
-				w.wizard.AttackDirection = shared.AttackingUp
-			}
 		}
 	}
 
@@ -466,6 +486,21 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
 	w.wizard.ActiveAnimation.Update()
+
+	for _, wizard := range w.wizards {
+		if wizard.Combat.Reflecting() {
+			wizard.Reflect.ActiveAnimation = shared.ReflectAnimations[shared.ReflectCircle]
+		}
+		if wizard.Reflect.ActiveAnimation == shared.ReflectAnimations[shared.ReflectCircle] {
+			wizard.Reflect.CheckReflectAnimation()
+			log.Println(wizard.Reflect.ActiveAnimation, wizard.Reflect.ActiveAnimation.Over)
+			wizard.Reflect.ActiveAnimation.Update()
+		}
+		if wizard.Reflect.ActiveAnimation != nil && !wizard.Reflect.ActiveAnimation.Over {
+			wizard.Reflect.X = wizard.X + shared.HalfTile
+			wizard.Reflect.Y = wizard.Y + shared.HalfTile
+		}
+	}
 
 	for _, enemy := range w.enemies {
 		if enemy.Combat.Attacking() {

@@ -40,6 +40,7 @@ type WizArena struct {
 	wizardFrameCache       map[int][]*ebiten.Image
 	enemyFrameCache        map[shared.EnemyType][]*ebiten.Image
 	projectileFrameCache   map[shared.ProjectileType][]*ebiten.Image
+	reflectFrameCache      map[int][]*ebiten.Image
 	statText               map[Stat]string
 	statTextImageCache     map[Stat]*ebiten.Image
 	tilemapJSON            *shared.TilemapJSON
@@ -52,7 +53,7 @@ type WizArena struct {
 	projectileImageCache   map[shared.ProjectileType]*ebiten.Image
 	enemyImageCache        map[shared.EnemyType]*ebiten.Image
 	heartImage             *ebiten.Image
-	Sprites                []*shared.Sprite
+	reflectImage           *ebiten.Image
 	enemies                []*shared.Enemy
 	colliders              []image.Rectangle
 	chests                 []image.Rectangle
@@ -93,9 +94,14 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		log.Printf("couldn't load image: %v", err)
 	}
 
+	reflectImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, shared.ReflectPath)
+	if err != nil {
+		log.Printf("couldn't load image: %v", err)
+	}
+
 	enemyImgCache, err := shared.NewEnemyImageCache([]shared.EnemyType{shared.Skeleton})
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("couldn't load enemy image cache: $v", err)
 	}
 
 	w := &WizArena{
@@ -104,13 +110,13 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
 		Conn:                 c,
-		Sprites:              []*shared.Sprite{},
 		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
 		enemies:              make([]*shared.Enemy, 0, 32),                                   // 16 enemies spawn at at time, doubled for headroom
 		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
 		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
 		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
 		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             //1 projectile type
+		reflectFrameCache:    make(map[int][]*ebiten.Image, 1),                               //1 reflect img
 		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles
 		deadProjectiles:      make([]*shared.Projectile, 0, 16),                              // alive or dead at one time
@@ -127,6 +133,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		trapsUp:              false,
 		audioPlayer:          audioPlayer,
 		heartImage:           heartImg,
+		reflectImage:         reflectImg,
 		roomID:               roomID,
 		debug:                false,
 	}
@@ -138,6 +145,10 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 	w.projectileFrameCache[shared.Fireball] = spritesheet.LoadFrames(
 		shared.ProjectileSpriteSheet,
 		projectileImgCache[shared.Fireball],
+	)
+	w.reflectFrameCache[0] = spritesheet.LoadFrames(
+		shared.ReflectSpriteSheet,
+		reflectImg,
 	)
 	for i, path := range shared.PlayerSpriteIndex {
 		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, path)

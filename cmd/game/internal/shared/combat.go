@@ -12,6 +12,7 @@ const (
 	DefaultProjectileScale   = 0.5
 	DefaultPlayerKnockback   = 3.0
 	DefaultAttackCooldown    = 60 //determines how many ticks projectile will persist
+	DefaultReflectCooldown   = 180
 	DefaultIFrames           = 90
 	DefaultFlickerFrames     = 5
 	DefaultHurtboxRadius     = 8
@@ -157,11 +158,14 @@ func NewEnemyCombat(attackCooldown int, health, attackPower, moveSpeed, projecti
 
 type WizardCombat struct {
 	*BasicCombat
-	attackCooldown  int
-	timeSinceAttack int
-	Dead            bool
-	Fell            bool
-	iFrames         int
+	attackCooldown   int
+	reflectCooldown  int
+	timeSinceAttack  int
+	timeSinceReflect int
+	iFrames          int
+	Dead             bool
+	Fell             bool
+	reflecting       bool
 }
 
 func (wc *WizardCombat) AttackCooldown() int {
@@ -194,9 +198,28 @@ func (wc *WizardCombat) Attack() bool {
 	return false
 }
 
+func (wc *WizardCombat) Reflect() bool {
+	if wc.timeSinceReflect >= int(wc.reflectCooldown) {
+		wc.reflecting = true
+		wc.timeSinceReflect = 0
+		return true
+	}
+	return false
+}
+
+func (wc *WizardCombat) Reflecting() bool {
+	return wc.reflecting
+}
+
+// reset cooldown on successful reflect
+func (wc *WizardCombat) ResetReflectCooldown() {
+	wc.timeSinceReflect = DefaultReflectCooldown
+}
+
 func (wc *WizardCombat) Update() {
 	wc.attacking = false
 	wc.timeSinceAttack += 1
+	wc.timeSinceReflect += 1
 	if wc.iFrames > 0 {
 		wc.iFrames -= 1
 	}
@@ -214,6 +237,7 @@ func (wc *WizardCombat) IFrames() int {
 type WizardPlayer struct {
 	*Player
 	Combat        *WizardCombat
+	Reflect       *Reflect
 	FlickerFrames int
 	HurtboxRadius float64
 }
@@ -242,7 +266,7 @@ func NewWizard(player *Player) *WizardPlayer {
 	return &WizardPlayer{
 		player,
 		&WizardCombat{
-			NewBasicCombat(
+			BasicCombat: NewBasicCombat(
 				DefaultPlayerHealth,
 				DefaultPlayerAttackPower,
 				DefaultPlayerMoveSpeed,
@@ -250,12 +274,16 @@ func NewWizard(player *Player) *WizardPlayer {
 				DefaultProjectileScale,
 				DefaultPlayerKnockback,
 			),
-			DefaultAttackCooldown,
-			60, // set timeSinceAttack so player can attack immediately
-			false,
-			false,
-			0,
+			attackCooldown:   DefaultAttackCooldown,
+			reflectCooldown:  DefaultReflectCooldown,
+			timeSinceAttack:  DefaultAttackCooldown,  // set timeSinceAttack so player can attack immediately
+			timeSinceReflect: DefaultReflectCooldown, // set timeSinceReflect so player can reflect immediately
+			iFrames:          0,
+			Dead:             false,
+			Fell:             false,
+			reflecting:       false,
 		},
+		NewReflect(player.X, player.Y),
 		DefaultFlickerFrames,
 		DefaultHurtboxRadius,
 	}
