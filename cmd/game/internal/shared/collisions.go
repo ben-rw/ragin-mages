@@ -2,19 +2,27 @@ package shared
 
 import "image"
 
+const (
+	collisionBoxLeft   = 7
+	collisionBoxRight  = 9
+	collisionBoxTop    = 13
+	collisionBoxBottom = 15
+)
+
 func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool {
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
-			int(sprite.X),
-			int(sprite.Y),
-			int(sprite.X)+16,
-			int(sprite.Y)+16,
+			// puts hitbox close to feet
+			int(sprite.X)+collisionBoxLeft,
+			int(sprite.Y)+collisionBoxTop,
+			int(sprite.X)+collisionBoxRight,
+			int(sprite.Y)+collisionBoxBottom,
 		)) {
 			if sprite.Noclip == false {
 				if sprite.Dx > 0.0 {
-					sprite.X = float64(collider.Min.X) - TileSize
+					sprite.X = float64(collider.Min.X) - collisionBoxRight
 				} else if sprite.Dx < 0.0 {
-					sprite.X = float64(collider.Max.X)
+					sprite.X = float64(collider.Max.X) - collisionBoxLeft
 				}
 			}
 			return true
@@ -26,16 +34,17 @@ func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool 
 func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) bool {
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
-			int(sprite.X),
-			int(sprite.Y),
-			int(sprite.X)+16,
-			int(sprite.Y)+16,
+			// puts hitbox close to feet
+			int(sprite.X)+collisionBoxLeft,
+			int(sprite.Y)+collisionBoxTop,
+			int(sprite.X)+collisionBoxRight,
+			int(sprite.Y)+collisionBoxBottom,
 		)) {
 			if sprite.Noclip == false {
 				if sprite.Dy > 0.0 {
-					sprite.Y = float64(collider.Min.Y) - TileSize
+					sprite.Y = float64(collider.Min.Y) - collisionBoxBottom
 				} else if sprite.Dy < 0.0 {
-					sprite.Y = float64(collider.Max.Y)
+					sprite.Y = float64(collider.Max.Y) - collisionBoxTop
 				}
 			}
 			return true
