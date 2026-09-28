@@ -66,6 +66,10 @@ func Stat1BottomLeft() (float64, float64) {
 	return ScreenWidth * 0.01, ScreenHeight * 0.86
 }
 
+func Stat0BottomLeft() (float64, float64) {
+	return ScreenWidth * 0.01, ScreenHeight * 0.81
+}
+
 // duplicate of TopLeftFurther
 func Heart1TopLeft() (float64, float64) {
 	return ScreenWidth * 0.01, ScreenHeight * 0.01

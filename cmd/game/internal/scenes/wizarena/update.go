@@ -323,7 +323,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 
 					if wizard.Combat.Health() <= 0 {
 						// player who last hit the player gets a stat boost
-						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost)
+						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
 						w.statText = w.NewStatText()
 					}
 				}
@@ -352,7 +352,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				if enemy.Combat.Health() <= 0 {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
-					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost)
+					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
 					w.statText = w.NewStatText()
 				}
 			}

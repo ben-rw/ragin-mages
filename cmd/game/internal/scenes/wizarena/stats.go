@@ -15,13 +15,17 @@ const (
 	ProjectileScale = iota
 	ProjectileSpeed
 	Knockback
+	AttackCooldown
 )
 
 func (w *WizArena) NewStatText() map[Stat]string {
 	return map[Stat]string{
-		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()),
-		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()),
-		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()),
+		// display stats to player starting at 1 and scaling by number of boosts applied to each stat
+		// to let player see how much they've increased each stat, rather than actual internal stat numbers
+		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*2-5),
+		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*4-1),
+		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*2-5),
+		AttackCooldown:  fmt.Sprintf("Attack Cooldown: %.2fs", float64(w.wizard.Combat.AttackCooldown())/60.0),
 	}
 }
 
@@ -45,7 +49,7 @@ var (
 		fontFace8,
 	)
 	instructionText2Img = NewTextLabel(
-		"Get boosts from chests, skeletons, and your friends!",
+		"Get POWER from chests, skeletons, and your friends!",
 		fontFace8,
 	)
 	deadTextImg = NewTextLabel(

@@ -136,6 +136,11 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	}
 
 	textOpts.PrimaryAlign = text.AlignStart
+	textOpts.GeoM.Translate(shared.Stat0BottomLeft())
+	text.Draw(screen, w.statText[AttackCooldown], fontFace8, &textOpts)
+	textOpts.GeoM.Reset()
+
+	textOpts.PrimaryAlign = text.AlignStart
 	textOpts.GeoM.Translate(shared.Stat1BottomLeft())
 	text.Draw(screen, w.statText[ProjectileScale], fontFace8, &textOpts)
 	textOpts.GeoM.Reset()

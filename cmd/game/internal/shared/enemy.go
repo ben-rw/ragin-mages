@@ -65,6 +65,6 @@ func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y f
 		Combat:        NewEnemyCombat(EnemyAttackCooldown, EnemyHealth, EnemyAttackPower, 0, 0, 0, EnemyKnockBack),
 		Type:          Skeleton,
 		FollowsPlayer: followsPlayer,
-		HurtboxRadius: DefaultHurtboxRadius,
+		HurtboxRadius: HurtboxRadius,
 	}
 }

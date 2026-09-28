@@ -5,30 +5,46 @@ import (
 )
 
 const (
-	DefaultPlayerHealth      = 3.0
-	DefaultPlayerAttackPower = 1.0
-	DefaultPlayerMoveSpeed   = 2.0
-	DefaultProjectileSpeed   = 3.0
-	DefaultProjectileScale   = 0.5
-	DefaultPlayerKnockback   = 3.0
-	DefaultAttackCooldown    = 60 //determines how many ticks projectile will persist
-	DefaultReflectCooldown   = 180
-	DefaultIFrames           = 90
-	DefaultFlickerFrames     = 5
-	DefaultHurtboxRadius     = 8
-	ReflectFrames            = 15
-	EnemyMoveSpeed           = 1.5
-	EnemyHealth              = 2.0
-	EnemyAttackPower         = 1.0
-	EnemyAttackCooldown      = 60
-	EnemyKnockBack           = 1.2
-	KillEnemyBoost           = 1.0
-	KillPlayerBoost          = 1.0
-	ReflectBoost             = 1.0
-	ChestBoost               = 3.0
-	WinRoundBoost            = 10.0
-	TrapDamage               = 1.0
+	PlayerHealth      = 3.0
+	PlayerAttackPower = 1.0
+	PlayerMoveSpeed   = 2.0
+	ReflectCooldown   = 180
+	IFrames           = 90
+	FlickerFrames     = 5
+	HurtboxRadius     = 8
+	ReflectFrames     = 15
 )
+
+// boostable stats
+const (
+	ProjectileSpeed = 3.0
+	ProjectileScale = 0.5
+	PlayerKnockback = 3.0
+	AttackCooldown  = 60 //determines how many ticks projectile will persist
+	PSpeedMult      = .5
+	PScaleMult      = .25
+	KnockbackMult   = .5
+	AttackCDMult    = 2.0
+	StandardMult    = 0.0
+)
+
+const (
+	KillEnemyBoost   = 1.0
+	KillPlayerBoost  = 1.0
+	ChestBoost       = 3.0
+	WinRoundBoost    = 10.0
+	StatTheftDivisor = 4
+)
+
+const (
+	EnemyMoveSpeed      = 1.5
+	EnemyHealth         = 2.0
+	EnemyAttackPower    = 1.0
+	EnemyAttackCooldown = 60
+	EnemyKnockBack      = 1.2
+)
+
+const TrapDamage = 1.0
 
 type Combat interface {
 	Health() int
@@ -96,24 +112,33 @@ func (b *BasicCombat) ProjectileSpeed() float64 {
 	return b.projectileSpeed
 }
 
-func (b *BasicCombat) BoostProjectileSpeed(amount float64) {
-	b.projectileSpeed += amount
+func (b *BasicCombat) BoostProjectileSpeed(amount float64, mult float64) {
+	if mult == StandardMult {
+		mult = PSpeedMult
+	}
+	b.projectileSpeed += amount * mult
 }
 
 func (b *BasicCombat) ProjectileScale() float64 {
 	return b.projectileScale
 }
 
-func (b *BasicCombat) BoostProjectileScale(amount float64) {
-	b.projectileScale += amount / 2
+func (b *BasicCombat) BoostProjectileScale(amount float64, mult float64) {
+	if mult == StandardMult {
+		mult = PScaleMult
+	}
+	b.projectileScale += amount * mult
 }
 
 func (b *BasicCombat) Knockback() float64 {
 	return b.knockback
 }
 
-func (b *BasicCombat) BoostKnockback(amount float64) {
-	b.knockback += amount
+func (b *BasicCombat) BoostKnockback(amount float64, mult float64) {
+	if mult == StandardMult {
+		mult = KnockbackMult
+	}
+	b.knockback += amount * mult
 }
 
 func NewBasicCombat(health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *BasicCombat {
@@ -175,21 +200,28 @@ func (wc *WizardCombat) AttackCooldown() int {
 	return wc.attackCooldown
 }
 
-func (wc *WizardCombat) BoostAttackCooldown(amount int) {
-	wc.attackCooldown -= amount
+func (wc *WizardCombat) BoostAttackCooldown(amount int, mult float64) {
+	if mult == StandardMult {
+		mult = AttackCDMult
+	}
+	wc.attackCooldown -= amount * int(mult)
+	if wc.attackCooldown < 12 { // limit projectile spawning to ~5/sec
+		wc.attackCooldown = 12 // 12/60 gives a nice even .2 as the attackCD cap
+	}
 }
 
-func (wc *WizardCombat) RandomBoost(amount float64) {
-	boosts := map[int]func(amount float64){
+// pass StandardMult unless stats have already had their corresponding mult applied
+func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
+	boosts := map[int]func(amount float64, mult float64){
 		0: wc.BoostProjectileSpeed,
 		1: wc.BoostProjectileScale,
 		2: wc.BoostKnockback,
-		3: func(amount float64) {
-			wc.BoostAttackCooldown(int(amount))
+		3: func(amount float64, mult float64) {
+			wc.BoostAttackCooldown(int(amount), mult)
 		},
 	}
 
-	boosts[rand.Intn(len(boosts))](amount)
+	boosts[rand.Intn(len(boosts))](amount, mult)
 }
 
 func (wc *WizardCombat) Attack() bool {
@@ -217,7 +249,7 @@ func (wc *WizardCombat) Reflecting() bool {
 
 // reset cooldown on successful reflect
 func (wc *WizardCombat) ResetReflectCooldown() {
-	wc.timeSinceReflect = DefaultReflectCooldown
+	wc.timeSinceReflect = ReflectCooldown
 }
 
 func (wc *WizardCombat) Update() {
@@ -237,7 +269,7 @@ func (wc *WizardCombat) Update() {
 
 func (wc *WizardCombat) Damage(amount float64) {
 	wc.health -= amount
-	wc.iFrames += DefaultIFrames
+	wc.iFrames += IFrames
 }
 
 func (wc *WizardCombat) IFrames() int {
@@ -255,15 +287,15 @@ type WizardPlayer struct {
 func (w *WizardPlayer) IFrameFlicker() {
 	w.FlickerFrames -= 1
 	if w.FlickerFrames <= 0 {
-		if w.Combat.IFrames() < DefaultFlickerFrames*2 {
+		if w.Combat.IFrames() < FlickerFrames*2 {
 			w.Alpha = 1.0
-			w.FlickerFrames = DefaultFlickerFrames
+			w.FlickerFrames = FlickerFrames
 		} else if w.Alpha == 0.1 {
 			w.Alpha = 0.5
-			w.FlickerFrames = DefaultFlickerFrames
+			w.FlickerFrames = FlickerFrames
 		} else {
 			w.Alpha = 0.1
-			w.FlickerFrames = DefaultFlickerFrames
+			w.FlickerFrames = FlickerFrames
 		}
 	}
 }
@@ -277,17 +309,17 @@ func NewWizard(player *Player) *WizardPlayer {
 		player,
 		&WizardCombat{
 			BasicCombat: NewBasicCombat(
-				DefaultPlayerHealth,
-				DefaultPlayerAttackPower,
-				DefaultPlayerMoveSpeed,
-				DefaultProjectileSpeed,
-				DefaultProjectileScale,
-				DefaultPlayerKnockback,
+				PlayerHealth,
+				PlayerAttackPower,
+				PlayerMoveSpeed,
+				ProjectileSpeed,
+				ProjectileScale,
+				PlayerKnockback,
 			),
-			attackCooldown:   DefaultAttackCooldown,
-			reflectCooldown:  DefaultReflectCooldown,
-			timeSinceAttack:  DefaultAttackCooldown,  // set timeSinceAttack so player can attack immediately
-			timeSinceReflect: DefaultReflectCooldown, // set timeSinceReflect so player can reflect immediately
+			attackCooldown:   AttackCooldown,
+			reflectCooldown:  ReflectCooldown,
+			timeSinceAttack:  AttackCooldown,  // set timeSinceAttack so player can attack immediately
+			timeSinceReflect: ReflectCooldown, // set timeSinceReflect so player can reflect immediately
 			iFrames:          0,
 			reflectFrames:    0,
 			Dead:             false,
@@ -295,7 +327,30 @@ func NewWizard(player *Player) *WizardPlayer {
 			reflecting:       false,
 		},
 		NewReflect(player.X, player.Y),
-		DefaultFlickerFrames,
-		DefaultHurtboxRadius,
+		FlickerFrames,
+		HurtboxRadius,
+	}
+}
+
+func StealStats(thief *WizardCombat, victim *WizardCombat) {
+	if thief.ProjectileScale() < victim.ProjectileScale() {
+		stolen := (victim.ProjectileScale() - thief.ProjectileScale()) / StatTheftDivisor
+		thief.BoostProjectileScale(stolen, 1) // 1 for all mults as existing player stats have had already had mult applied
+		victim.BoostProjectileScale(-stolen, 1)
+	}
+	if thief.ProjectileSpeed() < victim.ProjectileSpeed() {
+		stolen := (victim.ProjectileSpeed() - thief.ProjectileSpeed()) / StatTheftDivisor
+		thief.BoostProjectileSpeed(stolen, 1)
+		victim.BoostProjectileSpeed(-stolen, 1)
+	}
+	if thief.Knockback() < victim.Knockback() {
+		stolen := (victim.Knockback() - thief.Knockback()) / StatTheftDivisor
+		thief.BoostKnockback(stolen, 1)
+		victim.BoostKnockback(-stolen, 1)
+	}
+	if thief.AttackCooldown() > victim.AttackCooldown() {
+		stolen := (thief.AttackCooldown() - victim.AttackCooldown()) / StatTheftDivisor
+		thief.BoostAttackCooldown(stolen, 1)
+		victim.BoostAttackCooldown(-stolen, 1)
 	}
 }
