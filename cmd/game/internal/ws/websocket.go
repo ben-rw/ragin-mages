@@ -106,6 +106,24 @@ func ConnectToWebsocket() (*Connection, string, error) {
 		RoomID: roomID,
 	}
 
+	overlay := js.Global().Get("document").Call("getElementById", "start-overlay")
+	var callback js.Func
+	callback = js.FuncOf(func(this js.Value, args []js.Value) any {
+		defer callback.Release()
+
+		this.Call("remove")
+
+		canvas := js.Global().Get("document").Call("querySelector", "canvas")
+		canvas.Set("tabIndex", 0)
+		canvas.Call("focus")
+
+		return nil
+	})
+
+	overlay.Call("addEventListener", "click", callback, js.ValueOf(map[string]any{
+		"once": true,
+	}))
+
 	msg, err := protocol.MarshalToMessage(protocol.JoinRequest, joinData)
 	if err != nil {
 		return nil, "", err
@@ -144,4 +162,9 @@ func getClientInfo() (string, string, string) {
 	roomID := params.Call("get", "room").String()
 
 	return prot, host, roomID
+}
+
+func FailedToJoin() {
+	overlay := js.Global().Get("document").Call("getElementById", "start-overlay")
+	overlay.Set("textContent", "couldn't join: please join through the landing page")
 }

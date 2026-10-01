@@ -54,7 +54,9 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func main() {
 	conn, roomID, err := ws.ConnectToWebsocket()
 	if err != nil {
-		log.Fatal(err)
+		ws.FailedToJoin()
+		log.Printf("couldn't connect to websocket: %v", err)
+		return
 	}
 
 	game := &Game{

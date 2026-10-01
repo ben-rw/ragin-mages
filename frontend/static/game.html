@@ -33,12 +33,6 @@ if (!hasWebGL()) {
       overlay.textContent = "CLICK TO JOIN!";
       overlay.style.cursor = "pointer";
       overlay.style.backdropFilter = "blur(12px)"
-      overlay.addEventListener("click", function () {
-        this.remove();
-        const canvas = document.querySelector("canvas");
-        canvas.tabIndex = 0;
-        canvas.focus();
-      }, { once: true });
     });
 }
 </script>
