@@ -32,9 +32,9 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			}
 
 			// dummy test player
-			w.wizards["CPU"] = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{Name: "CPU"}, 7))
-			w.wizards["CPU"].X = 100
-			w.wizards["CPU"].Y = 100
+			// w.wizards["CPU"] = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{Name: "CPU"}, 7))
+			// w.wizards["CPU"].X = 100
+			// w.wizards["CPU"].Y = 100
 
 			w.wizard = w.wizards[w.Player.Data.Name]
 			w.statText = w.NewStatText()
@@ -283,7 +283,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// check fireball collisions
 	for i, projectile := range w.projectiles {
 		projectile.Update()
-		log.Println(projectile.Caster.Data.Name)
 		for _, wizard := range w.wizards {
 			if wizard == projectile.Caster {
 				continue
@@ -311,8 +310,8 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				if wizard.Combat.Reflecting() {
 					wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
 					wizard.Combat.ResetReflectCooldown()
-				} else if wizard.Data.Name == "CPU" {
-					wizard.ReflectProjectile(projectile, 200, 100)
+					// } else if wizard.Data.Name == "CPU" {
+					// 	wizard.ReflectProjectile(projectile, 200, 100)
 				} else {
 					wizard.Combat.Damage(projectile.Damage)
 					projectile.AlreadyHit[wizard] = struct{}{}
@@ -500,7 +499,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	w.wizard.ActiveAnimation.Update()
 
 	for _, wizard := range w.wizards {
-		log.Println(w.wizard.Data.Name, w.wizard.Combat.Reflecting())
 		wizard.Reflect.ActiveAnimation = wizard.Reflect.GetActiveAnimation()
 
 		if wizard.Reflect.ActiveAnimation != nil {

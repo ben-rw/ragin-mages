@@ -62,6 +62,7 @@ type WizArena struct {
 	projectiles            []*shared.Projectile
 	deadProjectiles        []*shared.Projectile
 	roomID                 string
+	round                  uint8
 	trapsUp                bool
 	debug                  bool
 }
@@ -115,8 +116,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
 		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
 		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
-		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             //1 projectile type
-		reflectFrameCache:    make(map[int][]*ebiten.Image, 1),                               //1 reflect img
+		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             // 1 projectile type
+		reflectFrameCache:    make(map[int][]*ebiten.Image, 1),                               // 1 reflect img
 		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles
 		deadProjectiles:      make([]*shared.Projectile, 0, 16),                              // alive or dead at one time
@@ -135,6 +136,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		heartImage:           heartImg,
 		reflectImage:         reflectImg,
 		roomID:               roomID,
+		round:                0,
 		debug:                false,
 	}
 

@@ -147,7 +147,7 @@ func (l *Lobby) Update(messages []protocol.Message) error {
 	// fade screen out before scene change
 	if l.sceneChanging {
 		l.screenFadeFinished = func() bool {
-			if l.foregroundAlpha <= 0.5 &&
+			if l.foregroundAlpha <= 0.3 &&
 				l.Background.alpha > 0 {
 				l.Background.alpha -= 0.02
 				l.foregroundAlpha -= 0.02

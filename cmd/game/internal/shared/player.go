@@ -43,8 +43,7 @@ func NewNameTag(x, y float64) *NameTag {
 var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize)
 
 func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
-	// imgPath := PlayerSpriteIndex[data.SpriteIndex]
-	imgPath := PlayerSpriteIndex[joinOrder]
+	imgPath := PlayerSpriteIndex[data.SpriteIndex]
 	playerImg, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, imgPath)
 	if err != nil {
 		log.Fatal(err)
