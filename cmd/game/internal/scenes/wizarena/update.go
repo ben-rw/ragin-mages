@@ -419,9 +419,16 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		// turn noclip back on if enemy gets knocked into hole
 		if shared.CheckPointInRect(
 			int(enemy.X+shared.HalfTile),
-			int(enemy.Y+shared.HalfTile),
+			int(enemy.Y+14), // between 13 and 15, which are the y coords used in rectangle collision checks
 			w.holes,
 		) {
+			enemy.Noclip = true
+		}
+
+		if enemy.X < 0 ||
+			enemy.Y < 0 ||
+			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
+			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
 			enemy.Noclip = true
 		}
 

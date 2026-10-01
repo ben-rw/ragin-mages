@@ -23,13 +23,19 @@ func (c *Camera) FollowTarget(targetX, targetY, tilemapWidthPixels, tilemapHeigh
 	minX := ScreenWidth - tilemapWidthPixels
 	minY := ScreenHeight - tilemapHeightPixels
 
-	//move towards the center of the player
-	lerp := 0.1
-	if destX <= 0.0 && destX >= minX {
-		c.X += (destX - c.X) * lerp
+	destX = math.Max(minX, math.Min(destX, 0.0))
+	destY = math.Max(minY, math.Min(destY, 0.0))
+
+	lerp := 0.15
+
+	c.X += (destX - c.X) * lerp
+	c.Y += (destY - c.Y) * lerp
+
+	if math.Abs(destX-c.X) < 1.8 {
+		c.X = destX
 	}
-	if destY <= 0.0 && destY >= minY {
-		c.Y += (destY - c.Y) * lerp
+	if math.Abs(destY-c.Y) < 1.8 {
+		c.Y = destY
 	}
 }
 
