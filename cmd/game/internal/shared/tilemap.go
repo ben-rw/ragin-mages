@@ -67,14 +67,14 @@ func NewTilemapJSON(filepath string) (*TilemapJSON, error) {
 		return nil, err
 	}
 
-	for _, tileset := range tilemapJSON.Tilesets {
-		data, err := AssetsFS.ReadFile(fmt.Sprintf("assets/maps/%v", tileset.Source))
+	for i := range tilemapJSON.Tilesets {
+		data, err := AssetsFS.ReadFile(fmt.Sprintf("assets/maps/%v", tilemapJSON.Tilesets[i].Source))
 		var tilesetData Tileset
 		err = json.Unmarshal(data, &tilesetData.Data)
 		if err != nil {
 			return nil, err
 		}
-		tileset.Data = tilesetData.Data
+		tilemapJSON.Tilesets[i].Data = tilesetData.Data
 	}
 
 	return &tilemapJSON, nil

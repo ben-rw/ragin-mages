@@ -104,6 +104,10 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Translate(projectile.X, projectile.Y)
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
+		if projectile.Alpha < 1.0 {
+			opts.ColorScale.ScaleAlpha(projectile.Alpha)
+		}
+
 		screen.DrawImage(
 			w.projectileFrameCache[projectile.Type][projectile.ActiveAnimation.Frame()],
 			&opts,
@@ -135,41 +139,73 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Reset()
 	}
 
-	textOpts.PrimaryAlign = text.AlignStart
-	textOpts.GeoM.Translate(shared.Stat0BottomLeft())
-	text.Draw(screen, w.statText[AttackCooldown], fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
+	if w.backgroundAlpha > 0 {
+		screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
+	}
 
-	textOpts.PrimaryAlign = text.AlignStart
-	textOpts.GeoM.Translate(shared.Stat1BottomLeft())
-	text.Draw(screen, w.statText[ProjectileScale], fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
+	if w.phase == Playing {
+		textOpts.PrimaryAlign = text.AlignCenter
+		textOpts.GeoM.Translate(shared.TopCenterFurther())
+		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
+		textOpts.GeoM.Reset()
 
-	textOpts.PrimaryAlign = text.AlignStart
-	textOpts.GeoM.Translate(shared.Stat2BottomLeft())
-	text.Draw(screen, w.statText[ProjectileSpeed], fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
+		textOpts.PrimaryAlign = text.AlignStart
+		textOpts.GeoM.Translate(shared.Stat0BottomLeft())
+		text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
+		textOpts.GeoM.Reset()
 
-	textOpts.PrimaryAlign = text.AlignStart
-	textOpts.GeoM.Translate(shared.Stat3BottomLeft())
-	text.Draw(screen, w.statText[Knockback], fontFace8, &textOpts)
-	textOpts.GeoM.Reset()
+		textOpts.PrimaryAlign = text.AlignStart
+		textOpts.GeoM.Translate(shared.Stat1BottomLeft())
+		text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
+		textOpts.GeoM.Reset()
 
-	opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
-	opts.GeoM.Translate(shared.TopRightFurther())
-	screen.DrawImage(StaticTextMap[instructionText1], &opts)
-	opts.GeoM.Reset()
+		textOpts.PrimaryAlign = text.AlignStart
+		textOpts.GeoM.Translate(shared.Stat2BottomLeft())
+		text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
+		textOpts.GeoM.Reset()
 
-	opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
-	opts.GeoM.Translate(shared.BottomRightFurther())
-	screen.DrawImage(StaticTextMap[instructionText2], &opts)
-	opts.GeoM.Reset()
+		textOpts.PrimaryAlign = text.AlignStart
+		textOpts.GeoM.Translate(shared.Stat3BottomLeft())
+		text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
+		textOpts.GeoM.Reset()
 
-	if w.wizard.Combat.Dead {
-		opts.GeoM.Translate(shared.Center())
-		opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
-		screen.DrawImage(StaticTextMap[deadText], &opts)
+		opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
+		opts.GeoM.Translate(shared.TopRightFurther())
+		screen.DrawImage(StaticTextMap[instructionText1], &opts)
 		opts.GeoM.Reset()
+
+		opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
+		opts.GeoM.Translate(shared.BottomRightFurther())
+		screen.DrawImage(StaticTextMap[instructionText2], &opts)
+		opts.GeoM.Reset()
+
+		if w.wizard.Combat.Dead {
+			opts.GeoM.Translate(shared.Center())
+			opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
+			screen.DrawImage(StaticTextMap[deadText], &opts)
+			opts.GeoM.Reset()
+		}
+
+	} else if w.phase == RoundStart || w.phase == GameStart {
+		var roundImg *ebiten.Image
+		if w.round == 1 {
+			roundImg = Round1TextImg
+		} else if w.round == 2 {
+			roundImg = Round2TextImg
+		} else {
+			roundImg = Round3TextImg
+		}
+		opts.GeoM.Translate(shared.Center())
+		opts.GeoM.Translate(-float64(roundImg.Bounds().Dx())/2, -float64(roundImg.Bounds().Dy())/2)
+		screen.DrawImage(roundImg, &opts)
+		opts.GeoM.Reset()
+
+	} else if w.phase == RoundOver || w.phase == GameOver {
+		textOpts.PrimaryAlign = text.AlignCenter
+		textOpts.LineSpacing = 24
+		textOpts.GeoM.Translate(shared.TopCenter())
+		text.Draw(screen, w.scoreboard, fontFace16, &textOpts)
+		textOpts.GeoM.Reset()
 	}
 
 	if w.debug {

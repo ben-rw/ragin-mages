@@ -30,6 +30,10 @@ func TopCenter() (float64, float64) {
 	return ScreenWidth * 0.5, ScreenHeight * 0.05
 }
 
+func TopCenterFurther() (float64, float64) {
+	return ScreenWidth * 0.5, ScreenHeight * 0.01
+}
+
 func BottomRight() (float64, float64) {
 	return ScreenWidth * 0.99, ScreenHeight * 0.9
 }

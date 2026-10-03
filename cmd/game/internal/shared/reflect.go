@@ -16,6 +16,12 @@ const (
 	ReflectAnimSpeed     = 1
 )
 
+type ReflectType int
+
+const (
+	Circle ReflectType = iota
+)
+
 var ReflectSpriteSheet = spritesheet.NewSpriteSheet(ReflectWidthInTiles, ReflectHeightInTiles, ReflectWidth, ReflectHeight)
 
 type Reflect struct {

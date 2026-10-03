@@ -30,7 +30,7 @@ const (
 
 type WizArena struct {
 	enemyRespawnTimer time.Time
-	roundTimer        time.Time
+	phaseTimer        time.Time
 	chestRespawnTimer time.Time
 	shared.Roster
 	Conn                   MessageConn
@@ -40,9 +40,9 @@ type WizArena struct {
 	wizardFrameCache       map[int][]*ebiten.Image
 	enemyFrameCache        map[shared.EnemyType][]*ebiten.Image
 	projectileFrameCache   map[shared.ProjectileType][]*ebiten.Image
-	reflectFrameCache      map[int][]*ebiten.Image
-	statText               map[Stat]string
-	statTextImageCache     map[Stat]*ebiten.Image
+	reflectFrameCache      map[shared.ReflectType][]*ebiten.Image
+	dynamicText            map[DynamicText]string
+	dynamicTextImageCache  map[DynamicText]*ebiten.Image
 	tilemapJSON            *shared.TilemapJSON
 	tiles                  map[string][]*shared.Tile
 	staticTilemapTrapsUp   *ebiten.Image
@@ -60,8 +60,13 @@ type WizArena struct {
 	holes                  []image.Rectangle
 	traps                  []image.Rectangle
 	projectiles            []*shared.Projectile
-	deadProjectiles        []*shared.Projectile
+	scoreboard             string
+	roundTimerString       string
 	roomID                 string
+	phase                  RoundPhase
+	screenAlpha            float32
+	backgroundAlpha        uint8
+	lastFormattedSecond    int
 	round                  uint8
 	trapsUp                bool
 	debug                  bool
@@ -106,6 +111,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 	}
 
 	w := &WizArena{
+		phaseTimer: time.Now().Add(GameStartTime * time.Second),
+		phase:      GameStart,
 		Roster: shared.Roster{
 			Players: make(map[string]*shared.Player, 8), // max 8 players
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
@@ -117,26 +124,26 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
 		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
 		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             // 1 projectile type
-		reflectFrameCache:    make(map[int][]*ebiten.Image, 1),                               // 1 reflect img
+		reflectFrameCache:    make(map[shared.ReflectType][]*ebiten.Image, 1),                // 1 reflect img
 		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
-		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles
-		deadProjectiles:      make([]*shared.Projectile, 0, 16),                              // alive or dead at one time
+		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles at one time
 		projectileImageCache: projectileImgCache,
 		enemyImageCache:      enemyImgCache,
 		tilemapJSON:          tilemap,
 		tiles:                tiles,
 		camera:               nil,
-		colliders:            make([]image.Rectangle, 2092), //2091 holes on map
-		chests:               make([]image.Rectangle, 8),    // 8 chests on the map
+		colliders:            make([]image.Rectangle, 0, 972), // 972 colliders on map
+		chests:               make([]image.Rectangle, 0, 8),   // 8 chests on the map
 		openedChests:         make(map[OpenedChest]struct{}, 8),
-		holes:                make([]image.Rectangle, 2092), //2091 holes on map
-		traps:                make([]image.Rectangle, 84),   //traps on map
+		holes:                make([]image.Rectangle, 0, 2092), // 2092 holes on map
+		traps:                make([]image.Rectangle, 84),      // traps on map
 		trapsUp:              false,
 		audioPlayer:          audioPlayer,
 		heartImage:           heartImg,
 		reflectImage:         reflectImg,
 		roomID:               roomID,
-		round:                0,
+		backgroundAlpha:      255,
+		round:                1,
 		debug:                false,
 	}
 
@@ -148,7 +155,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		shared.ProjectileSpriteSheet,
 		projectileImgCache[shared.Fireball],
 	)
-	w.reflectFrameCache[0] = spritesheet.LoadFrames(
+	w.reflectFrameCache[shared.Circle] = spritesheet.LoadFrames(
 		shared.ReflectSpriteSheet,
 		reflectImg,
 	)

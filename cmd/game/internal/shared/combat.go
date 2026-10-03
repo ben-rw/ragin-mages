@@ -24,13 +24,13 @@ const (
 	PSpeedMult      = .5
 	PScaleMult      = .25
 	KnockbackMult   = .5
-	AttackCDMult    = 2.0
+	AttackCDMult    = 1.0
 	StandardMult    = 0.0
 )
 
 const (
 	KillEnemyBoost   = 1.0
-	KillPlayerBoost  = 1.0
+	KillPlayerBoost  = 3.0
 	ChestBoost       = 3.0
 	WinRoundBoost    = 10.0
 	StatTheftDivisor = 4
@@ -191,9 +191,14 @@ type WizardCombat struct {
 	timeSinceReflect int
 	iFrames          int
 	reflectFrames    int
+	totalPower       int
 	Dead             bool
 	Fell             bool
 	reflecting       bool
+}
+
+func (wc *WizardCombat) GetTotalPower() int {
+	return wc.totalPower
 }
 
 func (wc *WizardCombat) AttackCooldown() int {
@@ -212,6 +217,7 @@ func (wc *WizardCombat) BoostAttackCooldown(amount int, mult float64) {
 
 // pass StandardMult unless stats have already had their corresponding mult applied
 func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
+	wc.totalPower += int(amount)
 	boosts := map[int]func(amount float64, mult float64){
 		0: wc.BoostProjectileSpeed,
 		1: wc.BoostProjectileScale,
@@ -276,6 +282,10 @@ func (wc *WizardCombat) IFrames() int {
 	return wc.iFrames
 }
 
+func (wc *WizardCombat) SetIFrames(amount int) {
+	wc.iFrames = amount
+}
+
 type WizardPlayer struct {
 	*Player
 	Combat        *WizardCombat
@@ -301,9 +311,6 @@ func (w *WizardPlayer) IFrameFlicker() {
 }
 
 func NewWizard(player *Player) *WizardPlayer {
-	spawnIndex := rand.Intn(8)
-	player.X = PlayerSpawns[spawnIndex].X * TileSize
-	player.Y = PlayerSpawns[spawnIndex].Y * TileSize
 
 	return &WizardPlayer{
 		player,

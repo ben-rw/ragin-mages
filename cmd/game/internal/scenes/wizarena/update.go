@@ -37,7 +37,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 			// w.wizards["CPU"].Y = 100
 
 			w.wizard = w.wizards[w.Player.Data.Name]
-			w.statText = w.NewStatText()
+			w.dynamicText = w.NewDynamicTextMap()
 
 			w.camera = shared.NewCamera(
 				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
@@ -61,6 +61,23 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		}
 	}
 
+	switch w.phase {
+	case Playing:
+		w.updatePlaying()
+	case RoundOver:
+		w.updateRoundOver()
+	case RoundStart:
+		w.updateRoundStart()
+	case GameOver:
+		w.gameOver()
+	case GameStart:
+		w.gameStart()
+	}
+
+	return nil
+}
+
+func (w *WizArena) updatePlaying() {
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
 
@@ -315,6 +332,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				} else {
 					wizard.Combat.Damage(projectile.Damage)
 					projectile.AlreadyHit[wizard] = struct{}{}
+					shared.StealStats(projectile.Caster.Combat, wizard.Combat)
 
 					w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
 					w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
@@ -323,7 +341,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					if wizard.Combat.Health() <= 0 {
 						// player who last hit the player gets a stat boost
 						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
-						w.statText = w.NewStatText()
+						w.dynamicText = w.NewDynamicTextMap()
 					}
 				}
 
@@ -352,7 +370,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
 					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
-					w.statText = w.NewStatText()
+					w.dynamicText = w.NewDynamicTextMap()
 				}
 			}
 		}
@@ -409,7 +427,13 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 	// check enemy collisions
 	for _, enemy := range w.enemies {
 		// lets enemies noclip until they're fully out of the hole
-		if enemy.Noclip {
+
+		if enemy.X < 0 ||
+			enemy.Y < 0 ||
+			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
+			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
+			enemy.Noclip = true
+		} else if enemy.Noclip {
 			if !shared.CheckCollisionHorizontal(enemy.Sprite, w.holes) &&
 				!shared.CheckCollisionVertical(enemy.Sprite, w.holes) {
 				enemy.Noclip = false
@@ -419,16 +443,9 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		// turn noclip back on if enemy gets knocked into hole
 		if shared.CheckPointInRect(
 			int(enemy.X+shared.HalfTile),
-			int(enemy.Y+14), // between 13 and 15, which are the y coords used in rectangle collision checks
+			int(enemy.Y+14), // between 13 and 15, which are the y coords used in CheckCollisionHorizontal/Vertical
 			w.holes,
 		) {
-			enemy.Noclip = true
-		}
-
-		if enemy.X < 0 ||
-			enemy.Y < 0 ||
-			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
 			enemy.Noclip = true
 		}
 
@@ -547,10 +564,7 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 		w.audioPlayer.Play()
 	}
 
-	//TODO: when 1 player is left, start a new round
-	// while preserving stat boosts.
-	// at the end of the third round, announce the winner
-	// and reload into lobby.
+	w.updateRound()
 
-	return nil
+	w.UpdateRoundTimerText()
 }
