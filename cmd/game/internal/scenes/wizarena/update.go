@@ -96,16 +96,16 @@ func (w *WizArena) updatePlaying() {
 
 	} else if w.wizard.Combat.Dead {
 		// define camera behavior for dead players
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 			w.camera.X -= shared.FreeCamSpeed
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 			w.camera.X += shared.FreeCamSpeed
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyUp) {
+		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
 			w.camera.Y += shared.FreeCamSpeed
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyDown) {
+		if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
 			w.camera.Y -= shared.FreeCamSpeed
 		}
 
@@ -116,16 +116,16 @@ func (w *WizArena) updatePlaying() {
 
 	} else {
 		// add velocity to wizard based on player input
-		if ebiten.IsKeyPressed(ebiten.KeyUp) {
+		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
 			w.wizard.Dy += -1
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyDown) {
+		if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
 			w.wizard.Dy += 1
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 			w.wizard.Dx += 1
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) {
+		if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
 			w.wizard.Dx += -1
 		}
 

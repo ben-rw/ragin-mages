@@ -8,11 +8,6 @@ import (
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
-// rounds - round start, screen black, fades in over 3 seconds - ticking down the alpha each update loop
-// if only 1 player alive or time runs out, round ends
-
-// need a round countdown screen with a small delay
-
 type RoundPhase int
 
 const (

@@ -27,13 +27,6 @@ func (w *WizArena) NewScoreboard() {
 	w.scoreboard = "POWER RANKINGS\n\n"
 	for _, wizard := range wizSlice {
 		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
 	}
 
 	if w.round > Rounds {
