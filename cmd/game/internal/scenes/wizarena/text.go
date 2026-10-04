@@ -25,8 +25,15 @@ func (w *WizArena) NewScoreboard() {
 	}
 
 	w.scoreboard = "POWER RANKINGS\n\n"
-	for _, wizard := range wizSlice {
-		w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
+	for i, wizard := range wizSlice {
+		if i == 0 && w.round <= Rounds {
+			// round winner gets stats boosted
+			w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower(), shared.WinRoundBoost)
+			wizard.Combat.RandomBoost(shared.WinRoundBoost, shared.StandardMult)
+			w.dynamicText = w.NewDynamicTextMap()
+		} else {
+			w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
+		}
 	}
 
 	if w.round > Rounds {

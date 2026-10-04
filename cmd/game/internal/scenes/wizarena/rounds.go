@@ -56,6 +56,7 @@ func (w *WizArena) updateRound() {
 
 		w.phase = RoundOver
 		w.phaseTimer = time.Now().Add(RoundOverTime * time.Second)
+		w.NewScoreboard()
 	}
 }
 
@@ -90,8 +91,6 @@ func (w *WizArena) updateRoundStart() {
 }
 
 func (w *WizArena) updateRoundOver() {
-	w.NewScoreboard()
-
 	// add a fade effect when players die
 	if w.wizard.Combat.Dead {
 		if !w.wizard.Combat.Fell {
@@ -186,7 +185,6 @@ func (w *WizArena) gameStart() {
 }
 
 func (w *WizArena) gameOver() {
-	w.NewScoreboard()
 	if time.Until(w.phaseTimer) <= 2*time.Second {
 		_ = sound.FadeOut(w.audioPlayer)
 	}
