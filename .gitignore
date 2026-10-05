@@ -7,10 +7,6 @@
 *.tiled-session
 *.prof
 
-css_color_options/
-images/
-imgs/
-
 
 # Binaries for programs and plugins
 *.exe
