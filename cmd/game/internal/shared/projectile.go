@@ -52,6 +52,14 @@ type Projectile struct {
 	TicksToLive   int
 	ReflectCount  int
 	Type          ProjectileType
+	ID            uint16
+}
+
+var i uint16 = 0
+
+func getProjectileID() uint16 {
+	i++
+	return i
 }
 
 func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
@@ -122,6 +130,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 		ReflectCount:  0,
 		AlreadyHit:    make(map[any]struct{}),
 		Type:          projectileType,
+		ID:            getProjectileID(),
 	}
 }
 

@@ -44,12 +44,6 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
 			)
 
-			// playerUpdateData := protocol.PlayerUpdateData{
-			// 	PlayerData: w.wizard.Data,
-			// }
-			//
-			// w.Conn.WriteMsg(protocol.PlayerUpdate, playerUpdateData)
-
 		case protocol.PlayerUpdate:
 			err := w.HandlePlayerUpdate(message)
 			if err != nil {
@@ -264,6 +258,7 @@ func (w *WizArena) updatePlaying() {
 			float64(cY),
 			shared.Fireball,
 		)
+		w.WriteNewProjectile(cX, cY)
 		w.projectiles = append(w.projectiles, projectile)
 
 		// figure out attack direction for animation
@@ -334,9 +329,9 @@ func (w *WizArena) updatePlaying() {
 					projectile.AlreadyHit[wizard] = struct{}{}
 					shared.StealStats(projectile.Caster.Combat, wizard.Combat)
 
-					w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-					w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-					w.wizard.Noclip = true
+					wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+					wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+					wizard.Noclip = true
 
 					if wizard.Combat.Health() <= 0 {
 						// player who last hit the player gets a stat boost
@@ -533,6 +528,11 @@ func (w *WizArena) updatePlaying() {
 		}
 	}
 
+	// send w.wizard location to server
+	if !w.wizard.Combat.Dead {
+		w.WriteWizardMovementUpdate()
+	}
+
 	for _, enemy := range w.enemies {
 		if enemy.Combat.Attacking() {
 			enemy.AttackAnim = true
@@ -567,4 +567,5 @@ func (w *WizArena) updatePlaying() {
 	w.updateRound()
 
 	w.UpdateRoundTimerText()
+
 }
