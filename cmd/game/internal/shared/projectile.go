@@ -76,7 +76,7 @@ func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileTy
 
 var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
 
-func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
+func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
 
 	ProjectileAnimations := map[EntityState]*animations.Animation{
 		FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),

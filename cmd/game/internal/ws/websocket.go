@@ -51,12 +51,12 @@ func (c *Connection) writeLoop() {
 }
 
 // check for messages to pass to Update in main
-func (c *Connection) Check() []protocol.Message {
-	msgs := []protocol.Message{}
+func (c *Connection) Check() []*protocol.Message {
+	msgs := []*protocol.Message{}
 	for {
 		select {
 		case msg := <-c.incomingMsgs:
-			msgs = append(msgs, msg)
+			msgs = append(msgs, &msg)
 		default:
 			return msgs
 		}

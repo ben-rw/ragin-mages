@@ -31,6 +31,8 @@ type Sprite struct {
 	Animations      map[EntityState]*animations.Animation
 	ActiveAnimation *animations.Animation
 	X, Y, Dx, Dy    float64
+	KnockbackDx     float64
+	KnockbackDy     float64
 	AttackDirection EntityState
 	Alpha           float32
 	Noclip          bool

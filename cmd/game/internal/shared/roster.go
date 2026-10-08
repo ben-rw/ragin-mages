@@ -11,7 +11,7 @@ type Roster struct {
 	Player  *Player
 }
 
-func (r *Roster) HandleJoinResponse(message protocol.Message) error {
+func (r *Roster) HandleJoinResponse(message *protocol.Message) error {
 	joinResponseData, err := message.UnmarshalMessageData()
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (r *Roster) HandleJoinResponse(message protocol.Message) error {
 	return nil
 }
 
-func (r *Roster) HandlePlayerUpdate(message protocol.Message) error {
+func (r *Roster) HandlePlayerUpdate(message *protocol.Message) error {
 	playerUpdateData, err := message.UnmarshalMessageData()
 	if err != nil {
 		return err

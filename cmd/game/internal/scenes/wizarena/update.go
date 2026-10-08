@@ -1,70 +1,15 @@
 package wizarena
 
 import (
-	"cmp"
-	"image"
-	"math"
-	"slices"
-
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	"log"
 )
 
-func (w *WizArena) Update(messages []protocol.Message) error {
-	for _, message := range messages {
-		switch message.Type {
-		case protocol.JoinResponse:
-			err := w.HandleJoinResponse(message)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			for _, player := range w.Players {
-				if _, ok := w.wizards[player.Data.Name]; !ok {
-					wizard := shared.NewWizard(player)
-					wizard.JoinAnim = false
-					w.wizards[wizard.Data.Name] = wizard
-				}
-			}
-
-			// dummy test player
-			// w.wizards["CPU"] = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{Name: "CPU"}, 7))
-			// w.wizards["CPU"].X = 100
-			// w.wizards["CPU"].Y = 100
-
-			w.wizard = w.wizards[w.Player.Data.Name]
-			w.dynamicText = w.NewDynamicTextMap()
-
-			w.camera = shared.NewCamera(
-				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
-				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
-			)
-
-		case protocol.PlayerUpdate:
-			err := w.HandlePlayerUpdate(message)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-		case protocol.WizardMovementUpdate:
-		case protocol.EnemyMovementUpdate:
-		case protocol.WizArenaMovement:
-		case protocol.WizardStatUpdate:
-		case protocol.NewProjectile:
-		case protocol.ProjectileReflected:
-		case protocol.ProjectileHitEnemy:
-		case protocol.ProjectileHitWizard:
-
-		default:
-		}
-	}
+func (w *WizArena) Update(messages []*protocol.Message) error {
+	w.CheckMessages(messages)
 
 	switch w.phase {
 	case Playing:
@@ -134,13 +79,13 @@ func (w *WizArena) updatePlaying() {
 			w.wizard.Dx += -1
 		}
 
-		//normalize diagonal movement
+		// normalize diagonal movement
 		if w.wizard.Dx != 0 && w.wizard.Dy != 0 {
 			w.wizard.Dx *= 0.70710678
 			w.wizard.Dy *= 0.70710678
 		}
 
-		//define normal camera behavior
+		// define normal camera behavior
 		w.camera.FollowTarget(
 			w.wizard.X,
 			w.wizard.Y,
@@ -161,430 +106,33 @@ func (w *WizArena) updatePlaying() {
 	}
 
 	// define enemy behavior
-	for _, enemy := range w.enemies {
-		enemy.Combat.Update()
-		enemy.Dx = 0
-		enemy.Dy = 0
-		if enemy.FollowsPlayer {
-			// make enemy follow nearest living player
-			var dx, dy, dist float64
-			var minDx, minDy float64
-			var minDist = 10000.0 // arbitrary big number
-			for _, w := range w.wizards {
-				if w.Combat.Dead {
-					continue
-				}
-				dx = w.X - enemy.X
-				dy = w.Y - enemy.Y
-				dist = math.Hypot(dx, dy)
-				if dist < minDist {
-					minDist = dist
-					minDx = dx
-					minDy = dy
-				}
-			}
+	w.UpdateEnemies()
 
-			closeEnough := 8.0 //8px
+	// check for enemies damaging player
+	w.CheckEnemyHitWizard()
 
-			if minDist > closeEnough {
-				normX := minDx / minDist
-				normY := minDy / minDist
+	// spawn projectiles and check projectile collisions
+	w.CheckProjectiles()
 
-				speed := enemy.Combat.MoveSpeed()
-
-				if enemy.Combat.MoveSpeed() > minDist {
-					speed = minDist
-				}
-
-				enemy.Dx = normX * speed
-				enemy.Dy = normY * speed
-
-			}
-		}
-	}
-
-	// check for enemies colliding with/damaging player
-	wizardRect := image.Rect(
-		int(w.wizard.X),
-		int(w.wizard.Y),
-		int(w.wizard.X)+shared.TileSize,
-		int(w.wizard.Y)+shared.TileSize,
-	)
-
-	for _, enemy := range w.enemies {
-		rect := image.Rect(
-			int(enemy.X),
-			int(enemy.Y),
-			int(enemy.X)+shared.TileSize,
-			int(enemy.Y)+shared.TileSize,
-		)
-
-		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
-			if enemy.Combat.Attack() {
-				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
-
-				// player pushed away by enemy
-				// find vector, divide by vector length, add to player's velocity
-				vX := w.wizard.X - enemy.X
-				vY := w.wizard.Y - enemy.Y
-				vlen := math.Sqrt(vX*vX + vY*vY)
-				normX := vX / vlen
-				normY := vY / vlen
-
-				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
-				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
-				w.wizard.Noclip = true
-
-				if math.Abs(normX) > math.Abs(normY) {
-					if normX > 0 {
-						enemy.AttackDirection = shared.AttackingRight
-					} else {
-						enemy.AttackDirection = shared.AttackingLeft
-					}
-				} else {
-					if normY > 0 {
-						enemy.AttackDirection = shared.AttackingDown
-					} else {
-						enemy.AttackDirection = shared.AttackingUp
-					}
-				}
-			}
-		}
-	}
-
-	leftClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-	rightClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-	cX, cY := ebiten.CursorPosition()
-	cX -= int(w.camera.X)
-	cY -= int(w.camera.Y)
-
-	// spawn new fireballs
-	if leftClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Attack() {
-		projectile := w.wizard.ShootProjectile(
-			w.projectileImageCache[shared.Fireball],
-			float64(cX),
-			float64(cY),
-			shared.Fireball,
-		)
-		w.WriteNewProjectile(cX, cY)
-		w.projectiles[projectile.ID] = projectile
-
-		// figure out attack direction for animation
-		vX := float64(cX) - w.wizard.X
-		vY := float64(cY) - w.wizard.Y
-		vlen := math.Hypot(vX, vY)
-		if vlen == 0 {
-			projectile.Despawn() // prevents division by zero
-		}
-		normX := vX / vlen
-		normY := vY / vlen
-
-		if math.Abs(normX) > math.Abs(normY) {
-			if normX > 0 {
-				w.wizard.AttackDirection = shared.AttackingRight
-			} else {
-				w.wizard.AttackDirection = shared.AttackingLeft
-			}
-		} else {
-			if normY > 0 {
-				w.wizard.AttackDirection = shared.AttackingDown
-			} else {
-				w.wizard.AttackDirection = shared.AttackingUp
-			}
-		}
-	}
-
-	// spawn new reflects
-	if rightClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Reflect() {
-		w.wizard.ReflectAnim = true
-		w.wizard.Reflect.Active = true
-	}
-
-	// check fireball collisions
-	for _, projectile := range w.projectiles {
-		projectile.Update()
-		if projectile.Caster == w.wizard {
-			for _, wizard := range w.wizards {
-				if wizard == projectile.Caster {
-					continue
-				}
-				if wizard.Combat.IFrames() > 0 {
-					continue
-				}
-				if _, ok := projectile.AlreadyHit[wizard]; ok {
-					continue
-				}
-
-				var wizardRadius = w.wizard.HurtboxRadius
-				if wizard.Combat.Reflecting() {
-					wizardRadius *= 2
-				}
-
-				if shared.CheckCollisionCircle(
-					projectile.X+projectile.HitboxOffsetX,
-					projectile.Y+projectile.HitboxOffsetY,
-					projectile.ScaledRadius,
-					wizard.X+shared.HalfTile,
-					wizard.Y+shared.HalfTile,
-					wizardRadius,
-				) {
-					if wizard.Combat.Reflecting() {
-						wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
-						w.WriteProjectileReflected(wizard.Data.Name, projectile.ID)
-						wizard.Combat.ResetReflectCooldown()
-						// } else if wizard.Data.Name == "CPU" {
-						// 	wizard.ReflectProjectile(projectile, 200, 100)
-					} else {
-						wizard.Combat.Damage(projectile.Damage)
-						projectile.AlreadyHit[wizard] = struct{}{}
-						shared.StealStats(projectile.Caster.Combat, wizard.Combat)
-
-						wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-						wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-						wizard.Noclip = true
-
-						w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
-
-						if wizard.Combat.Health() <= 0 {
-							// player who last hit the player gets a stat boost
-							projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
-							w.WriteWizardStatUpdate()
-						}
-
-						w.dynamicText = w.NewDynamicTextMap()
-					}
-
-				}
-			}
-			for _, enemy := range w.enemies {
-				if _, ok := projectile.AlreadyHit[enemy]; ok {
-					continue
-				}
-
-				if shared.CheckCollisionCircle(
-					projectile.X+projectile.HitboxOffsetX,
-					projectile.Y+projectile.HitboxOffsetY,
-					projectile.ScaledRadius,
-					enemy.X+shared.HalfTile,
-					enemy.Y+shared.HalfTile,
-					enemy.HurtboxRadius,
-				) {
-					enemy.Combat.Damage(projectile.Damage)
-					projectile.AlreadyHit[enemy] = struct{}{}
-
-					enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-					enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-
-					if enemy.Combat.Health() <= 0 {
-						delete(w.enemies, enemy.ID)
-						// player who last hit the enemy gets a stat boost
-						projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
-						w.WriteWizardStatUpdate()
-						w.dynamicText = w.NewDynamicTextMap()
-					}
-				}
-			}
-			for _, otherProjectile := range w.projectiles {
-				if projectile == otherProjectile {
-					continue
-				}
-
-				if shared.CheckCollisionCircle(
-					projectile.X+projectile.HitboxOffsetX,
-					projectile.Y+projectile.HitboxOffsetY,
-					projectile.ScaledRadius,
-					otherProjectile.X+otherProjectile.HitboxOffsetX,
-					otherProjectile.Y+otherProjectile.HitboxOffsetY,
-					otherProjectile.ScaledRadius,
-				) {
-					if projectile.Scale > otherProjectile.Scale {
-						delete(w.projectiles, otherProjectile.ID)
-					} else if projectile.Scale < otherProjectile.Scale {
-						delete(w.projectiles, projectile.ID)
-					} else {
-						delete(w.projectiles, projectile.ID)
-						delete(w.projectiles, otherProjectile.ID)
-					}
-				}
-			}
-		}
-
-		if projectile.TicksToLive < 1 {
-			delete(w.projectiles, projectile.ID)
-		}
+	// apply knockback when hit
+	if w.wizard.KnockbackDx != 0 || w.wizard.KnockbackDy != 0 {
+		w.wizard.Dx += w.wizard.KnockbackDx
+		w.wizard.Dy += w.wizard.KnockbackDy
+		w.wizard.KnockbackDx = 0
+		w.wizard.KnockbackDy = 0
 	}
 
 	// check enemy collisions
-	for _, enemy := range w.enemies {
-		// turn on noclip if enemy is knocked outside of the map
-		if enemy.X < 0 ||
-			enemy.Y < 0 ||
-			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0-shared.TileSize || // padding to prevent enemies getting stuck outside the map
-			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0-shared.TileSize {
-			enemy.Noclip = true
-		} else if enemy.Noclip {
-			// lets enemies noclip until they're fully out of the hole
-			if !shared.CheckCollisionHorizontal(enemy.Sprite, w.holes) &&
-				!shared.CheckCollisionVertical(enemy.Sprite, w.holes) {
-				enemy.Noclip = false
-			}
-		}
+	w.CheckEnemyCollisions()
 
-		// turn noclip back on if enemy gets knocked into hole
-		if shared.CheckPointInRect(
-			int(enemy.X+shared.HalfTile),
-			int(enemy.Y+14), // between 13 and 15, which are the y coords used in CheckCollisionHorizontal/Vertical
-			w.holes,
-		) {
-			enemy.Noclip = true
-		}
-
-		// fade in and ramp movement speed after spawn
-		if enemy.Alpha < 1.0 {
-			enemy.Alpha += 0.01
-		}
-		if enemy.Combat.MoveSpeed() < shared.EnemyMoveSpeed {
-			enemy.Combat.SetMoveSpeed(enemy.Combat.MoveSpeed() + shared.EnemyMoveSpeed/150)
-		}
-
-		enemy.X += enemy.Dx
-		if !enemy.Noclip {
-			shared.CheckCollisionHorizontal(enemy.Sprite, w.holes)
-		}
-		enemy.Y += enemy.Dy
-		if !enemy.Noclip {
-			shared.CheckCollisionVertical(enemy.Sprite, w.holes)
-		}
-	}
-
-	// check player collisions
-	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	if !w.wizard.Noclip {
-		shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
-	}
-
-	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
-	if !w.wizard.Noclip {
-		shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
-	}
-
-	w.CheckChestCollisions()
-
-	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
-		if shared.CheckPointInRect(
-			int(w.wizard.X+shared.HalfTile),
-			int(w.wizard.Y+14), // puts hitbox close to feet
-			w.traps,
-		) {
-			w.wizard.Combat.Damage(1.0)
-		}
-	}
-	w.UpdateTraps()
-
-	// check if wizard fell
-	w.wizard.Combat.Fell = shared.CheckPointInRect(
-		int(w.wizard.X+shared.HalfTile),
-		int(w.wizard.Y+14), // puts hitbox close to feet
-		w.holes,
-	)
-	if w.wizard.X < 0 ||
-		w.wizard.Y < 0 ||
-		w.wizard.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
-		w.wizard.Combat.Fell = true
-	}
-	if w.wizard.Combat.Fell {
-		w.wizard.Combat.SetHealth(0)
-	}
+	// move player, check collisions with walls, holes, chests, and traps
+	w.UpdatePlayerMovementAndCheckCollisions()
 
 	// determine animations
-	if w.wizard.Combat.Attacking() {
-		w.wizard.AttackAnim = true //starts attack animation
-	}
-
-	if w.wizard.Combat.Health() <= 0 && !w.wizard.Combat.Dead {
-		w.wizard.Combat.Dead = true
-		w.wizard.DieAnim = true //starts death animation
-	}
-
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
-
-	for _, wizard := range w.wizards {
-		wizard.Reflect.ActiveAnimation = wizard.Reflect.GetActiveAnimation()
-
-		if wizard.Reflect.ActiveAnimation != nil {
-			wizard.Reflect.ActiveAnimation.Update()
-
-			wizard.Reflect.X = wizard.X + shared.HalfTile
-			wizard.Reflect.Y = wizard.Y + shared.HalfTile
-		}
-	}
-
-	// send w.wizard location to server
-	if !w.wizard.Combat.Dead {
-		w.WriteWizardMovementUpdate()
-	}
-
-	for _, enemy := range w.enemies {
-		if enemy.Combat.Attacking() {
-			enemy.AttackAnim = true
-		}
-		if enemy.Combat.Dead {
-			enemy.DieAnim = true
-		}
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
-		enemy.ActiveAnimation.Update()
-	}
-
-	for _, projectile := range w.projectiles {
-		projectile.ActiveAnimation.Update()
-	}
+	w.UpdateAnimations()
 
 	// sort wizards, enemies, and projectiles for consistent draw ordering
-	w.sortedWizards = make([]*shared.WizardPlayer, 0, 8)
-	w.sortedEnemies = make([]*shared.Enemy, 0, 32)
-	w.sortedProjectiles = make([]*shared.Projectile, 0, 16)
-
-	for _, wizard := range w.wizards {
-		if !wizard.Combat.Dead {
-			w.sortedWizards = append(w.sortedWizards, wizard)
-		}
-	}
-	if len(w.sortedWizards) > 1 {
-		slices.SortFunc(w.sortedWizards, func(a, b *shared.WizardPlayer) int {
-			return cmp.Compare(a.Data.SpriteIndex, b.Data.SpriteIndex)
-		})
-	}
-
-	for _, enemy := range w.enemies {
-		w.sortedEnemies = append(w.sortedEnemies, enemy)
-	}
-	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
-			return cmp.Compare(a.ID, b.ID)
-		})
-	}
-
-	for _, enemy := range w.enemies {
-		w.sortedEnemies = append(w.sortedEnemies, enemy)
-	}
-	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
-			return cmp.Compare(a.ID, b.ID)
-		})
-	}
-
-	for _, projectile := range w.projectiles {
-		w.sortedProjectiles = append(w.sortedProjectiles, projectile)
-	}
-	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedProjectiles, func(a, b *shared.Projectile) int {
-			return cmp.Compare(a.ID, b.ID)
-		})
-	}
+	w.SortEntities()
 
 	// spawn timers
 	w.EnemyRespawn()
@@ -610,5 +158,4 @@ func (w *WizArena) updatePlaying() {
 	w.updateRound()
 
 	w.UpdateRoundTimerText()
-
 }

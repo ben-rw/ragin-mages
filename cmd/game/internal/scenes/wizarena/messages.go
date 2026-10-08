@@ -36,6 +36,14 @@ func (w *WizArena) WriteNewProjectile(cx, cy int) {
 	})
 }
 
+func (w *WizArena) WriteReflecting(cx, cy int) {
+	w.Conn.WriteMsg(protocol.Reflecting, &protocol.ReflectingData{
+		ReflectorName: w.wizard.Data.Name,
+		CursorX:       cx,
+		CursorY:       cy,
+	})
+}
+
 func (w *WizArena) WriteProjectileReflected(reflectorName string, projectileID uint16) {
 	w.Conn.WriteMsg(protocol.ProjectileReflected, &protocol.ProjectileReflectedData{
 		ReflectorName: reflectorName,

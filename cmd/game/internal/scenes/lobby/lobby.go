@@ -96,7 +96,7 @@ func NewLobby(c *ws.Connection, roomID string) *Lobby {
 	}
 }
 
-func (l *Lobby) Update(messages []protocol.Message) error {
+func (l *Lobby) Update(messages []*protocol.Message) error {
 	for _, message := range messages {
 		switch message.Type {
 		case protocol.JoinResponse:

@@ -17,7 +17,7 @@ import (
 // wrap ws.Connection to avoid syscall/js import
 // this allows for benchmarking with go test -bench
 type MessageConn interface {
-	Check() []protocol.Message
+	Check() []*protocol.Message
 	WriteMsg(mt protocol.MessageType, data any)
 }
 

@@ -198,6 +198,22 @@ type WizardCombat struct {
 	reflecting       bool
 }
 
+func (wc *WizardCombat) SetKnockback(amount float64) {
+	wc.knockback = amount
+}
+
+func (wc *WizardCombat) SetProjectileScale(amount float64) {
+	wc.projectileScale = amount
+}
+
+func (wc *WizardCombat) SetProjectileSpeed(amount float64) {
+	wc.projectileSpeed = amount
+}
+
+func (wc *WizardCombat) SetAttackCooldown(amount float64) {
+	wc.attackCooldown = amount
+}
+
 func (wc *WizardCombat) GetTotalPower() int {
 	return wc.totalPower
 }

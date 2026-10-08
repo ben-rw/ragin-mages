@@ -12,7 +12,7 @@ import (
 )
 
 type Scene interface {
-	Update(messages []protocol.Message) error
+	Update(messages []*protocol.Message) error
 	Draw(screen *ebiten.Image)
 }
 

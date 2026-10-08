@@ -24,6 +24,7 @@ const (
 	ProjectileHitWizard  MessageType = "ProjectileHitWizard"
 	ProjectileHitEnemy   MessageType = "ProjectileHitEnemy"
 	ProjectileReflected  MessageType = "ProjectileReflected"
+	Reflecting           MessageType = "Reflecting"
 )
 
 type Message struct {
@@ -76,7 +77,7 @@ type EnemyMovementUpdateData struct {
 	Y  float64 `json:"y"`
 	Dx float64 `json:"dx"`
 	Dy float64 `json:"dy"`
-	ID int     `json:"id"`
+	ID uint16  `json:"id"`
 }
 
 type EnemyStatUpdateData struct {
@@ -85,8 +86,8 @@ type EnemyStatUpdateData struct {
 }
 
 type WizArenaMovementData struct {
-	WizardMovementData  *WizardMovementUpdateData  `json:"wizard_movement_data"`
-	EnemiesMovementData []*EnemyMovementUpdateData `json:"enemies_movement_data"`
+	WizardsMovementData []*WizardMovementUpdateData `json:"wizard_movement_data"`
+	EnemiesMovementData []*EnemyMovementUpdateData  `json:"enemies_movement_data"`
 }
 
 type NewProjectileData struct {
@@ -100,6 +101,12 @@ type ProjectileReflectedData struct {
 	CursorX       int    `json:"cursor_x"`
 	CursorY       int    `json:"cursor_y"`
 	ProjectileID  uint16 `json:"projectile_id"`
+}
+
+type ReflectingData struct {
+	ReflectorName string `json:"reflector_name"`
+	CursorX       int    `json:"cursor_x"`
+	CursorY       int    `json:"cursor_y"`
 }
 
 type ProjectileHitWizardData struct {

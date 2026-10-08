@@ -29,7 +29,7 @@ func NewMemory(c *ws.Connection, roomID string) *Memory {
 	}
 }
 
-func (m *Memory) Update(messages []protocol.Message) error {
+func (m *Memory) Update(messages []*protocol.Message) error {
 	for _, message := range messages {
 		switch message.Type {
 		case protocol.JoinResponse:
