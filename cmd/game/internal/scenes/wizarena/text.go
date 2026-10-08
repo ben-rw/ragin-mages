@@ -30,6 +30,7 @@ func (w *WizArena) NewScoreboard() {
 			// round winner gets stats boosted
 			w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower(), shared.WinRoundBoost)
 			wizard.Combat.RandomBoost(shared.WinRoundBoost, shared.StandardMult)
+			w.WriteWizardStatUpdate()
 			w.dynamicText = w.NewDynamicTextMap()
 		} else {
 			w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
@@ -55,9 +56,9 @@ func (w *WizArena) NewDynamicTextMap() map[DynamicText]string {
 	return map[DynamicText]string{
 		// display stats to player starting at 1 and scaling by number of boosts applied to each stat
 		// to let player see how much they've increased each stat, rather than internal stat numbers
-		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*2-5),
-		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*4-1),
-		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*2-5),
+		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*(1/shared.PSpeedMult)-(1/shared.PSpeedMult*shared.BaseProjectileSpeed-1)),
+		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*(1/shared.PScaleMult)-(1/shared.PScaleMult*shared.BaseProjectileScale-1)),
+		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*(1/shared.KnockbackMult)-(1/shared.KnockbackMult*shared.BaseKnockback-1)),
 		AttackCooldown:  fmt.Sprintf("Attack Cooldown: %.2fs", float64(w.wizard.Combat.AttackCooldown())/60.0),
 	}
 }

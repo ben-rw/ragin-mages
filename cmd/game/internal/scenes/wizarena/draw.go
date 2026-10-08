@@ -2,6 +2,7 @@ package wizarena
 
 import (
 	"image/color"
+	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -209,6 +210,20 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	}
 
 	if w.debug {
+
+		if w.wizard.Combat.Reflecting() {
+			log.Println("reflecting")
+			vector.StrokeCircle(
+				screen,
+				float32(w.wizard.X+shared.HalfTile+w.camera.X),
+				float32(w.wizard.Y+shared.HalfTile+w.camera.Y),
+				float32(w.wizard.HurtboxRadius)*2,
+				1.0,
+				color.RGBA{255, 0, 0, 255},
+				false,
+			)
+		}
+
 		for _, projectile := range w.projectiles {
 			opts.GeoM.Translate(-shared.FBCenterX, -shared.FBCenterY)
 			opts.GeoM.Scale(projectile.Scale, projectile.Scale)

@@ -17,15 +17,15 @@ const (
 
 // boostable stats
 const (
-	ProjectileSpeed = 3.0
-	ProjectileScale = 0.5
-	PlayerKnockback = 3.0
-	AttackCooldown  = 60 //determines how many ticks projectile will persist
-	PSpeedMult      = .5
-	PScaleMult      = .25
-	KnockbackMult   = .5
-	AttackCDMult    = 1.0
-	StandardMult    = 0.0
+	BaseProjectileSpeed = 3.0
+	BaseProjectileScale = 0.5
+	BaseKnockback       = 3.0
+	BaseAttackCooldown  = 60 //determines how many ticks projectile will persist
+	PSpeedMult          = .5
+	PScaleMult          = .25
+	KnockbackMult       = .5
+	AttackCDMult        = .5
+	StandardMult        = 0.0
 )
 
 const (
@@ -205,11 +205,11 @@ func (wc *WizardCombat) AttackCooldown() int {
 	return wc.attackCooldown
 }
 
-func (wc *WizardCombat) BoostAttackCooldown(amount int, mult float64) {
+func (wc *WizardCombat) BoostAttackCooldown(amount float64, mult float64) {
 	if mult == StandardMult {
 		mult = AttackCDMult
 	}
-	wc.attackCooldown -= amount * int(mult)
+	wc.attackCooldown -= int(amount * mult)
 	if wc.attackCooldown < 12 { // limit projectile spawning to ~5/sec
 		wc.attackCooldown = 12 // 12/60 gives a nice even .2 as the attackCD cap
 	}
@@ -223,7 +223,7 @@ func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
 		1: wc.BoostProjectileScale,
 		2: wc.BoostKnockback,
 		3: func(amount float64, mult float64) {
-			wc.BoostAttackCooldown(int(amount), mult)
+			wc.BoostAttackCooldown(amount, mult)
 		},
 	}
 
@@ -319,14 +319,14 @@ func NewWizard(player *Player) *WizardPlayer {
 				PlayerHealth,
 				PlayerAttackPower,
 				PlayerMoveSpeed,
-				ProjectileSpeed,
-				ProjectileScale,
-				PlayerKnockback,
+				BaseProjectileSpeed,
+				BaseProjectileScale,
+				BaseKnockback,
 			),
-			attackCooldown:   AttackCooldown,
+			attackCooldown:   BaseAttackCooldown,
 			reflectCooldown:  ReflectCooldown,
-			timeSinceAttack:  AttackCooldown,  // set timeSinceAttack so player can attack immediately
-			timeSinceReflect: ReflectCooldown, // set timeSinceReflect so player can reflect immediately
+			timeSinceAttack:  BaseAttackCooldown, // set timeSinceAttack so player can attack immediately
+			timeSinceReflect: ReflectCooldown,    // set timeSinceReflect so player can reflect immediately
 			iFrames:          0,
 			reflectFrames:    0,
 			Dead:             false,
@@ -357,7 +357,7 @@ func StealStats(thief *WizardCombat, victim *WizardCombat) {
 	}
 	if thief.AttackCooldown() > victim.AttackCooldown() {
 		stolen := (thief.AttackCooldown() - victim.AttackCooldown()) / StatTheftDivisor
-		thief.BoostAttackCooldown(stolen, 1)
-		victim.BoostAttackCooldown(-stolen, 1)
+		thief.BoostAttackCooldown(float64(stolen), 1)
+		victim.BoostAttackCooldown(float64(-stolen), 1)
 	}
 }

@@ -71,7 +71,7 @@ func (w *WizArena) WriteProjectileHitWizard(victim *shared.WizardPlayer, victimD
 	})
 }
 
-func (w *WizArena) WriteProjectileHitEnemy(victimDx, victimDy float64) {
+func (w *WizArena) WriteProjectileHitEnemy(victim *shared.Enemy, victimDx, victimDy float64) {
 	w.Conn.WriteMsg(protocol.ProjectileHitEnemy, &protocol.ProjectileHitEnemyData{
 		ShooterStatData: &protocol.WizardStatUpdateData{
 			Score:           w.wizard.Data.Score,
@@ -83,8 +83,8 @@ func (w *WizArena) WriteProjectileHitEnemy(victimDx, victimDy float64) {
 			Name:            w.wizard.Data.Name,
 		},
 		VictimStatData: &protocol.EnemyStatUpdateData{
-			Health: 0,
-			ID:     0,
+			Health: victim.Combat.Health(),
+			ID:     victim.ID,
 		},
 		VictimDx: victimDx,
 		VictimDy: victimDy,

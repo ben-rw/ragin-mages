@@ -55,11 +55,11 @@ type Projectile struct {
 	ID            uint16
 }
 
-var i uint16 = 0
+var projectileID uint16 = 0
 
 func getProjectileID() uint16 {
-	i++
-	return i
+	projectileID++
+	return projectileID
 }
 
 func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {

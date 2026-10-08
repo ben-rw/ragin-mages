@@ -13,6 +13,7 @@ type Enemy struct {
 	Type          EnemyType
 	FollowsPlayer bool
 	HurtboxRadius float64
+	ID            uint16
 }
 
 type EnemyType int
@@ -34,6 +35,13 @@ func NewEnemyImageCache(enemyTypes []EnemyType) (map[EnemyType]*ebiten.Image, er
 
 	}
 	return imgs, nil
+}
+
+var enemyID uint16 = 0
+
+func getEnemyID() uint16 {
+	enemyID++
+	return enemyID
 }
 
 func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y float64) *Enemy {
@@ -66,5 +74,6 @@ func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y f
 		Type:          Skeleton,
 		FollowsPlayer: followsPlayer,
 		HurtboxRadius: HurtboxRadius,
+		ID:            getEnemyID(),
 	}
 }

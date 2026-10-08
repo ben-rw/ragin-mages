@@ -333,9 +333,12 @@ func (w *WizArena) updatePlaying() {
 					wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
 					wizard.Noclip = true
 
+					w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
+
 					if wizard.Combat.Health() <= 0 {
 						// player who last hit the player gets a stat boost
 						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
+						w.WriteWizardStatUpdate()
 						w.dynamicText = w.NewDynamicTextMap()
 					}
 				}
@@ -365,6 +368,7 @@ func (w *WizArena) updatePlaying() {
 					deadEnemies[i] = struct{}{}
 					// player who last hit the enemy gets a stat boost
 					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
+					w.WriteWizardStatUpdate()
 					w.dynamicText = w.NewDynamicTextMap()
 				}
 			}

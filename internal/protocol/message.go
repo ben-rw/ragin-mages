@@ -81,7 +81,7 @@ type EnemyMovementUpdateData struct {
 
 type EnemyStatUpdateData struct {
 	Health float64 `json:"health"`
-	ID     int     `json:"id"`
+	ID     uint16  `json:"id"`
 }
 
 // type WizArenaMovementStateData struct {
