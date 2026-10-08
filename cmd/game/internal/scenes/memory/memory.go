@@ -115,3 +115,32 @@ func (m *Memory) Draw(screen *ebiten.Image) {
 	textOpts.GeoM.Translate(shared.BottomRight())
 	text.Draw(screen, waitText, &text.GoTextFace{Source: shared.FontSrc, Size: 8}, &textOpts)
 }
+
+// walks player from one place to another at speed proportionate
+// to the initial distance between the player's location and the
+// destination with no input from the player
+func (m *Memory) ScriptedWalk(destX, destY float64) {
+	distX := destX - m.Player.X
+	stepX := distX / 100000
+	distY := destY - m.Player.Y
+	stepY := distY / 100000
+	for destX != m.Player.X || destY != m.Player.Y {
+		if destX-m.Player.X > stepX {
+			m.Player.X = destX
+		} else {
+			m.Player.X += stepX
+		}
+		if destY-m.Player.Y > stepY {
+			m.Player.Y = destY
+		} else {
+			m.Player.Y += stepY
+		}
+	}
+}
+
+// put player at the back of the line after thier turn, remove furthest positions
+// based on number of eliminated players, making the line shorter
+func (m *Memory) getInLine(totalPlayers, eliminatedPlayers int) {
+	lineIndex := totalPlayers - eliminatedPlayers
+	m.ScriptedWalk(PlayerPositions[lineIndex].X, PlayerPositions[lineIndex].Y)
+}

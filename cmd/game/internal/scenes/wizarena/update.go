@@ -1,8 +1,10 @@
 package wizarena
 
 import (
+	"cmp"
 	"image"
 	"math"
+	"slices"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -50,6 +52,15 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 				log.Println(err)
 				continue
 			}
+
+		case protocol.WizardMovementUpdate:
+		case protocol.EnemyMovementUpdate:
+		case protocol.WizArenaMovement:
+		case protocol.WizardStatUpdate:
+		case protocol.NewProjectile:
+		case protocol.ProjectileReflected:
+		case protocol.ProjectileHitEnemy:
+		case protocol.ProjectileHitWizard:
 
 		default:
 		}
@@ -241,9 +252,6 @@ func (w *WizArena) updatePlaying() {
 		}
 	}
 
-	deadEnemies := make(map[int]struct{})
-	deadProjectiles := make(map[int]struct{})
-
 	leftClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
 	rightClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
 	cX, cY := ebiten.CursorPosition()
@@ -259,7 +267,7 @@ func (w *WizArena) updatePlaying() {
 			shared.Fireball,
 		)
 		w.WriteNewProjectile(cX, cY)
-		w.projectiles = append(w.projectiles, projectile)
+		w.projectiles[projectile.ID] = projectile
 
 		// figure out attack direction for animation
 		vX := float64(cX) - w.wizard.X
@@ -293,146 +301,129 @@ func (w *WizArena) updatePlaying() {
 	}
 
 	// check fireball collisions
-	for i, projectile := range w.projectiles {
+	for _, projectile := range w.projectiles {
 		projectile.Update()
-		for _, wizard := range w.wizards {
-			if wizard == projectile.Caster {
-				continue
-			}
-			if wizard.Combat.IFrames() > 0 {
-				continue
-			}
-			if _, ok := projectile.AlreadyHit[wizard]; ok {
-				continue
-			}
+		if projectile.Caster == w.wizard {
+			for _, wizard := range w.wizards {
+				if wizard == projectile.Caster {
+					continue
+				}
+				if wizard.Combat.IFrames() > 0 {
+					continue
+				}
+				if _, ok := projectile.AlreadyHit[wizard]; ok {
+					continue
+				}
 
-			var wizardRadius = w.wizard.HurtboxRadius
-			if wizard.Combat.Reflecting() {
-				wizardRadius *= 2
-			}
-
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				wizard.X+shared.HalfTile,
-				wizard.Y+shared.HalfTile,
-				wizardRadius,
-			) {
+				var wizardRadius = w.wizard.HurtboxRadius
 				if wizard.Combat.Reflecting() {
-					wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
-					wizard.Combat.ResetReflectCooldown()
-					// } else if wizard.Data.Name == "CPU" {
-					// 	wizard.ReflectProjectile(projectile, 200, 100)
-				} else {
-					wizard.Combat.Damage(projectile.Damage)
-					projectile.AlreadyHit[wizard] = struct{}{}
-					shared.StealStats(projectile.Caster.Combat, wizard.Combat)
+					wizardRadius *= 2
+				}
 
-					wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-					wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-					wizard.Noclip = true
+				if shared.CheckCollisionCircle(
+					projectile.X+projectile.HitboxOffsetX,
+					projectile.Y+projectile.HitboxOffsetY,
+					projectile.ScaledRadius,
+					wizard.X+shared.HalfTile,
+					wizard.Y+shared.HalfTile,
+					wizardRadius,
+				) {
+					if wizard.Combat.Reflecting() {
+						wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
+						w.WriteProjectileReflected(wizard.Data.Name, projectile.ID)
+						wizard.Combat.ResetReflectCooldown()
+						// } else if wizard.Data.Name == "CPU" {
+						// 	wizard.ReflectProjectile(projectile, 200, 100)
+					} else {
+						wizard.Combat.Damage(projectile.Damage)
+						projectile.AlreadyHit[wizard] = struct{}{}
+						shared.StealStats(projectile.Caster.Combat, wizard.Combat)
 
-					w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
+						wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+						wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+						wizard.Noclip = true
 
-					if wizard.Combat.Health() <= 0 {
-						// player who last hit the player gets a stat boost
-						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
+						w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
+
+						if wizard.Combat.Health() <= 0 {
+							// player who last hit the player gets a stat boost
+							projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
+							w.WriteWizardStatUpdate()
+						}
+
+						w.dynamicText = w.NewDynamicTextMap()
+					}
+
+				}
+			}
+			for _, enemy := range w.enemies {
+				if _, ok := projectile.AlreadyHit[enemy]; ok {
+					continue
+				}
+
+				if shared.CheckCollisionCircle(
+					projectile.X+projectile.HitboxOffsetX,
+					projectile.Y+projectile.HitboxOffsetY,
+					projectile.ScaledRadius,
+					enemy.X+shared.HalfTile,
+					enemy.Y+shared.HalfTile,
+					enemy.HurtboxRadius,
+				) {
+					enemy.Combat.Damage(projectile.Damage)
+					projectile.AlreadyHit[enemy] = struct{}{}
+
+					enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
+					enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+
+					if enemy.Combat.Health() <= 0 {
+						delete(w.enemies, enemy.ID)
+						// player who last hit the enemy gets a stat boost
+						projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
 						w.WriteWizardStatUpdate()
 						w.dynamicText = w.NewDynamicTextMap()
 					}
 				}
-
 			}
-		}
-		for i, enemy := range w.enemies {
-			if _, ok := projectile.AlreadyHit[enemy]; ok {
-				continue
-			}
-
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				enemy.X+shared.HalfTile,
-				enemy.Y+shared.HalfTile,
-				enemy.HurtboxRadius,
-			) {
-				enemy.Combat.Damage(projectile.Damage)
-				projectile.AlreadyHit[enemy] = struct{}{}
-
-				enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-				enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-
-				if enemy.Combat.Health() <= 0 {
-					deadEnemies[i] = struct{}{}
-					// player who last hit the enemy gets a stat boost
-					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
-					w.WriteWizardStatUpdate()
-					w.dynamicText = w.NewDynamicTextMap()
+			for _, otherProjectile := range w.projectiles {
+				if projectile == otherProjectile {
+					continue
 				}
-			}
-		}
-		for j, otherProjectile := range w.projectiles {
-			if projectile == otherProjectile {
-				continue
-			}
 
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				otherProjectile.X+otherProjectile.HitboxOffsetX,
-				otherProjectile.Y+otherProjectile.HitboxOffsetY,
-				otherProjectile.ScaledRadius,
-			) {
-				if projectile.Scale > otherProjectile.Scale {
-					deadProjectiles[j] = struct{}{}
-				} else if projectile.Scale < otherProjectile.Scale {
-					deadProjectiles[i] = struct{}{}
-				} else {
-					deadProjectiles[j] = struct{}{}
-					deadProjectiles[i] = struct{}{}
+				if shared.CheckCollisionCircle(
+					projectile.X+projectile.HitboxOffsetX,
+					projectile.Y+projectile.HitboxOffsetY,
+					projectile.ScaledRadius,
+					otherProjectile.X+otherProjectile.HitboxOffsetX,
+					otherProjectile.Y+otherProjectile.HitboxOffsetY,
+					otherProjectile.ScaledRadius,
+				) {
+					if projectile.Scale > otherProjectile.Scale {
+						delete(w.projectiles, otherProjectile.ID)
+					} else if projectile.Scale < otherProjectile.Scale {
+						delete(w.projectiles, projectile.ID)
+					} else {
+						delete(w.projectiles, projectile.ID)
+						delete(w.projectiles, otherProjectile.ID)
+					}
 				}
 			}
 		}
 
 		if projectile.TicksToLive < 1 {
-			deadProjectiles[i] = struct{}{}
+			delete(w.projectiles, projectile.ID)
 		}
-	}
-
-	// despawn dead entities
-	if len(deadProjectiles) > 0 {
-		newProjectiles := make([]*shared.Projectile, 0)
-		for i, projectile := range w.projectiles {
-			if _, ok := deadProjectiles[i]; !ok {
-				newProjectiles = append(newProjectiles, projectile)
-			}
-		}
-		w.projectiles = newProjectiles
-	}
-
-	if len(deadEnemies) > 0 {
-		newEnemies := make([]*shared.Enemy, 0)
-		for i, enemy := range w.enemies {
-			if _, ok := deadEnemies[i]; !ok {
-				newEnemies = append(newEnemies, enemy)
-			}
-		}
-		w.enemies = newEnemies
 	}
 
 	// check enemy collisions
 	for _, enemy := range w.enemies {
-		// lets enemies noclip until they're fully out of the hole
-
+		// turn on noclip if enemy is knocked outside of the map
 		if enemy.X < 0 ||
 			enemy.Y < 0 ||
-			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
+			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0-shared.TileSize || // padding to prevent enemies getting stuck outside the map
+			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0-shared.TileSize {
 			enemy.Noclip = true
 		} else if enemy.Noclip {
+			// lets enemies noclip until they're fully out of the hole
 			if !shared.CheckCollisionHorizontal(enemy.Sprite, w.holes) &&
 				!shared.CheckCollisionVertical(enemy.Sprite, w.holes) {
 				enemy.Noclip = false
@@ -552,6 +543,49 @@ func (w *WizArena) updatePlaying() {
 		projectile.ActiveAnimation.Update()
 	}
 
+	// sort wizards, enemies, and projectiles for consistent draw ordering
+	w.sortedWizards = make([]*shared.WizardPlayer, 0, 8)
+	w.sortedEnemies = make([]*shared.Enemy, 0, 32)
+	w.sortedProjectiles = make([]*shared.Projectile, 0, 16)
+
+	for _, wizard := range w.wizards {
+		if !wizard.Combat.Dead {
+			w.sortedWizards = append(w.sortedWizards, wizard)
+		}
+	}
+	if len(w.sortedWizards) > 1 {
+		slices.SortFunc(w.sortedWizards, func(a, b *shared.WizardPlayer) int {
+			return cmp.Compare(a.Data.SpriteIndex, b.Data.SpriteIndex)
+		})
+	}
+
+	for _, enemy := range w.enemies {
+		w.sortedEnemies = append(w.sortedEnemies, enemy)
+	}
+	if len(w.sortedEnemies) > 1 {
+		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
+			return cmp.Compare(a.ID, b.ID)
+		})
+	}
+
+	for _, enemy := range w.enemies {
+		w.sortedEnemies = append(w.sortedEnemies, enemy)
+	}
+	if len(w.sortedEnemies) > 1 {
+		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
+			return cmp.Compare(a.ID, b.ID)
+		})
+	}
+
+	for _, projectile := range w.projectiles {
+		w.sortedProjectiles = append(w.sortedProjectiles, projectile)
+	}
+	if len(w.sortedEnemies) > 1 {
+		slices.SortFunc(w.sortedProjectiles, func(a, b *shared.Projectile) int {
+			return cmp.Compare(a.ID, b.ID)
+		})
+	}
+
 	// spawn timers
 	w.EnemyRespawn()
 	w.ChestRespawn()
@@ -559,6 +593,11 @@ func (w *WizArena) updatePlaying() {
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
 		w.debug = !w.debug
+	}
+
+	// toggle FPS/TPS display
+	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
+		w.displayFPS = !w.displayFPS
 	}
 
 	// play background music

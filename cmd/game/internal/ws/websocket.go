@@ -102,10 +102,6 @@ func ConnectToWebsocket() (*Connection, string, error) {
 		return nil, "", err
 	}
 
-	joinData := protocol.JoinRequestData{
-		RoomID: roomID,
-	}
-
 	overlay := js.Global().Get("document").Call("getElementById", "start-overlay")
 	var callback js.Func
 	callback = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -123,6 +119,10 @@ func ConnectToWebsocket() (*Connection, string, error) {
 	overlay.Call("addEventListener", "click", callback, js.ValueOf(map[string]any{
 		"once": true,
 	}))
+
+	joinData := protocol.JoinRequestData{
+		RoomID: roomID,
+	}
 
 	msg, err := protocol.MarshalToMessage(protocol.JoinRequest, joinData)
 	if err != nil {

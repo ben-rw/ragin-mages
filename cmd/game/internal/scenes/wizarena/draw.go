@@ -1,11 +1,13 @@
 package wizarena
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -44,7 +46,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		opts.GeoM.Translate(wizard.X, wizard.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
@@ -62,7 +64,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		if wizard.Reflect.ActiveAnimation != nil {
 			opts.GeoM.Translate(-shared.ReflectWidth/2, -shared.ReflectHeight/2)
 			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
@@ -77,7 +79,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	for _, enemy := range w.enemies {
+	for _, enemy := range w.sortedEnemies {
 		opts.GeoM.Translate(enemy.X, enemy.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
@@ -95,8 +97,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, projectile := range w.projectiles {
-
+	for _, projectile := range w.sortedProjectiles {
 		opts.GeoM.Translate(-projectile.CenterX, -projectile.CenterY)
 
 		opts.GeoM.Scale(projectile.Scale, projectile.Scale)
@@ -124,7 +125,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		textOpts.PrimaryAlign = wizard.NameTag.LayoutOptions.PrimaryAlign
 
 		textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
@@ -209,6 +210,11 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Reset()
 	}
 
+	if w.displayFPS {
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f FPS", ebiten.ActualFPS()), 6, 15)
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f TPS", ebiten.ActualTPS()), 6, 25)
+	}
+
 	if w.debug {
 
 		if w.wizard.Combat.Reflecting() {
@@ -224,7 +230,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			)
 		}
 
-		for _, projectile := range w.projectiles {
+		for _, projectile := range w.sortedProjectiles {
 			opts.GeoM.Translate(-shared.FBCenterX, -shared.FBCenterY)
 			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
 			opts.GeoM.Rotate(projectile.Rotation)
@@ -252,12 +258,12 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.GeoM.Reset()
 		}
 
-		for _, enemies := range w.enemies {
+		for _, enemy := range w.sortedEnemies {
 			vector.StrokeCircle(
 				screen,
-				float32(enemies.X+shared.HalfTile+w.camera.X),
-				float32(enemies.Y+shared.HalfTile+w.camera.Y),
-				float32(enemies.HurtboxRadius),
+				float32(enemy.X+shared.HalfTile+w.camera.X),
+				float32(enemy.Y+shared.HalfTile+w.camera.Y),
+				float32(enemy.HurtboxRadius),
 				1.0,
 				color.RGBA{255, 0, 0, 255},
 				false,

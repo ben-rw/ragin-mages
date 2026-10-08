@@ -9,7 +9,8 @@ import (
 
 func (w *WizArena) SpawnEnemies() {
 	for i := range shared.EnemySpawnCount {
-		w.enemies = append(w.enemies, shared.NewEnemy(w.enemyImageCache[shared.Skeleton], shared.Skeleton, true, shared.EnemySpawns[i].X*shared.TileSize, shared.EnemySpawns[i].Y*shared.TileSize))
+		enemy := shared.NewEnemy(w.enemyImageCache[shared.Skeleton], shared.Skeleton, true, shared.EnemySpawns[i].X*shared.TileSize, shared.EnemySpawns[i].Y*shared.TileSize)
+		w.enemies[enemy.ID] = enemy
 	}
 }
 

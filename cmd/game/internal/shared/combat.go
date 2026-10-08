@@ -20,7 +20,7 @@ const (
 	BaseProjectileSpeed = 3.0
 	BaseProjectileScale = 0.5
 	BaseKnockback       = 3.0
-	BaseAttackCooldown  = 60 //determines how many ticks projectile will persist
+	BaseAttackCooldown  = 60.0 //determines how many ticks projectile will persist
 	PSpeedMult          = .5
 	PScaleMult          = .25
 	KnockbackMult       = .5
@@ -62,14 +62,14 @@ type BasicCombat struct {
 	projectileSpeed float64
 	projectileScale float64
 	knockback       float64
+	attackCooldown  float64
+	timeSinceAttack float64
 	attacking       bool
 }
 
 type EnemyCombat struct {
 	*BasicCombat
-	attackCooldown  int
-	timeSinceAttack int
-	Dead            bool
+	Dead bool
 }
 
 func (b *BasicCombat) Update() {
@@ -141,7 +141,7 @@ func (b *BasicCombat) BoostKnockback(amount float64, mult float64) {
 	b.knockback += amount * mult
 }
 
-func NewBasicCombat(health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *BasicCombat {
+func NewBasicCombat(health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback, attackCooldown, timeSinceAttack float64) *BasicCombat {
 	return &BasicCombat{
 		health,
 		attackPower,
@@ -149,6 +149,8 @@ func NewBasicCombat(health, attackPower, moveSpeed, projectileSpeed, projectileS
 		projectileSpeed,
 		projectileScale,
 		knockback,
+		attackCooldown,
+		0,
 		false,
 	}
 }
@@ -167,7 +169,7 @@ func (e *EnemyCombat) Update() {
 	e.timeSinceAttack += 1
 }
 
-func NewEnemyCombat(attackCooldown int, health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *EnemyCombat {
+func NewEnemyCombat(attackCooldown, health, attackPower, moveSpeed, projectileSpeed, projectileScale, knockback float64) *EnemyCombat {
 	return &EnemyCombat{
 		NewBasicCombat(
 			health,
@@ -176,16 +178,15 @@ func NewEnemyCombat(attackCooldown int, health, attackPower, moveSpeed, projecti
 			projectileSpeed,
 			projectileScale,
 			knockback,
+			attackCooldown,
+			0,
 		),
-		attackCooldown,
-		0,
 		false,
 	}
 }
 
 type WizardCombat struct {
 	*BasicCombat
-	attackCooldown   int
 	reflectCooldown  int
 	timeSinceAttack  int
 	timeSinceReflect int
@@ -201,7 +202,7 @@ func (wc *WizardCombat) GetTotalPower() int {
 	return wc.totalPower
 }
 
-func (wc *WizardCombat) AttackCooldown() int {
+func (wc *WizardCombat) AttackCooldown() float64 {
 	return wc.attackCooldown
 }
 
@@ -209,7 +210,7 @@ func (wc *WizardCombat) BoostAttackCooldown(amount float64, mult float64) {
 	if mult == StandardMult {
 		mult = AttackCDMult
 	}
-	wc.attackCooldown -= int(amount * mult)
+	wc.attackCooldown -= amount * mult
 	if wc.attackCooldown < 12 { // limit projectile spawning to ~5/sec
 		wc.attackCooldown = 12 // 12/60 gives a nice even .2 as the attackCD cap
 	}
@@ -322,8 +323,9 @@ func NewWizard(player *Player) *WizardPlayer {
 				BaseProjectileSpeed,
 				BaseProjectileScale,
 				BaseKnockback,
+				BaseAttackCooldown,
+				0,
 			),
-			attackCooldown:   BaseAttackCooldown,
 			reflectCooldown:  ReflectCooldown,
 			timeSinceAttack:  BaseAttackCooldown, // set timeSinceAttack so player can attack immediately
 			timeSinceReflect: ReflectCooldown,    // set timeSinceReflect so player can reflect immediately

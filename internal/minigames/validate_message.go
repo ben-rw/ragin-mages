@@ -2,9 +2,11 @@ package minigames
 
 import (
 	"errors"
+	"math/rand"
+
 	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
-	"math/rand"
+	"github.com/ben-rw/ragin-mages/internal/room"
 )
 
 // lobby, random omitted as they are not games
@@ -12,7 +14,7 @@ var minigameMap = map[int]protocol.SceneType{
 	0: protocol.WizardsScene,
 }
 
-func ValidateMessage(message *protocol.Message, scene protocol.SceneType) (*protocol.Message, error) {
+func ValidateMessage(message *protocol.Message, r *room.Room) (*protocol.Message, error) {
 	if message.Type == protocol.SceneChange {
 		sceneChangeData, err := message.UnmarshalMessageData()
 		if err != nil {
@@ -60,10 +62,13 @@ func ValidateMessage(message *protocol.Message, scene protocol.SceneType) (*prot
 			if err != nil {
 				return &protocol.Message{Type: protocol.Unset}, err
 			}
+
+			// wizards.NewWizardServer(r)
+
 			return msg, nil
 		}
 	} else {
-		switch scene {
+		switch r.Scene {
 		case protocol.LobbyScene:
 			msg, err := lobby.ValidateMsg(message)
 			if err != nil {

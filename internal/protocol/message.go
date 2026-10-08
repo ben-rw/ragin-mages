@@ -10,20 +10,20 @@ import (
 type MessageType string
 
 const (
-	Unset                 MessageType = "Unset"
-	JoinRequest           MessageType = "JoinRequest"
-	JoinResponse          MessageType = "JoinResponse"
-	SceneChange           MessageType = "SceneChange"
-	PlayerUpdate          MessageType = "PlayerUpdate"
-	WizardMovementUpdate  MessageType = "WizardMovementUpdate"
-	WizardStatUpdate      MessageType = "WizardStatUpdate"
-	EnemyMovementUpdate   MessageType = "EnemyMovementUpdate"
-	EnemyStatUpdate       MessageType = "EnemyStatUpdate"
-	WizArenaMovementState MessageType = "WizArenaState"
-	NewProjectile         MessageType = "NewProjectile"
-	ProjectileHitWizard   MessageType = "ProjectileHitWizard"
-	ProjectileHitEnemy    MessageType = "ProjectileHitEnemy"
-	ProjectileReflected   MessageType = "ProjectileReflected"
+	Unset                MessageType = "Unset"
+	JoinRequest          MessageType = "JoinRequest"
+	JoinResponse         MessageType = "JoinResponse"
+	SceneChange          MessageType = "SceneChange"
+	PlayerUpdate         MessageType = "PlayerUpdate"
+	WizardMovementUpdate MessageType = "WizardMovementUpdate"
+	WizardStatUpdate     MessageType = "WizardStatUpdate"
+	EnemyMovementUpdate  MessageType = "EnemyMovementUpdate"
+	EnemyStatUpdate      MessageType = "EnemyStatUpdate"
+	WizArenaMovement     MessageType = "WizArenaState"
+	NewProjectile        MessageType = "NewProjectile"
+	ProjectileHitWizard  MessageType = "ProjectileHitWizard"
+	ProjectileHitEnemy   MessageType = "ProjectileHitEnemy"
+	ProjectileReflected  MessageType = "ProjectileReflected"
 )
 
 type Message struct {
@@ -63,7 +63,7 @@ type WizardMovementUpdateData struct {
 
 type WizardStatUpdateData struct {
 	Score           int     `json:"score"`
-	AttackCooldown  int     `json:"attack_cooldown"`
+	AttackCooldown  float64 `json:"attack_cooldown"`
 	ProjectileSpeed float64 `json:"projectile_speed"`
 	ProjectileScale float64 `json:"projectile_scale"`
 	Knockback       float64 `json:"knockback"`
@@ -84,10 +84,10 @@ type EnemyStatUpdateData struct {
 	ID     uint16  `json:"id"`
 }
 
-// type WizArenaMovementStateData struct {
-// 	WizardMovementData  *WizardMovementUpdateData  `json:"wizard_movement_data"`
-// 	EnemiesMovementData []*EnemyMovementUpdateData `json:"enemies_movement_data"`
-// }
+type WizArenaMovementData struct {
+	WizardMovementData  *WizardMovementUpdateData  `json:"wizard_movement_data"`
+	EnemiesMovementData []*EnemyMovementUpdateData `json:"enemies_movement_data"`
+}
 
 type NewProjectileData struct {
 	CasterName string `json:"caster_name"`

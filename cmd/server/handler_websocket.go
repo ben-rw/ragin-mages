@@ -135,7 +135,7 @@ func readLoop(r *room.Room, c *room.Client) {
 			}
 		}
 
-		updateMsg, err := minigames.ValidateMessage(&msg, c.Player.Room.Scene)
+		updateMsg, err := minigames.ValidateMessage(&msg, r)
 		if updateMsg.Type != protocol.Unset {
 			log.Printf("msg: %v, updateMsg: %v\n", string(msg.Data), string(updateMsg.Data))
 		}

@@ -85,7 +85,7 @@ func (w *WizardPlayer) ReflectProjectile(p *Projectile, cursorX, cursorY float64
 	p.Speed *= (1.0 + boostPercent)
 	p.Knockback *= (1.0 + boostPercent)
 	p.Scale *= (1.0 + boostPercent)
-	p.TicksToLive = w.Combat.attackCooldown
+	p.TicksToLive = int(w.Combat.attackCooldown)
 	p.Dx = normX * p.Speed
 	p.Dy = normY * p.Speed
 	p.NormX = normX

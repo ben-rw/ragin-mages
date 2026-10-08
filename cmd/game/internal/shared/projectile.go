@@ -126,7 +126,7 @@ func (w *WizardPlayer) ShootProjectile(img *ebiten.Image, cursorX, cursorY float
 		Rotation:      rotation,
 		CenterX:       FireballWidth / 2,
 		CenterY:       FireballHeight / 2,
-		TicksToLive:   w.Combat.AttackCooldown(),
+		TicksToLive:   int(w.Combat.AttackCooldown()),
 		ReflectCount:  0,
 		AlreadyHit:    make(map[any]struct{}),
 		Type:          projectileType,

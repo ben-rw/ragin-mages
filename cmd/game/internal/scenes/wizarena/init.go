@@ -54,12 +54,15 @@ type WizArena struct {
 	enemyImageCache        map[shared.EnemyType]*ebiten.Image
 	heartImage             *ebiten.Image
 	reflectImage           *ebiten.Image
-	enemies                []*shared.Enemy
+	enemies                map[uint16]*shared.Enemy
+	sortedEnemies          []*shared.Enemy
+	sortedWizards          []*shared.WizardPlayer
 	colliders              []image.Rectangle
 	chests                 []image.Rectangle
 	holes                  []image.Rectangle
 	traps                  []image.Rectangle
-	projectiles            []*shared.Projectile
+	projectiles            map[uint16]*shared.Projectile
+	sortedProjectiles      []*shared.Projectile
 	scoreboard             string
 	roundTimerString       string
 	roomID                 string
@@ -70,6 +73,7 @@ type WizArena struct {
 	round                  uint8
 	trapsUp                bool
 	debug                  bool
+	displayFPS             bool
 }
 
 func NewWizArena(c MessageConn, roomID string) *WizArena {
@@ -119,14 +123,14 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		},
 		Conn:                 c,
 		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
-		enemies:              make([]*shared.Enemy, 0, 32),                                   // 16 enemies spawn at at time, doubled for headroom
+		enemies:              make(map[uint16]*shared.Enemy, 32),                             // 16 enemies spawn at at time, doubled for headroom
 		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
 		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
 		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
 		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             // 1 projectile type
 		reflectFrameCache:    make(map[shared.ReflectType][]*ebiten.Image, 1),                // 1 reflect img
 		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
-		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles at one time
+		projectiles:          make(map[uint16]*shared.Projectile, 16),                        // there shouldn't ever be more than 16 projectiles at one time
 		projectileImageCache: projectileImgCache,
 		enemyImageCache:      enemyImgCache,
 		tilemapJSON:          tilemap,
@@ -145,6 +149,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		backgroundAlpha:      255,
 		round:                1,
 		debug:                false,
+		displayFPS:           false,
 	}
 
 	w.enemyFrameCache[shared.Skeleton] = spritesheet.LoadFrames(

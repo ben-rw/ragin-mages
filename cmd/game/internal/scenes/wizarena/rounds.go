@@ -38,8 +38,8 @@ func (w *WizArena) startNewRound() {
 	}
 
 	clear(w.openedChests)
-	w.enemies = make([]*shared.Enemy, 0, 32)
-	w.projectiles = make([]*shared.Projectile, 0, 16)
+	w.enemies = make(map[uint16]*shared.Enemy, 32)
+	w.projectiles = make(map[uint16]*shared.Projectile, 16)
 
 	w.phaseTimer = time.Now().Add(RoundTime * time.Second)
 	w.enemyRespawnTimer = time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second)
