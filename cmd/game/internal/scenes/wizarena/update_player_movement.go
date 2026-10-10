@@ -1,18 +1,20 @@
 package wizarena
 
-import "github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+import (
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
+)
 
 func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
+	w.wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
 	if !w.wizard.Noclip {
-		shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+		CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
 	}
 
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
+	w.wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
 	if !w.wizard.Noclip {
-		shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+		CheckCollisionVertical(w.wizard.Sprite, w.colliders)
 	}
 
 	// send w.wizard location to server
@@ -23,8 +25,8 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.CheckChestCollisions()
 
 	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
-		if shared.CheckPointInRect(
-			int(w.wizard.X+shared.HalfTile),
+		if CheckPointInRect(
+			int(w.wizard.X+wizServer.HalfTile),
 			int(w.wizard.Y+14), // puts hitbox close to feet
 			w.traps,
 		) {
@@ -34,8 +36,8 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.UpdateTraps()
 
 	// check if wizard fell
-	w.wizard.Combat.Fell = shared.CheckPointInRect(
-		int(w.wizard.X+shared.HalfTile),
+	w.wizard.Combat.Fell = CheckPointInRect(
+		int(w.wizard.X+wizServer.HalfTile),
 		int(w.wizard.Y+14), // puts hitbox close to feet
 		w.holes,
 	)

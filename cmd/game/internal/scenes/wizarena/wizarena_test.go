@@ -33,8 +33,8 @@ package wizarena
 // 	}
 //
 // 	w.camera = shared.NewCamera(
-// 		-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
-// 		-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
+// 		-(w.wizard.X+wizards.HalfTile)+shared.ScreenWidth/2.0,
+// 		-(w.wizard.Y+wizards.HalfTile)+shared.ScreenHeight/2.0,
 // 	)
 // 	return w
 // }

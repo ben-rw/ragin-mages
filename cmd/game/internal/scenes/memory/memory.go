@@ -98,7 +98,7 @@ func (m *Memory) Draw(screen *ebiten.Image) {
 			LayoutOptions: player.NameTag.LayoutOptions,
 		}
 		textOpts.GeoM.Translate(player.NameTag.X, player.NameTag.Y)
-		text.Draw(screen, player.Data.Name, player.NameTag.Face, &textOpts)
+		text.Draw(screen, player.Data.Username, player.NameTag.Face, &textOpts)
 
 		textOpts.GeoM.Reset()
 	}

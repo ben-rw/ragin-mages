@@ -1,7 +1,9 @@
-package shared
+package wizarena
 
 import (
 	"math/rand"
+
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 )
 
 const (
@@ -304,7 +306,7 @@ func (wc *WizardCombat) SetIFrames(amount int) {
 }
 
 type WizardPlayer struct {
-	*Player
+	*shared.Player
 	Combat        *WizardCombat
 	Reflect       *Reflect
 	FlickerFrames int
@@ -327,8 +329,7 @@ func (w *WizardPlayer) IFrameFlicker() {
 	}
 }
 
-func NewWizard(player *Player) *WizardPlayer {
-
+func NewWizard(player *shared.Player) *WizardPlayer {
 	return &WizardPlayer{
 		player,
 		&WizardCombat{

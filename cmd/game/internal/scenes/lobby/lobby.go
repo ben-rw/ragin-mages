@@ -221,7 +221,7 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 	for _, player := range l.Players {
 		textOpts.LayoutOptions = player.NameTag.LayoutOptions
 		textOpts.GeoM.Translate(player.NameTag.X, player.NameTag.Y)
-		text.Draw(l.lobbyImage, player.Data.Name, player.NameTag.Face, &textOpts)
+		text.Draw(l.lobbyImage, player.Data.Username, player.NameTag.Face, &textOpts)
 		textOpts.GeoM.Reset()
 	}
 

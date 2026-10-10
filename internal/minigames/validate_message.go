@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/ben-rw/ragin-mages/internal/room"
 )
@@ -63,7 +64,7 @@ func ValidateMessage(message *protocol.Message, r *room.Room) (*protocol.Message
 				return &protocol.Message{Type: protocol.Unset}, err
 			}
 
-			// wizards.NewWizardServer(r)
+			go wizServer.StartWizardServer(r)
 
 			return msg, nil
 		}
@@ -82,7 +83,7 @@ func ValidateMessage(message *protocol.Message, r *room.Room) (*protocol.Message
 			}
 			return msg, nil
 		case protocol.WizardsScene:
-			msg, err := lobby.ValidateMsg(message)
+			msg, err := wizServer.ValidateMsg(message)
 			if err != nil {
 				return &protocol.Message{Type: protocol.Unset}, err
 			}

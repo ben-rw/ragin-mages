@@ -5,6 +5,7 @@ import (
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -32,15 +33,15 @@ func NewNameTag(x, y float64) *NameTag {
 			Source: FontSrc,
 			Size:   nameTagSize,
 		},
-		X: x + TileSize/2,
-		Y: y + TileSize + 2,
+		X: x + wizServer.TileSize/2,
+		Y: y + wizServer.TileSize + 2,
 		LayoutOptions: text.LayoutOptions{
 			PrimaryAlign: 1,
 		},
 	}
 }
 
-var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, TileSize, TileSize)
+var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, wizServer.TileSize, wizServer.TileSize)
 
 func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 	imgPath := PlayerSpriteIndex[data.SpriteIndex]
@@ -79,7 +80,7 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 			1.0,
 		),
 		Data: &protocol.PlayerData{
-			Name:        data.Name,
+			Username:    data.Username,
 			Score:       data.Score,
 			Host:        data.Host,
 			SpriteIndex: data.SpriteIndex,

@@ -1,6 +1,8 @@
 package wizarena
 
-import "github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+import (
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
+)
 
 func (w *WizArena) UpdateAnimations() {
 	if w.wizard.Combat.Attacking() {
@@ -21,8 +23,8 @@ func (w *WizArena) UpdateAnimations() {
 		if wizard.Reflect.ActiveAnimation != nil {
 			wizard.Reflect.ActiveAnimation.Update()
 
-			wizard.Reflect.X = wizard.X + shared.HalfTile
-			wizard.Reflect.Y = wizard.Y + shared.HalfTile
+			wizard.Reflect.X = wizard.X + wizServer.HalfTile
+			wizard.Reflect.Y = wizard.Y + wizServer.HalfTile
 		}
 	}
 

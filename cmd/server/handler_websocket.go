@@ -202,7 +202,7 @@ func getPlayerDataList(r *room.Room) ([]*protocol.PlayerData, error) {
 
 func playerToPlayerData(player *room.Player) *protocol.PlayerData {
 	return &protocol.PlayerData{
-		Name:        player.Name,
+		Username:    player.Name,
 		Score:       player.Score,
 		Host:        player.Host,
 		SpriteIndex: player.SpriteIndex,

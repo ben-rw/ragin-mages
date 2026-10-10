@@ -1,6 +1,10 @@
-package shared
+package wizarena
 
-import "image"
+import (
+	"image"
+
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+)
 
 const (
 	collisionBoxLeft   = 7
@@ -9,7 +13,7 @@ const (
 	collisionBoxBottom = 15
 )
 
-func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool {
+func CheckCollisionHorizontal(sprite *shared.Sprite, colliders []image.Rectangle) bool {
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			// puts hitbox close to feet
@@ -31,7 +35,7 @@ func CheckCollisionHorizontal(sprite *Sprite, colliders []image.Rectangle) bool 
 	return false
 }
 
-func CheckCollisionVertical(sprite *Sprite, colliders []image.Rectangle) bool {
+func CheckCollisionVertical(sprite *shared.Sprite, colliders []image.Rectangle) bool {
 	for _, collider := range colliders {
 		if collider.Overlaps(image.Rect(
 			// puts hitbox close to feet

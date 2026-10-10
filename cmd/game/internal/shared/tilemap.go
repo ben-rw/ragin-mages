@@ -8,14 +8,10 @@ import (
 	"path"
 	"sort"
 
+	wizServer "github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
-
-const TileSize = 16
-const HalfTile = 8
-
-const NumberOfTileImgs = 46
 
 type Tile struct {
 	Img   *ebiten.Image
@@ -103,8 +99,8 @@ func newTilesetImageList(tilemapJSON *TilemapJSON) ([]*ebiten.Image, error) {
 	return imgList, nil
 }
 
-func NewTileImageCache(tilemapJSON *TilemapJSON) (map[int]*ebiten.Image, error) {
-	imgMap := make(map[int]*ebiten.Image, NumberOfTileImgs)
+func NewTileImageCache(tilemapJSON *TilemapJSON, numberOfTileImgs int) (map[int]*ebiten.Image, error) {
+	imgMap := make(map[int]*ebiten.Image, numberOfTileImgs)
 	tilemapImgList, err := newTilesetImageList(tilemapJSON)
 	if err != nil {
 		return nil, err
@@ -128,10 +124,10 @@ func NewTileImageCache(tilemapJSON *TilemapJSON) (map[int]*ebiten.Image, error) 
 				srcX := (id - tilemapJSON.Tilesets[tilemapImgIndex].Firstgid) % tilemapJSON.Tilesets[tilemapImgIndex].Data.Columns
 				srcY := (id - tilemapJSON.Tilesets[tilemapImgIndex].Firstgid) / tilemapJSON.Tilesets[tilemapImgIndex].Data.Columns
 
-				srcX *= TileSize
-				srcY *= TileSize
+				srcX *= wizServer.TileSize
+				srcY *= wizServer.TileSize
 
-				imgMap[id] = tileImg.SubImage(image.Rect(srcX, srcY, srcX+TileSize, srcY+TileSize)).(*ebiten.Image)
+				imgMap[id] = tileImg.SubImage(image.Rect(srcX, srcY, srcX+wizServer.TileSize, srcY+wizServer.TileSize)).(*ebiten.Image)
 			}
 		}
 	}
@@ -142,28 +138,28 @@ func FixRotatedTile(tile *Tile, opts *ebiten.DrawImageOptions) {
 	switch {
 	case tile.Flips.HorizontalFlip && tile.Flips.VerticalFlip:
 		opts.GeoM.Scale(-1, -1)
-		opts.GeoM.Translate(TileSize, 0)
-		opts.GeoM.Translate(0, TileSize)
+		opts.GeoM.Translate(wizServer.TileSize, 0)
+		opts.GeoM.Translate(0, wizServer.TileSize)
 	case tile.Flips.DiagonalFlip && tile.Flips.HorizontalFlip:
-		opts.GeoM.Translate(-TileSize/2, -TileSize/2)
+		opts.GeoM.Translate(-wizServer.TileSize/2, -wizServer.TileSize/2)
 		opts.GeoM.Rotate(math.Pi / 2)
-		opts.GeoM.Translate(TileSize/2, TileSize/2)
+		opts.GeoM.Translate(wizServer.TileSize/2, wizServer.TileSize/2)
 	case tile.Flips.HorizontalFlip:
 		opts.GeoM.Scale(-1, 1)
-		opts.GeoM.Translate(TileSize, 0)
+		opts.GeoM.Translate(wizServer.TileSize, 0)
 	case tile.Flips.DiagonalFlip && tile.Flips.VerticalFlip:
-		opts.GeoM.Translate(-TileSize/2, -TileSize/2)
+		opts.GeoM.Translate(-wizServer.TileSize/2, -wizServer.TileSize/2)
 		opts.GeoM.Rotate(3 * math.Pi / 2)
-		opts.GeoM.Translate(TileSize/2, TileSize/2)
+		opts.GeoM.Translate(wizServer.TileSize/2, wizServer.TileSize/2)
 	case tile.Flips.VerticalFlip:
 		opts.GeoM.Scale(1, -1)
-		opts.GeoM.Translate(0, TileSize)
+		opts.GeoM.Translate(0, wizServer.TileSize)
 	default:
 	}
 }
 
 func NewOrderedTileList(tilemapJSON *TilemapJSON) (map[string][]*Tile, error) {
-	tileImgCache, err := NewTileImageCache(tilemapJSON)
+	tileImgCache, err := NewTileImageCache(tilemapJSON, wizServer.NumberOfTileImgs)
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +189,8 @@ func NewOrderedTileList(tilemapJSON *TilemapJSON) (map[string][]*Tile, error) {
 			x := i % layer.Width
 			y := i / layer.Width
 
-			x *= TileSize
-			y *= TileSize
+			x *= wizServer.TileSize
+			y *= wizServer.TileSize
 
 			tile.Img = tileImgCache[id]
 			tile.X = x

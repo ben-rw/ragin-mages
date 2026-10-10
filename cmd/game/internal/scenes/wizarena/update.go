@@ -2,6 +2,7 @@ package wizarena
 
 import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
@@ -12,15 +13,15 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 	w.CheckMessages(messages)
 
 	switch w.phase {
-	case Playing:
+	case wizServer.Playing:
 		w.updatePlaying()
-	case RoundOver:
+	case wizServer.RoundOver:
 		w.updateRoundOver()
-	case RoundStart:
+	case wizServer.RoundStart:
 		w.updateRoundStart()
-	case GameOver:
+	case wizServer.GameOver:
 		w.gameOver()
-	case GameStart:
+	case wizServer.GameStart:
 		w.gameStart()
 	}
 
@@ -34,7 +35,7 @@ func (w *WizArena) updatePlaying() {
 	if w.wizard.DieAnim {
 		// add a fade effect when players die
 		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -shared.HalfTile {
+			if w.wizard.Y > -wizServer.HalfTile {
 				w.wizard.Y -= 3.0
 			}
 		}
@@ -133,10 +134,6 @@ func (w *WizArena) updatePlaying() {
 
 	// sort wizards, enemies, and projectiles for consistent draw ordering
 	w.SortEntities()
-
-	// spawn timers
-	w.EnemyRespawn()
-	w.ChestRespawn()
 
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {

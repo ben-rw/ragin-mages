@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -25,7 +26,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	opts.GeoM.Reset()
 
 	for _, tile := range w.tiles["chests"] {
-		if _, ok := w.openedChests[OpenedChest{tile.X, tile.Y}]; ok {
+		if _, ok := w.openedChests[wizServer.OpenedChest{X: tile.X, Y: tile.Y}]; ok {
 			continue
 		}
 
@@ -66,7 +67,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 
 	for _, wizard := range w.sortedWizards {
 		if wizard.Reflect.ActiveAnimation != nil {
-			opts.GeoM.Translate(-shared.ReflectWidth/2, -shared.ReflectHeight/2)
+			opts.GeoM.Translate(-ReflectWidth/2, -ReflectHeight/2)
 			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
 			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
@@ -135,7 +136,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			textOpts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
-		text.Draw(screen, wizard.Data.Name, wizard.NameTag.Face, &textOpts)
+		text.Draw(screen, wizard.Data.Username, wizard.NameTag.Face, &textOpts)
 
 		textOpts.ColorScale.Reset()
 		textOpts.GeoM.Reset()
@@ -145,7 +146,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
 	}
 
-	if w.phase == Playing {
+	if w.phase == wizServer.Playing {
 		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.GeoM.Translate(shared.TopCenterFurther())
 		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
@@ -188,7 +189,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.GeoM.Reset()
 		}
 
-	} else if w.phase == RoundStart || w.phase == GameStart {
+	} else if w.phase == wizServer.RoundStart || w.phase == wizServer.GameStart {
 		var roundImg *ebiten.Image
 		if w.round == 1 {
 			roundImg = Round1TextImg
@@ -202,7 +203,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		screen.DrawImage(roundImg, &opts)
 		opts.GeoM.Reset()
 
-	} else if w.phase == RoundOver || w.phase == GameOver {
+	} else if w.phase == wizServer.RoundOver || w.phase == wizServer.GameOver {
 		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.LineSpacing = 24
 		textOpts.GeoM.Translate(shared.TopCenter())
@@ -221,8 +222,8 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			log.Println("reflecting")
 			vector.StrokeCircle(
 				screen,
-				float32(w.wizard.X+shared.HalfTile+w.camera.X),
-				float32(w.wizard.Y+shared.HalfTile+w.camera.Y),
+				float32(w.wizard.X+wizServer.HalfTile+w.camera.X),
+				float32(w.wizard.Y+wizServer.HalfTile+w.camera.Y),
 				float32(w.wizard.HurtboxRadius)*2,
 				1.0,
 				color.RGBA{255, 0, 0, 255},
@@ -231,18 +232,18 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 
 		for _, projectile := range w.sortedProjectiles {
-			opts.GeoM.Translate(-shared.FBCenterX, -shared.FBCenterY)
+			opts.GeoM.Translate(-FBCenterX, -FBCenterY)
 			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
 			opts.GeoM.Rotate(projectile.Rotation)
 			opts.GeoM.Translate(projectile.X, projectile.Y)
 
-			hx, hy := opts.GeoM.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
-			shared.CheckCollisionCircle(
+			hx, hy := opts.GeoM.Apply(FBInnerBallX, FBInnerBallY)
+			CheckCollisionCircle(
 				hx,
 				hy,
 				projectile.ScaledRadius,
-				w.wizard.X+shared.HalfTile,
-				w.wizard.Y+shared.HalfTile,
+				w.wizard.X+wizServer.HalfTile,
+				w.wizard.Y+wizServer.HalfTile,
 				w.wizard.HurtboxRadius,
 			)
 
@@ -261,8 +262,8 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		for _, enemy := range w.sortedEnemies {
 			vector.StrokeCircle(
 				screen,
-				float32(enemy.X+shared.HalfTile+w.camera.X),
-				float32(enemy.Y+shared.HalfTile+w.camera.Y),
+				float32(enemy.X+wizServer.HalfTile+w.camera.X),
+				float32(enemy.Y+wizServer.HalfTile+w.camera.Y),
 				float32(enemy.HurtboxRadius),
 				1.0,
 				color.RGBA{255, 0, 0, 255},

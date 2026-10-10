@@ -1,17 +1,16 @@
 package wizarena
 
 import (
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
 func (w *WizArena) WriteWizardMovementUpdate() {
 	w.Conn.WriteMsg(protocol.WizardMovementUpdate, &protocol.WizardMovementUpdateData{
-		X:    w.wizard.X,
-		Y:    w.wizard.Y,
-		Dx:   w.wizard.Y,
-		Dy:   w.wizard.Y,
-		Name: w.wizard.Data.Name,
+		X:        w.wizard.X,
+		Y:        w.wizard.Y,
+		Dx:       w.wizard.Y,
+		Dy:       w.wizard.Y,
+		Username: w.wizard.Data.Username,
 	})
 }
 
@@ -24,13 +23,13 @@ func (w *WizArena) WriteWizardStatUpdate() {
 		ProjectileSpeed: w.wizard.Combat.ProjectileSpeed(),
 		ProjectileScale: w.wizard.Combat.ProjectileScale(),
 		Knockback:       w.wizard.Combat.Knockback(),
-		Name:            w.wizard.Data.Name,
+		Username:        w.wizard.Data.Username,
 	})
 }
 
 func (w *WizArena) WriteNewProjectile(cx, cy int) {
 	w.Conn.WriteMsg(protocol.NewProjectile, &protocol.NewProjectileData{
-		CasterName: w.wizard.Data.Name,
+		CasterName: w.wizard.Data.Username,
 		CursorX:    cx,
 		CursorY:    cy,
 	})
@@ -38,7 +37,7 @@ func (w *WizArena) WriteNewProjectile(cx, cy int) {
 
 func (w *WizArena) WriteReflecting(cx, cy int) {
 	w.Conn.WriteMsg(protocol.Reflecting, &protocol.ReflectingData{
-		ReflectorName: w.wizard.Data.Name,
+		ReflectorName: w.wizard.Data.Username,
 		CursorX:       cx,
 		CursorY:       cy,
 	})
@@ -51,7 +50,7 @@ func (w *WizArena) WriteProjectileReflected(reflectorName string, projectileID u
 	})
 }
 
-func (w *WizArena) WriteProjectileHitWizard(victim *shared.WizardPlayer, victimDx, victimDy float64) {
+func (w *WizArena) WriteProjectileHitWizard(victim *WizardPlayer, victimDx, victimDy float64) {
 	w.Conn.WriteMsg(protocol.ProjectileHitWizard, &protocol.ProjectileHitWizardData{
 		ShooterStatData: &protocol.WizardStatUpdateData{
 			Score:           w.wizard.Data.Score,
@@ -60,7 +59,7 @@ func (w *WizArena) WriteProjectileHitWizard(victim *shared.WizardPlayer, victimD
 			ProjectileSpeed: w.wizard.Combat.ProjectileSpeed(),
 			ProjectileScale: w.wizard.Combat.ProjectileScale(),
 			Knockback:       w.wizard.Combat.Knockback(),
-			Name:            w.wizard.Data.Name,
+			Username:        w.wizard.Data.Username,
 		},
 		VictimStatData: &protocol.WizardStatUpdateData{
 			Score:           victim.Data.Score,
@@ -69,7 +68,7 @@ func (w *WizArena) WriteProjectileHitWizard(victim *shared.WizardPlayer, victimD
 			ProjectileSpeed: victim.Combat.ProjectileSpeed(),
 			ProjectileScale: victim.Combat.ProjectileScale(),
 			Knockback:       victim.Combat.Knockback(),
-			Name:            victim.Data.Name,
+			Username:        victim.Data.Username,
 		},
 		VictimDx:     victimDx,
 		VictimDy:     victimDy,
@@ -77,7 +76,7 @@ func (w *WizArena) WriteProjectileHitWizard(victim *shared.WizardPlayer, victimD
 	})
 }
 
-func (w *WizArena) WriteProjectileHitEnemy(victim *shared.Enemy, victimDx, victimDy float64) {
+func (w *WizArena) WriteProjectileHitEnemy(victim *Enemy, victimDx, victimDy float64) {
 	w.Conn.WriteMsg(protocol.ProjectileHitEnemy, &protocol.ProjectileHitEnemyData{
 		ShooterStatData: &protocol.WizardStatUpdateData{
 			Score:           w.wizard.Data.Score,
@@ -86,7 +85,7 @@ func (w *WizArena) WriteProjectileHitEnemy(victim *shared.Enemy, victimDx, victi
 			ProjectileSpeed: w.wizard.Combat.ProjectileSpeed(),
 			ProjectileScale: w.wizard.Combat.ProjectileScale(),
 			Knockback:       w.wizard.Combat.Knockback(),
-			Name:            w.wizard.Data.Name,
+			Username:        w.wizard.Data.Username,
 		},
 		VictimStatData: &protocol.EnemyStatUpdateData{
 			Health: victim.Combat.Health(),

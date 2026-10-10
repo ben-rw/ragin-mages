@@ -1,10 +1,12 @@
-package shared
+package wizarena
 
 import (
 	"math"
 
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
 const (
@@ -25,18 +27,18 @@ const (
 var ReflectSpriteSheet = spritesheet.NewSpriteSheet(ReflectWidthInTiles, ReflectHeightInTiles, ReflectWidth, ReflectHeight)
 
 type Reflect struct {
-	*Sprite
+	*shared.Sprite
 	Active bool
 }
 
 func NewReflect(x, y float64) *Reflect {
-	ReflectAnimations := map[EntityState]*animations.Animation{
-		ReflectCircle: animations.NewAnimation(0, 4, 1, ReflectAnimSpeed),
+	ReflectAnimations := map[shared.EntityState]*animations.Animation{
+		shared.ReflectCircle: animations.NewAnimation(0, 4, 1, ReflectAnimSpeed),
 	}
 	return &Reflect{
-		Sprite: &Sprite{
-			X:               x + HalfTile,
-			Y:               y + HalfTile,
+		Sprite: &shared.Sprite{
+			X:               x + wizServer.HalfTile,
+			Y:               y + wizServer.HalfTile,
 			SpriteSheet:     ReflectSpriteSheet,
 			Animations:      ReflectAnimations,
 			ActiveAnimation: nil,
@@ -50,7 +52,7 @@ func (r *Reflect) GetActiveAnimation() *animations.Animation {
 		return nil
 	}
 
-	anim := r.Animations[ReflectCircle]
+	anim := r.Animations[shared.ReflectCircle]
 	if anim.Over {
 		anim.Over = false
 		r.Active = false

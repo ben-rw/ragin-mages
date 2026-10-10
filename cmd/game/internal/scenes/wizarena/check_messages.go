@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
@@ -18,19 +19,19 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 			}
 
 			for _, player := range w.Players {
-				if _, ok := w.wizards[player.Data.Name]; !ok {
-					wizard := shared.NewWizard(player)
+				if _, ok := w.wizards[player.Data.Username]; !ok {
+					wizard := NewWizard(player)
 					wizard.JoinAnim = false
-					w.wizards[wizard.Data.Name] = wizard
+					w.wizards[wizard.Data.Username] = wizard
 				}
 			}
 
-			w.wizard = w.wizards[w.Player.Data.Name]
+			w.wizard = w.wizards[w.Player.Data.Username]
 			w.dynamicText = w.NewDynamicTextMap()
 
 			w.camera = shared.NewCamera(
-				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
-				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
+				-(w.wizard.X+wizServer.HalfTile)+shared.ScreenWidth/2.0,
+				-(w.wizard.Y+wizServer.HalfTile)+shared.ScreenHeight/2.0,
 			)
 
 		case protocol.PlayerUpdate:

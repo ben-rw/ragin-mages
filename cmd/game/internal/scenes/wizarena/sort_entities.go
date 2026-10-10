@@ -3,14 +3,12 @@ package wizarena
 import (
 	"cmp"
 	"slices"
-
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 )
 
 func (w *WizArena) SortEntities() {
-	w.sortedWizards = make([]*shared.WizardPlayer, 0, 8)
-	w.sortedEnemies = make([]*shared.Enemy, 0, 32)
-	w.sortedProjectiles = make([]*shared.Projectile, 0, 16)
+	w.sortedWizards = make([]*WizardPlayer, 0, 8)
+	w.sortedEnemies = make([]*Enemy, 0, 32)
+	w.sortedProjectiles = make([]*Projectile, 0, 16)
 
 	for _, wizard := range w.wizards {
 		if !wizard.Combat.Dead {
@@ -18,7 +16,7 @@ func (w *WizArena) SortEntities() {
 		}
 	}
 	if len(w.sortedWizards) > 1 {
-		slices.SortFunc(w.sortedWizards, func(a, b *shared.WizardPlayer) int {
+		slices.SortFunc(w.sortedWizards, func(a, b *WizardPlayer) int {
 			return cmp.Compare(a.Data.SpriteIndex, b.Data.SpriteIndex)
 		})
 	}
@@ -27,7 +25,7 @@ func (w *WizArena) SortEntities() {
 		w.sortedEnemies = append(w.sortedEnemies, enemy)
 	}
 	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
+		slices.SortFunc(w.sortedEnemies, func(a, b *Enemy) int {
 			return cmp.Compare(a.ID, b.ID)
 		})
 	}
@@ -36,7 +34,7 @@ func (w *WizArena) SortEntities() {
 		w.sortedEnemies = append(w.sortedEnemies, enemy)
 	}
 	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedEnemies, func(a, b *shared.Enemy) int {
+		slices.SortFunc(w.sortedEnemies, func(a, b *Enemy) int {
 			return cmp.Compare(a.ID, b.ID)
 		})
 	}
@@ -45,7 +43,7 @@ func (w *WizArena) SortEntities() {
 		w.sortedProjectiles = append(w.sortedProjectiles, projectile)
 	}
 	if len(w.sortedEnemies) > 1 {
-		slices.SortFunc(w.sortedProjectiles, func(a, b *shared.Projectile) int {
+		slices.SortFunc(w.sortedProjectiles, func(a, b *Projectile) int {
 			return cmp.Compare(a.ID, b.ID)
 		})
 	}

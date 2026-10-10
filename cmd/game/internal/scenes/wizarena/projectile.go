@@ -1,11 +1,14 @@
-package shared
+package wizarena
 
 import (
+	"math"
+
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"math"
 )
 
 type ProjectileType int
@@ -33,7 +36,7 @@ var projectileImgPaths = map[ProjectileType]string{
 }
 
 type Projectile struct {
-	*Sprite
+	*shared.Sprite
 	Caster        *WizardPlayer
 	AlreadyHit    map[any]struct{}
 	Damage        float64
@@ -65,7 +68,7 @@ func getProjectileID() uint16 {
 func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
 	imgs := make(map[ProjectileType]*ebiten.Image, len(projectileTypes))
 	for _, projectileType := range projectileTypes {
-		img, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, projectileImgPaths[projectileType])
+		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, projectileImgPaths[projectileType])
 		if err != nil {
 			return nil, err
 		}
@@ -78,8 +81,8 @@ var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, Fir
 
 func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
 
-	ProjectileAnimations := map[EntityState]*animations.Animation{
-		FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
+	ProjectileAnimations := map[shared.EntityState]*animations.Animation{
+		shared.FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
 	}
 
 	vX := cursorX - w.X
@@ -99,15 +102,15 @@ func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64
 	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
 
 	return &Projectile{
-		Sprite: NewSprite(
+		Sprite: shared.NewSprite(
 			img,
-			w.X+HalfTile+normX*HalfTile-normX*HalfTile*w.Combat.ProjectileScale(),
-			w.Y+HalfTile+normY*HalfTile-normY*HalfTile*w.Combat.ProjectileScale(),
+			w.X+wizServer.HalfTile+normX*wizServer.HalfTile-normX*wizServer.HalfTile*w.Combat.ProjectileScale(),
+			w.Y+wizServer.HalfTile+normY*wizServer.HalfTile-normY*wizServer.HalfTile*w.Combat.ProjectileScale(),
 			normX*w.Combat.ProjectileSpeed(),
 			normY*w.Combat.ProjectileSpeed(),
 			ProjectileSpriteSheet,
 			ProjectileAnimations,
-			ProjectileAnimations[FireballFly],
+			ProjectileAnimations[shared.FireballFly],
 			false,
 			false,
 			1.0,

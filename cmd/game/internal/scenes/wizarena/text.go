@@ -7,18 +7,19 @@ import (
 	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 func (w *WizArena) NewScoreboard() {
-	wizSlice := make([]*shared.WizardPlayer, 0, 8)
+	wizSlice := make([]*WizardPlayer, 0, 8)
 	for _, wizard := range w.wizards {
 		wizSlice = append(wizSlice, wizard)
 	}
 
 	if len(wizSlice) > 1 {
-		slices.SortFunc(wizSlice, func(a, b *shared.WizardPlayer) int {
+		slices.SortFunc(wizSlice, func(a, b *WizardPlayer) int {
 			return a.Combat.GetTotalPower() - b.Combat.GetTotalPower()
 		})
 		slices.Reverse(wizSlice)
@@ -26,19 +27,19 @@ func (w *WizArena) NewScoreboard() {
 
 	w.scoreboard = "POWER RANKINGS\n\n"
 	for i, wizard := range wizSlice {
-		if i == 0 && w.round <= Rounds {
+		if i == 0 && w.round <= wizServer.Rounds {
 			// round winner gets stats boosted
-			w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower(), shared.WinRoundBoost)
-			wizard.Combat.RandomBoost(shared.WinRoundBoost, shared.StandardMult)
+			w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Username, wizard.Combat.GetTotalPower(), WinRoundBoost)
+			wizard.Combat.RandomBoost(WinRoundBoost, StandardMult)
 			w.WriteWizardStatUpdate()
 			w.dynamicText = w.NewDynamicTextMap()
 		} else {
-			w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Name, wizard.Combat.GetTotalPower())
+			w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Username, wizard.Combat.GetTotalPower())
 		}
 	}
 
-	if w.round > Rounds {
-		w.scoreboard += fmt.Sprintf("\n%v WINS!", wizSlice[0].Data.Name)
+	if w.round > wizServer.Rounds {
+		w.scoreboard += fmt.Sprintf("\n%v WINS!", wizSlice[0].Data.Username)
 	}
 }
 
@@ -56,9 +57,9 @@ func (w *WizArena) NewDynamicTextMap() map[DynamicText]string {
 	return map[DynamicText]string{
 		// display stats to player starting at 1 and scaling by number of boosts applied to each stat
 		// to let player see how much they've increased each stat, rather than internal stat numbers
-		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*(1/shared.PSpeedMult)-(1/shared.PSpeedMult*shared.BaseProjectileSpeed-1)),
-		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*(1/shared.PScaleMult)-(1/shared.PScaleMult*shared.BaseProjectileScale-1)),
-		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*(1/shared.KnockbackMult)-(1/shared.KnockbackMult*shared.BaseKnockback-1)),
+		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*(1/PSpeedMult)-(1/PSpeedMult*BaseProjectileSpeed-1)),
+		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*(1/PScaleMult)-(1/PScaleMult*BaseProjectileScale-1)),
+		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*(1/KnockbackMult)-(1/KnockbackMult*BaseKnockback-1)),
 		AttackCooldown:  fmt.Sprintf("Attack Cooldown: %.2fs", float64(w.wizard.Combat.AttackCooldown())/60.0),
 	}
 }

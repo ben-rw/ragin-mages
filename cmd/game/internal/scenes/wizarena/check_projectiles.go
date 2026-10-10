@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -19,10 +20,10 @@ func (w *WizArena) CheckProjectiles() {
 	// spawn new fireballs
 	if leftClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Attack() {
 		projectile := w.wizard.NewProjectile(
-			w.projectileImageCache[shared.Fireball],
+			w.projectileImageCache[Fireball],
 			float64(cX),
 			float64(cY),
-			shared.Fireball,
+			Fireball,
 		)
 		w.WriteNewProjectile(cX, cY)
 		w.projectiles[projectile.ID] = projectile
@@ -79,32 +80,32 @@ func (w *WizArena) CheckProjectiles() {
 					wizardRadius *= 2
 				}
 
-				if shared.CheckCollisionCircle(
+				if CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,
-					wizard.X+shared.HalfTile,
-					wizard.Y+shared.HalfTile,
+					wizard.X+wizServer.HalfTile,
+					wizard.Y+wizServer.HalfTile,
 					wizardRadius,
 				) {
 					if wizard.Combat.Reflecting() {
 						wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
-						w.WriteProjectileReflected(wizard.Data.Name, projectile.ID)
+						w.WriteProjectileReflected(wizard.Data.Username, projectile.ID)
 						wizard.Combat.ResetReflectCooldown()
 					} else {
 						wizard.Combat.Damage(projectile.Damage)
 						projectile.AlreadyHit[wizard] = struct{}{}
-						shared.StealStats(projectile.Caster.Combat, wizard.Combat)
+						StealStats(projectile.Caster.Combat, wizard.Combat)
 
-						wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-						wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+						wizard.Dx = projectile.NormX * wizServer.TileSize * projectile.Knockback
+						wizard.Dy = projectile.NormY * wizServer.TileSize * projectile.Knockback
 						wizard.Noclip = true
 
 						w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
 
 						if wizard.Combat.Health() <= 0 {
 							// player who last hit the player gets a stat boost
-							projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
+							projectile.Caster.Combat.RandomBoost(KillPlayerBoost, StandardMult)
 							w.WriteWizardStatUpdate()
 						}
 
@@ -118,24 +119,24 @@ func (w *WizArena) CheckProjectiles() {
 					continue
 				}
 
-				if shared.CheckCollisionCircle(
+				if CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,
-					enemy.X+shared.HalfTile,
-					enemy.Y+shared.HalfTile,
+					enemy.X+wizServer.HalfTile,
+					enemy.Y+wizServer.HalfTile,
 					enemy.HurtboxRadius,
 				) {
 					enemy.Combat.Damage(projectile.Damage)
 					projectile.AlreadyHit[enemy] = struct{}{}
 
-					enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-					enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
+					enemy.Dx = projectile.NormX * wizServer.TileSize * projectile.Knockback
+					enemy.Dy = projectile.NormY * wizServer.TileSize * projectile.Knockback
 
 					if enemy.Combat.Health() <= 0 {
 						delete(w.enemies, enemy.ID)
 						// player who last hit the enemy gets a stat boost
-						projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
+						projectile.Caster.Combat.RandomBoost(KillEnemyBoost, StandardMult)
 						w.WriteWizardStatUpdate()
 						w.dynamicText = w.NewDynamicTextMap()
 					}
@@ -146,7 +147,7 @@ func (w *WizArena) CheckProjectiles() {
 					continue
 				}
 
-				if shared.CheckCollisionCircle(
+				if CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,

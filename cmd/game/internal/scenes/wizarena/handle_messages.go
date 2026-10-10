@@ -3,7 +3,6 @@ package wizarena
 import (
 	"errors"
 
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
@@ -18,11 +17,11 @@ func (w *WizArena) HandleWizardMovementUpdate(message *protocol.Message) error {
 		return err
 	}
 
-	if _, ok := w.wizards[data.Name]; ok {
-		w.wizards[data.Name].X = data.X
-		w.wizards[data.Name].Y = data.Y
-		w.wizards[data.Name].Dx = data.Dx
-		w.wizards[data.Name].Dy = data.Dy
+	if _, ok := w.wizards[data.Username]; ok {
+		w.wizards[data.Username].X = data.X
+		w.wizards[data.Username].Y = data.Y
+		w.wizards[data.Username].Dx = data.Dx
+		w.wizards[data.Username].Dy = data.Dy
 	}
 
 	return nil
@@ -61,11 +60,11 @@ func (w *WizArena) HandleWizArenaMovementUpdate(message *protocol.Message) error
 	}
 
 	for _, wizardData := range data.WizardsMovementData {
-		if _, ok := w.wizards[wizardData.Name]; ok {
-			w.wizards[wizardData.Name].X = wizardData.X
-			w.wizards[wizardData.Name].Y = wizardData.Y
-			w.wizards[wizardData.Name].Dx = wizardData.Dx
-			w.wizards[wizardData.Name].Dy = wizardData.Dy
+		if _, ok := w.wizards[wizardData.Username]; ok {
+			w.wizards[wizardData.Username].X = wizardData.X
+			w.wizards[wizardData.Username].Y = wizardData.Y
+			w.wizards[wizardData.Username].Dx = wizardData.Dx
+			w.wizards[wizardData.Username].Dy = wizardData.Dy
 		}
 	}
 
@@ -92,13 +91,13 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 		return err
 	}
 
-	if _, ok := w.wizards[data.Name]; ok {
-		w.wizards[data.Name].Data.Score = data.Score
-		w.wizards[data.Name].Combat.SetAttackCooldown(data.AttackCooldown)
-		w.wizards[data.Name].Combat.SetProjectileSpeed(data.ProjectileSpeed)
-		w.wizards[data.Name].Combat.SetProjectileScale(data.ProjectileScale)
-		w.wizards[data.Name].Combat.SetKnockback(data.Knockback)
-		w.wizards[data.Name].Combat.SetHealth(data.Health)
+	if _, ok := w.wizards[data.Username]; ok {
+		w.wizards[data.Username].Data.Score = data.Score
+		w.wizards[data.Username].Combat.SetAttackCooldown(data.AttackCooldown)
+		w.wizards[data.Username].Combat.SetProjectileSpeed(data.ProjectileSpeed)
+		w.wizards[data.Username].Combat.SetProjectileScale(data.ProjectileScale)
+		w.wizards[data.Username].Combat.SetKnockback(data.Knockback)
+		w.wizards[data.Username].Combat.SetHealth(data.Health)
 	}
 
 	return nil
@@ -135,10 +134,10 @@ func (w *WizArena) HandleNewProjectile(message *protocol.Message) error {
 
 	if wizard, ok := w.wizards[data.CasterName]; ok {
 		wizard.NewProjectile(
-			w.projectileImageCache[shared.Fireball],
+			w.projectileImageCache[Fireball],
 			float64(data.CursorX),
 			float64(data.CursorY),
-			shared.Fireball,
+			Fireball,
 		)
 	}
 
@@ -178,7 +177,7 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 		return err
 	}
 
-	if shooter, ok := w.wizards[data.ShooterStatData.Name]; ok {
+	if shooter, ok := w.wizards[data.ShooterStatData.Username]; ok {
 		shooter.Data.Score = data.ShooterStatData.Score
 		shooter.Combat.SetAttackCooldown(data.ShooterStatData.AttackCooldown)
 		shooter.Combat.SetProjectileSpeed(data.ShooterStatData.ProjectileSpeed)
@@ -186,7 +185,7 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 		shooter.Combat.SetKnockback(data.ShooterStatData.Knockback)
 	}
 
-	if victim, ok := w.wizards[data.VictimStatData.Name]; ok {
+	if victim, ok := w.wizards[data.VictimStatData.Username]; ok {
 		victim.Data.Score = data.VictimStatData.Score
 		victim.Combat.SetAttackCooldown(data.VictimStatData.AttackCooldown)
 		victim.Combat.SetProjectileSpeed(data.VictimStatData.ProjectileSpeed)
@@ -212,7 +211,7 @@ func (w *WizArena) HandleProjectileHitEnemy(message *protocol.Message) error {
 		return err
 	}
 
-	if shooter, ok := w.wizards[data.ShooterStatData.Name]; ok {
+	if shooter, ok := w.wizards[data.ShooterStatData.Username]; ok {
 		shooter.Data.Score = data.ShooterStatData.Score
 		shooter.Combat.SetAttackCooldown(data.ShooterStatData.AttackCooldown)
 		shooter.Combat.SetProjectileSpeed(data.ShooterStatData.ProjectileSpeed)

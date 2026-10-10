@@ -5,22 +5,23 @@ import (
 	"math"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
 func (w *WizArena) CheckEnemyHitWizard() {
 	wizardRect := image.Rect(
 		int(w.wizard.X),
 		int(w.wizard.Y),
-		int(w.wizard.X)+shared.TileSize,
-		int(w.wizard.Y)+shared.TileSize,
+		int(w.wizard.X)+wizServer.TileSize,
+		int(w.wizard.Y)+wizServer.TileSize,
 	)
 
 	for _, enemy := range w.enemies {
 		rect := image.Rect(
 			int(enemy.X),
 			int(enemy.Y),
-			int(enemy.X)+shared.TileSize,
-			int(enemy.Y)+shared.TileSize,
+			int(enemy.X)+wizServer.TileSize,
+			int(enemy.Y)+wizServer.TileSize,
 		)
 
 		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
@@ -35,8 +36,8 @@ func (w *WizArena) CheckEnemyHitWizard() {
 				normX := vX / vlen
 				normY := vY / vlen
 
-				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
-				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
+				w.wizard.Dx = normX * wizServer.TileSize * enemy.Combat.Knockback()
+				w.wizard.Dy = normY * wizServer.TileSize * enemy.Combat.Knockback()
 				w.wizard.Noclip = true
 
 				if math.Abs(normX) > math.Abs(normY) {
