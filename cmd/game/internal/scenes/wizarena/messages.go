@@ -50,6 +50,13 @@ func (w *WizArena) WriteProjectileReflected(reflectorName string, projectileID u
 	})
 }
 
+func (w *WizArena) WriteProjectileDestroyed(casterName string, projectileID uint16) {
+	w.Conn.WriteMsg(protocol.ProjectileDestroyed, &protocol.ProjectileDestroyedData{
+		CasterName:   casterName,
+		ProjectileID: projectileID,
+	})
+}
+
 func (w *WizArena) WriteProjectileHitWizard(victim *WizardPlayer, victimDx, victimDy float64) {
 	w.Conn.WriteMsg(protocol.ProjectileHitWizard, &protocol.ProjectileHitWizardData{
 		ShooterStatData: &protocol.WizardStatUpdateData{
@@ -93,5 +100,12 @@ func (w *WizArena) WriteProjectileHitEnemy(victim *Enemy, victimDx, victimDy flo
 		},
 		VictimDx: victimDx,
 		VictimDy: victimDy,
+	})
+}
+
+func (w *WizArena) WriteChestUpdate(x, y int) {
+	w.Conn.WriteMsg(protocol.ChestUpdate, protocol.ChestUpdateData{
+		X: x,
+		Y: y,
 	})
 }

@@ -157,11 +157,15 @@ func (w *WizArena) CheckProjectiles() {
 				) {
 					if projectile.Scale > otherProjectile.Scale {
 						delete(w.projectiles, otherProjectile.ID)
+						w.WriteProjectileDestroyed(otherProjectile.Caster.Data.Username, otherProjectile.ID)
 					} else if projectile.Scale < otherProjectile.Scale {
 						delete(w.projectiles, projectile.ID)
+						w.WriteProjectileDestroyed(projectile.Caster.Data.Username, projectile.ID)
 					} else {
 						delete(w.projectiles, projectile.ID)
 						delete(w.projectiles, otherProjectile.ID)
+						w.WriteProjectileDestroyed(projectile.Caster.Data.Username, projectile.ID)
+						w.WriteProjectileDestroyed(otherProjectile.Caster.Data.Username, otherProjectile.ID)
 					}
 				}
 			}

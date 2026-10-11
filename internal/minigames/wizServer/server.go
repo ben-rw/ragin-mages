@@ -14,18 +14,17 @@ type WizardServer struct {
 	enemyRespawnTimer time.Time
 	phaseTimer        time.Time
 	chestRespawnTimer time.Time
-	openedChests      map[OpenedChest]struct{}
 	phase             RoundPhase
 	round             uint8
+	clientLoadedCount uint8
 }
 
-func StartWizardServer(r *room.Room) {
+func Init(r *room.Room) *WizardServer {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	wizards := make(map[string]*Wizard, len(r.Players))
 	for _, wizard := range r.Players {
-		wizards[wizard.Name] = &Wizard{}
+		wizards[wizard.Username] = &Wizard{}
 	}
 
 	w := &WizardServer{
@@ -35,12 +34,17 @@ func StartWizardServer(r *room.Room) {
 		phaseTimer:        time.Now().Add(GameStartTime * time.Second),
 		enemyRespawnTimer: time.Now().Add(RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		phase:             GameStart,
+		round:             1,
+		clientLoadedCount: 0,
 	}
 
-	w.Update(ctx)
+	go w.Update(ctx, cancel)
+
+	return w
 }
 
-func (w *WizardServer) Update(ctx context.Context) {
+func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
+	defer cancel()
 
 	switch w.phase {
 	case Playing:
@@ -53,6 +57,8 @@ func (w *WizardServer) Update(ctx context.Context) {
 		w.gameOver()
 	case GameStart:
 		w.gameStart()
+	case WaitingForClients:
+		w.waitForClients()
 	default:
 	}
 

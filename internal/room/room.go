@@ -18,13 +18,13 @@ type Room struct {
 	Mu                *sync.RWMutex
 	ID                string
 	Players           []*Player
-	Scene             protocol.SceneType
+	Scene             *protocol.Scene
 }
 
 // check for username collisions, set player.Room, add player to Room
 func (r *Room) AppendPlayer(player *Player) error {
 	r.Mu.Lock()
-	player.Name = nameCollisionSolver(player.Name, r.Players)
+	player.Username = nameCollisionSolver(player.Username, r.Players)
 	player.Room = r
 	r.Players = append(r.Players, player)
 	r.Mu.Unlock()
@@ -61,6 +61,20 @@ func (r *Room) GetPlayerList() ([]*Player, error) {
 	return playerList, nil
 }
 
+func (r *Room) GetPlayerDataList() ([]*protocol.PlayerData, error) {
+	playerList, err := r.GetPlayerList()
+	if err != nil {
+		return nil, err
+	}
+
+	dataList := make([]*protocol.PlayerData, len(playerList))
+	for i, player := range playerList {
+		dataList[i] = player.PlayerToPlayerData()
+	}
+
+	return dataList, nil
+}
+
 func (r *Room) Broadcast(msg *protocol.Message) {
 	r.Mu.RLock()
 	playerList := make([]*Player, len(r.Players))
@@ -68,6 +82,25 @@ func (r *Room) Broadcast(msg *protocol.Message) {
 	r.Mu.RUnlock()
 
 	for _, player := range playerList {
+		if player.Client != nil {
+			err := wsjson.Write(context.Background(), player.Client.Conn, msg)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+}
+
+func (r *Room) BroadcastExcludeSender(msg *protocol.Message, senderName string) {
+	r.Mu.RLock()
+	playerList := make([]*Player, len(r.Players))
+	_ = copy(playerList, r.Players)
+	r.Mu.RUnlock()
+
+	for _, player := range playerList {
+		if player.Username == senderName {
+			continue
+		}
 		if player.Client != nil {
 			err := wsjson.Write(context.Background(), player.Client.Conn, msg)
 			if err != nil {

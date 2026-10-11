@@ -51,7 +51,7 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		Conn: conn,
 	}
 
-	playerDataList, err := getPlayerDataList(currentRoom)
+	playerDataList, err := currentRoom.GetPlayerDataList()
 	if err != nil {
 		log.Println(err)
 	}
@@ -74,7 +74,7 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 	} else {
 		player = &room.Player{
 			ID:          id,
-			Name:        username,
+			Username:    username,
 			Score:       0,
 			Host:        host,
 			SpriteIndex: currentRoom.AssignPlayerSprite(),
@@ -88,7 +88,7 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		client.Player = player
 	}
 
-	playerData := playerToPlayerData(player)
+	playerData := player.PlayerToPlayerData()
 
 	if !exists {
 		playerDataList = append(playerDataList, playerData)
@@ -135,77 +135,20 @@ func readLoop(r *room.Room, c *room.Client) {
 			}
 		}
 
-		updateMsg, err := minigames.ValidateMessage(&msg, r)
-		if updateMsg.Type != protocol.Unset {
-			log.Printf("msg: %v, updateMsg: %v\n", string(msg.Data), string(updateMsg.Data))
-		}
+		err = minigames.ValidateMessage(&msg, r)
+		// if updateMsg.Type != protocol.Unset {
+		// 	log.Printf("msg: %v, updateMsg: %v\n", string(msg.Data), string(updateMsg.Data))
+		// }
 		if err != nil {
 			log.Printf("couldn't validate message: %v\n", err)
 			continue
-		} else if updateMsg.Type == protocol.Unset {
-			log.Println("message not broadcasted: empty message")
-			continue
-		} else {
-			r.Broadcast(updateMsg)
 		}
-
-		if updateMsg.Type == protocol.SceneChange {
-			playerList, err := r.GetPlayerList()
-			if err != nil {
-				log.Printf("couldn't get player list: %v\n", err)
-				continue
-			}
-
-			playerDataList, err := getPlayerDataList(r)
-			if err != nil {
-				log.Printf("couldn't get player data list: %v\n", err)
-				continue
-			}
-
-			for _, player := range playerList {
-
-				scenePlayerData := &protocol.JoinResponseData{
-					PlayerData: playerToPlayerData(player),
-					PlayerList: playerDataList,
-				}
-
-				msg, err := protocol.MarshalToMessage(protocol.JoinResponse, scenePlayerData)
-				if err != nil {
-					log.Printf("couldn't marshal msg: %v\n", err)
-					continue
-				}
-
-				if player.Client != nil {
-					err := wsjson.Write(context.Background(), player.Client.Conn, msg)
-					if err != nil {
-						log.Println(err)
-					}
-				}
-			}
-		}
-	}
-}
-
-func getPlayerDataList(r *room.Room) ([]*protocol.PlayerData, error) {
-	playerList, err := r.GetPlayerList()
-	if err != nil {
-		return nil, err
-	}
-
-	dataList := make([]*protocol.PlayerData, len(playerList))
-	for i, player := range playerList {
-		dataList[i] = playerToPlayerData(player)
-	}
-
-	return dataList, nil
-}
-
-func playerToPlayerData(player *room.Player) *protocol.PlayerData {
-	return &protocol.PlayerData{
-		Username:    player.Name,
-		Score:       player.Score,
-		Host:        player.Host,
-		SpriteIndex: player.SpriteIndex,
+		// else if updateMsg.Type == protocol.Unset {
+		// 	log.Println("message not broadcasted: empty message")
+		// 	continue
+		// } else {
+		// 	r.Broadcast(updateMsg)
+		// }
 	}
 }
 

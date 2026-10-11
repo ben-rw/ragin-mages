@@ -26,7 +26,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	opts.GeoM.Reset()
 
 	for _, tile := range w.tiles["chests"] {
-		if _, ok := w.openedChests[wizServer.OpenedChest{X: tile.X, Y: tile.Y}]; ok {
+		if _, ok := w.openedChests[OpenedChest{X: tile.X, Y: tile.Y}]; ok {
 			continue
 		}
 

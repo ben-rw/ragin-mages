@@ -83,6 +83,12 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 				log.Println(err)
 				continue
 			}
+		case protocol.ProjectileDestroyed:
+			err := w.HandleProjectileDestroyed(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		case protocol.ProjectileHitWizard:
 			err := w.HandleProjectileHitWizard(message)
 			if err != nil {
@@ -97,6 +103,7 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 			}
 
 		default:
+			log.Printf("client %v recieved unrecognized message type: %v", w.wizard.Data.Username, message.Type)
 		}
 	}
 }

@@ -48,7 +48,7 @@ type WizArena struct {
 	staticTilemapTrapsUp   *ebiten.Image
 	staticTilemapTrapsDown *ebiten.Image
 	camera                 *shared.Camera
-	openedChests           map[wizServer.OpenedChest]struct{}
+	openedChests           map[OpenedChest]struct{}
 	audioPlayer            *audio.Player
 	projectileImageCache   map[ProjectileType]*ebiten.Image
 	enemyImageCache        map[EnemyType]*ebiten.Image
@@ -136,7 +136,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		camera:               nil,
 		colliders:            make([]image.Rectangle, 0, 972), // 972 colliders on map
 		chests:               make([]image.Rectangle, 0, 8),   // 8 chests on the map
-		openedChests:         make(map[wizServer.OpenedChest]struct{}, 8),
+		openedChests:         make(map[OpenedChest]struct{}, 8),
 		holes:                make([]image.Rectangle, 0, 2092), // 2092 holes on map
 		traps:                make([]image.Rectangle, 84),      // traps on map
 		trapsUp:              false,

@@ -9,15 +9,10 @@ import (
 
 const ChestRespawnTimer = 30
 
-type OpenedChest struct {
-	X, Y int
-}
-
 // spawn chests on a timer
 func (w *WizardServer) chestRespawn() {
 	if w.chestRespawnTimer.IsZero() || time.Until(w.chestRespawnTimer) <= 0 {
 		w.chestRespawnTimer = time.Now().Add(ChestRespawnTimer * time.Second)
-		w.openedChests = map[OpenedChest]struct{}{}
 	}
 }
 

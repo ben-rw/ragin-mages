@@ -166,6 +166,24 @@ func (w *WizArena) HandleProjectileReflected(message *protocol.Message) error {
 	return nil
 }
 
+func (w *WizArena) HandleProjectileDestroyed(message *protocol.Message) error {
+	projectileDestroyedData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := projectileDestroyedData.(*protocol.ProjectileDestroyedData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	if _, ok := w.projectiles[data.ProjectileID]; ok {
+		delete(w.projectiles, w.projectiles[data.ProjectileID].ID)
+	}
+
+	return nil
+}
+
 func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 	projectileHitWizardData, err := message.UnmarshalMessageData()
 	if err != nil {
@@ -222,6 +240,22 @@ func (w *WizArena) HandleProjectileHitEnemy(message *protocol.Message) error {
 	if victim, ok := w.enemies[data.VictimStatData.ID]; ok {
 		victim.Combat.SetHealth(data.VictimStatData.Health)
 	}
+
+	return nil
+}
+
+func (w *WizArena) HandleChestUpdate(message *protocol.Message) error {
+	chestUpdateData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := chestUpdateData.(*protocol.ChestUpdateData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	w.openedChests[OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
 
 	return nil
 }

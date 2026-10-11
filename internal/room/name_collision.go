@@ -13,7 +13,7 @@ func nameCollisionSolver(name string, playerList []*Player) string {
 
 	var collision bool = false
 	for _, player := range playerList {
-		if player.Name == name {
+		if player.Username == name {
 			name = insults[rand.Intn(len(insults))]
 			collision = true
 			break

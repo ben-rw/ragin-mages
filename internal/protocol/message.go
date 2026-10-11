@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,8 +26,10 @@ const (
 	ProjectileHitWizard  MessageType = "ProjectileHitWizard"
 	ProjectileHitEnemy   MessageType = "ProjectileHitEnemy"
 	ProjectileReflected  MessageType = "ProjectileReflected"
+	ProjectileDestroyed  MessageType = "ProjectileDestroyed"
 	Reflecting           MessageType = "Reflecting"
 	ChestUpdate          MessageType = "ChestUpdate"
+	RoundTimerUpdate     MessageType = "RoundTimerUpdate"
 )
 
 type Message struct {
@@ -109,6 +112,11 @@ type ProjectileReflectedData struct {
 	ProjectileID  uint16 `json:"projectile_id"`
 }
 
+type ProjectileDestroyedData struct {
+	CasterName   string `json:"caster_name"`
+	ProjectileID uint16 `json:"projectile_id"`
+}
+
 type ReflectingData struct {
 	ReflectorName string `json:"reflector_name"`
 	CursorX       int    `json:"cursor_x"`
@@ -133,6 +141,16 @@ type ProjectileHitEnemyData struct {
 type ChestUpdateData struct {
 	X int `json:"x"`
 	Y int `json:"y"`
+}
+
+type RoundTimerUpdateData struct {
+	TimeRemaining int
+}
+
+type Scene struct {
+	Type   SceneType
+	State  any
+	Cancel context.CancelFunc
 }
 
 type SceneType int
@@ -164,6 +182,8 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &ChestUpdateData{}
 	case ClientLoaded:
 		v = &ClientLoadedData{}
+	case RoundTimerUpdate:
+		v = &RoundTimerUpdateData{}
 	case EnemyMovementUpdate:
 		v = &EnemyMovementUpdateData{}
 	case EnemyStatUpdate:
@@ -176,6 +196,8 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &ProjectileHitWizardData{}
 	case ProjectileReflected:
 		v = &ProjectileReflectedData{}
+	case ProjectileDestroyed:
+		v = &ProjectileDestroyedData{}
 	case Reflecting:
 		v = &ReflectingData{}
 	case WizArenaMovement:

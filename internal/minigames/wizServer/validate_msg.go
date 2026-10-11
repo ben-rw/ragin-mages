@@ -6,10 +6,8 @@ import (
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
-func (w *WizardServer) ValidateMsg(msg *protocol.Message) (*protocol.Message, error) {
+func ValidateMsg(msg *protocol.Message, w *WizardServer) error {
 	switch msg.Type {
-	case protocol.EnemyMovementUpdate:
-		w.handleEnemyMovementUpdate(msg)
 	case protocol.EnemyStatUpdate:
 		w.handleEnemyStatUpdate(msg)
 	case protocol.NewProjectile:
@@ -20,17 +18,19 @@ func (w *WizardServer) ValidateMsg(msg *protocol.Message) (*protocol.Message, er
 		w.handleProjectileHitWizard(msg)
 	case protocol.ProjectileReflected:
 		w.handleProjectileReflected(msg)
-	case protocol.WizArenaMovement:
-		w.handleWizArenaMovementUpdate(msg)
+	case protocol.ProjectileDestroyed:
+		w.handleProjectileDestroyed(msg)
 	case protocol.WizardMovementUpdate:
-		w.handleWizArenaMovementUpdate(msg)
+		w.handleWizardMovementUpdate(msg)
 	case protocol.WizardStatUpdate:
 		w.handleWizardStatUpdate(msg)
 	case protocol.ChestUpdate:
 		w.handleChestUpdate(msg)
+	case protocol.ClientLoaded:
+		w.handleClientLoaded(msg)
 	default:
 		log.Printf("unexpected protocol.MessageType: %#v", msg.Type)
 	}
 
-	return &protocol.Message{Type: protocol.Unset}, nil
+	return nil
 }

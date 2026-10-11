@@ -12,20 +12,21 @@ const (
 	RoundStart
 	GameOver
 	GameStart
+	WaitingForClients
 )
 
 const (
-	Rounds         = 3   // 3 rounds
-	RoundTime      = 150 // 2.5 min per round
-	RoundOverTime  = 3   // 3 seconds displaying scoreboard
-	RoundStartTime = 1   // 1 seconds displaying round number
-	GameOverTime   = 5   // 8 (3 from intermission + 5 additional) seconds at the end of the game
-	GameStartTime  = 1
+	Rounds             = 3   // 3 rounds
+	RoundTime          = 150 // 2.5 min per round
+	RoundOverTime      = 3   // 3 seconds displaying scoreboard
+	RoundStartTime     = 1   // 1 seconds displaying round number
+	GameOverTime       = 5   // 8 (3 from intermission + 5 additional) seconds at the end of the game
+	GameStartTime      = 1
+	WaitForClientsTime = 5 // 5 seconds max waiting for clients to connect
 )
 
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizardServer) startNewRound() {
-	clear(w.openedChests)
 	w.enemies = make(map[uint16]*Enemy, 32)
 
 	w.phaseTimer = time.Now().Add(RoundTime * time.Second)
@@ -58,7 +59,6 @@ func (w *WizardServer) updateRoundOver() {
 		if w.round > Rounds {
 			w.phase = GameOver
 			w.phaseTimer = time.Now().Add(GameOverTime * time.Second)
-			w.gameOver()
 			return
 		}
 
@@ -76,4 +76,15 @@ func (w *WizardServer) gameStart() {
 }
 
 func (w *WizardServer) gameOver() {
+}
+
+func (w *WizardServer) waitForClients() {
+	if w.clientLoadedCount == uint8(len(w.Players)) {
+		w.phaseTimer = time.Now()
+	}
+
+	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+		w.phase = GameStart
+		w.phaseTimer = time.Now().Add(GameStartTime * time.Second)
+	}
 }

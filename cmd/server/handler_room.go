@@ -44,7 +44,7 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 		ID:                roomID,
 		Players:           []*room.Player{},
 		PlayerSpriteIndex: room.NewPlayerSpriteIndex(),
-		Scene:             protocol.LobbyScene,
+		Scene:             &protocol.Scene{Type: protocol.LobbyScene},
 		Mu:                &sync.RWMutex{},
 	}
 
@@ -179,7 +179,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 		newRoom := &room.Room{
 			ID:                roomID,
 			Players:           []*room.Player{},
-			Scene:             protocol.LobbyScene,
+			Scene:             &protocol.Scene{Type: protocol.LobbyScene},
 			PlayerSpriteIndex: psi,
 			Mu:                &sync.RWMutex{},
 		}
@@ -187,7 +187,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 
 		err := newRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
-			Name:        username,
+			Username:    username,
 			Score:       0,
 			Host:        true,
 			SpriteIndex: newRoom.AssignPlayerSprite(),
@@ -198,7 +198,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 	} else {
 		err := currentRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
-			Name:        username,
+			Username:    username,
 			Score:       0,
 			Host:        false,
 			SpriteIndex: currentRoom.AssignPlayerSprite(),
