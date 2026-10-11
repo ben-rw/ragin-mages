@@ -10,6 +10,7 @@ import (
 
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizArena) startNewRound() {
+	w.round += 1
 	for _, wizard := range w.wizards {
 		wizard.Combat.Dead = false
 		wizard.Combat.Fell = false
@@ -23,16 +24,6 @@ func (w *WizArena) startNewRound() {
 	w.projectiles = make(map[uint16]*Projectile, 16)
 
 	w.backgroundAlpha = 0
-}
-
-func (w *WizArena) updateRound() {
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 || w.wizard.Combat.Dead {
-		w.round += 1
-
-		w.phase = wizServer.RoundOver
-		w.phaseTimer = time.Now().Add(wizServer.RoundOverTime * time.Second)
-		w.NewScoreboard()
-	}
 }
 
 func (w *WizArena) updateRoundStart() {
@@ -57,13 +48,11 @@ func (w *WizArena) updateRoundStart() {
 		float64(w.tilemapJSON.Layers[0].Width)*16.0,
 		float64(w.tilemapJSON.Layers[0].Height)*16.0,
 	)
-
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		w.startNewRound()
-	}
 }
 
 func (w *WizArena) updateRoundOver() {
+	w.NewScoreboard()
+
 	// add a fade effect when players die
 	if w.wizard.Combat.Dead {
 		if !w.wizard.Combat.Fell {
@@ -123,18 +112,6 @@ func (w *WizArena) updateRoundOver() {
 	}
 
 	w.UpdateTraps()
-
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		if w.round > wizServer.Rounds {
-			w.phase = wizServer.GameOver
-			w.phaseTimer = time.Now().Add(wizServer.GameOverTime * time.Second)
-			w.gameOver()
-			return
-		}
-
-		w.phase = wizServer.RoundStart
-		w.phaseTimer = time.Now().Add(wizServer.RoundStartTime * time.Second)
-	}
 }
 
 func (w *WizArena) gameStart() {

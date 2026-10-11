@@ -2,7 +2,9 @@ package wizarena
 
 import (
 	"errors"
+	"time"
 
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
@@ -256,6 +258,38 @@ func (w *WizArena) HandleChestUpdate(message *protocol.Message) error {
 	}
 
 	w.openedChests[OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
+
+	return nil
+}
+
+func (w *WizArena) HandleRoundTimerUpdate(message *protocol.Message) error {
+	roundTimerUpdateData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := roundTimerUpdateData.(*protocol.RoundTimerUpdateData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	w.phaseTimer = time.Now().Add(time.Duration(data.TimeRemaining) * time.Millisecond)
+
+	return nil
+}
+
+func (w *WizArena) HandlePhaseUpdate(message *protocol.Message) error {
+	phaseUpdateData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := phaseUpdateData.(*protocol.PhaseUpdateData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	w.phase = wizServer.RoundPhase(data.Phase)
 
 	return nil
 }

@@ -27,20 +27,11 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 			return err
 		}
 
+		if scdata.SceneType == protocol.RandomScene {
+			scdata.SceneType = minigameMap[rand.Intn(len(minigameMap))]
+		}
+
 		switch scdata.SceneType {
-		case protocol.RandomScene:
-			data := protocol.SceneChangeData{
-				SceneType: minigameMap[rand.Intn(len(minigameMap))],
-			}
-			msg, err := protocol.MarshalToMessage(protocol.SceneChange, data)
-			if err != nil {
-				return err
-			}
-
-			r.Broadcast(msg)
-			r.SendAllPlayerDataToNewScene()
-			return nil
-
 		case protocol.LobbyScene:
 			data := protocol.SceneChangeData{
 				SceneType: protocol.LobbyScene,
@@ -50,8 +41,8 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 				return err
 			}
 
+			lobby.Init(r)
 			r.Broadcast(msg)
-			r.Scene.State = lobby.Init(r)
 			r.SendAllPlayerDataToNewScene()
 
 			return nil
@@ -79,8 +70,8 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 				return err
 			}
 
+			wizServer.Init(r)
 			r.Broadcast(msg)
-			r.Scene.State = wizServer.Init(r)
 			r.SendAllPlayerDataToNewScene()
 
 			return nil

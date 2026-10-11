@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/google/uuid"
@@ -47,7 +48,7 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 		Scene:             &protocol.Scene{Type: protocol.LobbyScene},
 		Mu:                &sync.RWMutex{},
 	}
-
+	lobby.Init(newRoom)
 	cfg.RoomReg.Set(roomID, newRoom)
 
 	http.SetCookie(w, &http.Cookie{
@@ -183,6 +184,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 			PlayerSpriteIndex: psi,
 			Mu:                &sync.RWMutex{},
 		}
+		lobby.Init(newRoom)
 		cfg.RoomReg.Set(roomID, newRoom)
 
 		err := newRoom.AppendPlayer(&room.Player{

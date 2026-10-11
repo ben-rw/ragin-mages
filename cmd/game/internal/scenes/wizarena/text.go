@@ -137,6 +137,10 @@ var (
 		"FINAL ROUND",
 		fontFace24,
 	)
+	WaitingTextImg = NewTextLabel(
+		"Waiting for players...",
+		fontFace24,
+	)
 )
 
 var opts text.DrawOptions

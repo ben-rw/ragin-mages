@@ -30,6 +30,7 @@ const (
 	Reflecting           MessageType = "Reflecting"
 	ChestUpdate          MessageType = "ChestUpdate"
 	RoundTimerUpdate     MessageType = "RoundTimerUpdate"
+	PhaseUpdate          MessageType = "PhaseUpdate"
 )
 
 type Message struct {
@@ -147,6 +148,10 @@ type RoundTimerUpdateData struct {
 	TimeRemaining int
 }
 
+type PhaseUpdateData struct {
+	Phase int
+}
+
 type Scene struct {
 	Type   SceneType
 	State  any
@@ -206,6 +211,8 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &WizardMovementUpdateData{}
 	case WizardStatUpdate:
 		v = &WizardStatUpdateData{}
+	case PhaseUpdate:
+		v = &PhaseUpdateData{}
 	case Unset:
 		return nil, errors.New("can't unmarshal message with type unset")
 	default:

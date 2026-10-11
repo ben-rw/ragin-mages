@@ -40,7 +40,6 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 				log.Println(err)
 				continue
 			}
-
 		case protocol.WizardMovementUpdate:
 			err := w.HandleWizardMovementUpdate(message)
 			if err != nil {
@@ -101,9 +100,29 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 				log.Println(err)
 				continue
 			}
+		case protocol.ChestUpdate:
+			err := w.HandleChestUpdate(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		case protocol.RoundTimerUpdate:
+			err := w.HandleRoundTimerUpdate(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		case protocol.PhaseUpdate:
+			err := w.HandlePhaseUpdate(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		case protocol.SceneChange:
+			log.Println("scene changed to WizArena")
 
 		default:
-			log.Printf("client %v recieved unrecognized message type: %v", w.wizard.Data.Username, message.Type)
+			log.Printf("client recieved unrecognized message type: %v", message.Type)
 		}
 	}
 }

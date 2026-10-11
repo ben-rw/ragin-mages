@@ -1,6 +1,8 @@
 package wizarena
 
 import (
+	"log"
+
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -19,6 +21,8 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 		w.updateRoundOver()
 	case wizServer.RoundStart:
 		w.updateRoundStart()
+	case wizServer.StartNewRound:
+		w.startNewRound()
 	case wizServer.GameOver:
 		w.gameOver()
 	case wizServer.GameStart:
@@ -29,6 +33,7 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 }
 
 func (w *WizArena) updatePlaying() {
+	log.Printf("%v, %v, %v, %v", w.wizard.X, w.wizard.Y, w.wizard.Combat.Health(), w.wizard.Combat.Fell)
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
 
@@ -151,8 +156,6 @@ func (w *WizArena) updatePlaying() {
 		w.audioPlayer.SetBufferSize(8192)
 		w.audioPlayer.Play()
 	}
-
-	w.updateRound()
 
 	w.UpdateRoundTimerText()
 }

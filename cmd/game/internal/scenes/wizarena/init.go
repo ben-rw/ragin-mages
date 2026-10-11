@@ -77,8 +77,6 @@ type WizArena struct {
 }
 
 func NewWizArena(c MessageConn, roomID string) *WizArena {
-	log.Println("scene changed to Wizards")
-
 	tilemap, err := shared.NewTilemapJSON(tilemapPath)
 	if err != nil {
 		log.Printf("couldn't load tilemap: %v", err)
@@ -115,7 +113,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 	}
 
 	w := &WizArena{
-		phase: wizServer.GameStart,
+		phase: wizServer.WaitingForClients,
 		Roster: shared.Roster{
 			Players: make(map[string]*shared.Player, 8), // max 8 players
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),

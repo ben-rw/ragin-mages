@@ -209,6 +209,11 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		textOpts.GeoM.Translate(shared.TopCenter())
 		text.Draw(screen, w.scoreboard, fontFace16, &textOpts)
 		textOpts.GeoM.Reset()
+	} else if w.phase == wizServer.WaitingForClients {
+		opts.GeoM.Translate(shared.Center())
+		opts.GeoM.Translate(-float64(WaitingTextImg.Bounds().Dx())/2, -float64(WaitingTextImg.Bounds().Dy())/2)
+		screen.DrawImage(WaitingTextImg, &opts)
+		opts.GeoM.Reset()
 	}
 
 	if w.displayFPS {

@@ -1,13 +1,23 @@
 package lobby
 
-import "github.com/ben-rw/ragin-mages/internal/room"
+import (
+	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
+)
 
 type LobbyServer struct {
 	*room.Room
 }
 
-func Init(r *room.Room) any {
-	r.Scene.Cancel = nil
+func Init(r *room.Room) {
+	r.Scene.Type = protocol.LobbyScene
+	if r.Scene.Cancel != nil {
+		r.Scene.Cancel()
+		r.Scene.Cancel = nil
+	}
 
-	return &LobbyServer{}
+	l := &LobbyServer{
+		Room: r,
+	}
+	r.Scene.State = l
 }
