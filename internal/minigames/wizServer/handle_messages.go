@@ -33,13 +33,15 @@ func (w *WizardServer) handleWizardMovementUpdate(message *protocol.Message) err
 		err = errors.New("failed type assertion")
 		return err
 	}
-	//
-	// if _, ok := w.wizards[data.Username]; ok {
-	// 	w.wizards[data.Username].X = data.X
-	// 	w.wizards[data.Username].Y = data.Y
-	// 	w.wizards[data.Username].Dx = data.Dx
-	// 	w.wizards[data.Username].Dy = data.Dy
-	// }
+
+	if _, ok := w.wizards[data.Username]; ok {
+		w.Mu.Lock()
+		w.wizards[data.Username].X = data.X
+		w.wizards[data.Username].Y = data.Y
+		w.wizards[data.Username].Dx = data.Dx
+		w.wizards[data.Username].Dy = data.Dy
+		w.Mu.Unlock()
+	}
 
 	w.BroadcastExcludeSender(message, data.Username)
 
@@ -114,21 +116,39 @@ func (w *WizardServer) handleWizardStatUpdate(message *protocol.Message) error {
 		return err
 	}
 
+	w.Mu.Lock()
+	if _, ok := w.wizards[data.Username]; ok {
+		w.wizards[data.Username].Health = data.Health
+		if w.wizards[data.Username].Health <= 0 {
+			w.deadWizards[data.Username] = struct{}{}
+		}
+	}
+	w.Mu.Unlock()
+
 	w.BroadcastExcludeSender(message, data.Username)
 
 	return nil
 }
 
 func (w *WizardServer) handleEnemyStatUpdate(message *protocol.Message) error {
-	// enemyStatUpdate, err := message.UnmarshalMessageData()
-	// if err != nil {
-	// 	return err
-	// }
-	// data, ok := enemyStatUpdate.(*protocol.EnemyStatUpdateData)
-	// if !ok {
-	// 	err = errors.New("failed type assertion")
-	// 	return err
-	// }
+	enemyStatUpdate, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := enemyStatUpdate.(*protocol.EnemyStatUpdateData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	w.Mu.Lock()
+	if _, ok := w.enemies[data.ID]; ok {
+		w.enemies[data.ID].Health = data.Health
+		if w.enemies[data.ID].Health <= 0 {
+			delete(w.enemies, data.ID)
+		}
+	}
+	w.Mu.Unlock()
 
 	w.Broadcast(message)
 
@@ -167,6 +187,22 @@ func (w *WizardServer) handleProjectileReflected(message *protocol.Message) erro
 	return nil
 }
 
+func (w *WizardServer) handleReflecting(message *protocol.Message) error {
+	reflectingData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := reflectingData.(*protocol.ReflectingData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	w.wizards[data.ReflectorName].StartReflecting()
+
+	return nil
+}
+
 func (w *WizardServer) handleProjectileDestroyed(message *protocol.Message) error {
 	projectileDestroyedData, err := message.UnmarshalMessageData()
 	if err != nil {
@@ -194,6 +230,14 @@ func (w *WizardServer) handleProjectileHitWizard(message *protocol.Message) erro
 		return err
 	}
 
+	w.Mu.Lock()
+	if _, ok := w.wizards[data.VictimStatData.Username]; ok {
+		if w.wizards[data.VictimStatData.Username].Health <= 0 {
+			w.deadWizards[data.VictimStatData.Username] = struct{}{}
+		}
+	}
+	w.Mu.Unlock()
+
 	w.BroadcastExcludeSender(message, data.ShooterStatData.Username)
 
 	return nil
@@ -210,12 +254,25 @@ func (w *WizardServer) handleProjectileHitEnemy(message *protocol.Message) error
 		return err
 	}
 
-	w.BroadcastExcludeSender(message, data.ShooterStatData.Username)
+	w.Mu.Lock()
+	if _, ok := w.enemies[data.VictimStatData.ID]; ok {
+		w.enemies[data.VictimStatData.ID].KnockbackDx = data.VictimDx
+		w.enemies[data.VictimStatData.ID].KnockbackDy = data.VictimDy
+		w.enemies[data.VictimStatData.ID].Health = data.VictimStatData.Health
+		if w.enemies[data.VictimStatData.ID].Health <= 0 {
+			delete(w.enemies, data.VictimStatData.ID)
+		}
+	}
+	w.Mu.Unlock()
+
+	if ok {
+		w.BroadcastExcludeSender(message, data.ShooterStatData.Username)
+	}
 
 	return nil
 }
 
 func (w *WizardServer) handleClientLoaded(message *protocol.Message) error {
-	w.clientLoadedCount += 1
+	w.clientLoadedCount.Add(1)
 	return nil
 }

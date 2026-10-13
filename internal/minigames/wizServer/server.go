@@ -34,7 +34,7 @@ func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
 			case WaitingForClients:
 				w.waitForClients()
 			default:
-				log.Printf("wizServer: unrecognized round phase: %v", w.phase)
+				log.Printf("wizServer: unrecognized round phase: %v\n", w.phase)
 			}
 		}
 	}
@@ -42,25 +42,27 @@ func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
 }
 
 func (w *WizardServer) updatePlaying() {
+	w.updateEnemies()
+	w.checkEnemyCollisions()
+
 	w.updateMovement()
 	w.updateSyncTimer()
-
 	w.enemyRespawn()
 	w.chestRespawn()
-
 	w.updateRound()
 }
 
 func (w *WizardServer) updateSyncTimer() {
 	if w.syncTimer.IsZero() || time.Until(w.syncTimer) <= 0 {
 		w.BroadcastMsg(protocol.RoundTimerUpdate, &protocol.RoundTimerUpdateData{
-			TimeRemaining: int(time.Until(w.phaseTimer) * time.Millisecond),
+			TimeRemaining: int(time.Until(w.phaseTimer).Milliseconds()),
 		})
 		w.syncTimer = time.Now().Add(SyncTime * time.Second)
 	}
 }
 
 func (w *WizardServer) updateMovement() {
+	w.Mu.RLock()
 	wizardsMovementData := []*protocol.WizardMovementUpdateData{}
 	for _, wizard := range w.wizards {
 		wmd := &protocol.WizardMovementUpdateData{
@@ -84,6 +86,7 @@ func (w *WizardServer) updateMovement() {
 		}
 		enemiesMovementData = append(enemiesMovementData, emd)
 	}
+	w.Mu.RUnlock()
 
 	w.BroadcastMsg(protocol.WizArenaMovement, &protocol.WizArenaMovementData{
 		WizardsMovementData: wizardsMovementData,

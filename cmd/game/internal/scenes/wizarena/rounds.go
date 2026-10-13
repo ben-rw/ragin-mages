@@ -24,9 +24,12 @@ func (w *WizArena) startNewRound() {
 	w.projectiles = make(map[uint16]*Projectile, 16)
 
 	w.backgroundAlpha = 0
+
+	w.phase = wizServer.Playing
 }
 
 func (w *WizArena) updateRoundStart() {
+	w.scoreboardUpdated = false
 	w.wizard.Alpha = 1.0
 
 	w.wizard.Dx = 0
@@ -51,7 +54,10 @@ func (w *WizArena) updateRoundStart() {
 }
 
 func (w *WizArena) updateRoundOver() {
-	w.NewScoreboard()
+	if !w.scoreboardUpdated {
+		w.NewScoreboard()
+		w.scoreboardUpdated = true
+	}
 
 	// add a fade effect when players die
 	if w.wizard.Combat.Dead {

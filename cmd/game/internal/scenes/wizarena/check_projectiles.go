@@ -80,7 +80,7 @@ func (w *WizArena) CheckProjectiles() {
 					wizardRadius *= 2
 				}
 
-				if CheckCollisionCircle(
+				if wizServer.CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,
@@ -119,7 +119,7 @@ func (w *WizArena) CheckProjectiles() {
 					continue
 				}
 
-				if CheckCollisionCircle(
+				if wizServer.CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,
@@ -132,6 +132,8 @@ func (w *WizArena) CheckProjectiles() {
 
 					enemy.Dx = projectile.NormX * wizServer.TileSize * projectile.Knockback
 					enemy.Dy = projectile.NormY * wizServer.TileSize * projectile.Knockback
+
+					w.WriteProjectileHitEnemy(enemy, enemy.Dx, enemy.Dy)
 
 					if enemy.Combat.Health() <= 0 {
 						delete(w.enemies, enemy.ID)
@@ -147,7 +149,7 @@ func (w *WizArena) CheckProjectiles() {
 					continue
 				}
 
-				if CheckCollisionCircle(
+				if wizServer.CheckCollisionCircle(
 					projectile.X+projectile.HitboxOffsetX,
 					projectile.Y+projectile.HitboxOffsetY,
 					projectile.ScaledRadius,

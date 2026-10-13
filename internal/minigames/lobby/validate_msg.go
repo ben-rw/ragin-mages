@@ -12,6 +12,6 @@ func ValidateMsg(msg *protocol.Message, l *LobbyServer) error {
 		return nil
 	}
 
-	log.Printf("couldn't validate msg data: %v", data)
+	log.Printf("couldn't validate msg data: %v\n", data)
 	return nil
 }

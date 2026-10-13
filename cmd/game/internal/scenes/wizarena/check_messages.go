@@ -122,7 +122,7 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 			log.Println("scene changed to WizArena")
 
 		default:
-			log.Printf("client recieved unrecognized message type: %v", message.Type)
+			log.Printf("client recieved unrecognized message type: %v\n", message.Type)
 		}
 	}
 }

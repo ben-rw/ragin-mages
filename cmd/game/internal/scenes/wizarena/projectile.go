@@ -6,6 +6,7 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -68,7 +69,7 @@ func getProjectileID() uint16 {
 func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
 	imgs := make(map[ProjectileType]*ebiten.Image, len(projectileTypes))
 	for _, projectileType := range projectileTypes {
-		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, projectileImgPaths[projectileType])
+		img, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, projectileImgPaths[projectileType])
 		if err != nil {
 			return nil, err
 		}

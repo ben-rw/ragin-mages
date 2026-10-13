@@ -1,6 +1,7 @@
 package wizServer
 
 import (
+	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -31,7 +32,10 @@ const (
 
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizardServer) startNewRound() {
+	w.Mu.Lock()
 	w.enemies = make(map[uint16]*Enemy, 32)
+	w.deadWizards = make(map[string]struct{}, len(w.Players))
+	w.Mu.Unlock()
 
 	w.phaseTimer = time.Now().Add(RoundTime * time.Second)
 	w.syncTimer = time.Now().Add(SyncTime * time.Second)
@@ -39,13 +43,13 @@ func (w *WizardServer) startNewRound() {
 	w.chestRespawnTimer = time.Now().Add(ChestRespawnTimer * time.Second)
 
 	w.phase = Playing
-	w.BroadcastMsg(protocol.PhaseUpdate, &protocol.PhaseUpdateData{
-		Phase: int(w.phase),
+	w.BroadcastMsg(protocol.RoundTimerUpdate, &protocol.RoundTimerUpdateData{
+		TimeRemaining: int(time.Until(w.phaseTimer).Milliseconds()),
 	})
 }
 
 func (w *WizardServer) updateRound() {
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+	if w.checkRoundOver() || w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
 		w.round += 1
 
 		w.phase = RoundOver
@@ -56,15 +60,31 @@ func (w *WizardServer) updateRound() {
 	}
 }
 
+// single player plays until killed or out of time
+// last wizard alive wins the round in a multiplayer game
+func (w *WizardServer) checkRoundOver() bool {
+	if len(w.wizards) == 1 && len(w.deadWizards) == 1 {
+		return true
+	} else if len(w.wizards) > 1 && len(w.deadWizards) == len(w.wizards)-1 {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (w *WizardServer) updateRoundStart() {
-	w.AssignPlayerSpawns()
-	w.updateMovement()
+	if !w.spawnsAssigned {
+		w.AssignPlayerSpawns()
+		w.updateMovement()
+		w.spawnsAssigned = true
+	}
 
 	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
 		w.phase = StartNewRound
 		w.BroadcastMsg(protocol.PhaseUpdate, &protocol.PhaseUpdateData{
 			Phase: int(w.phase),
 		})
+		w.spawnsAssigned = false
 		w.startNewRound()
 	}
 }
@@ -77,6 +97,9 @@ func (w *WizardServer) updateRoundOver() {
 				Phase: int(w.phase),
 			})
 			w.phaseTimer = time.Now().Add(GameOverTime * time.Second)
+			w.BroadcastMsg(protocol.RoundTimerUpdate, &protocol.RoundTimerUpdateData{
+				TimeRemaining: int(time.Until(w.phaseTimer).Milliseconds()),
+			})
 			return
 		}
 
@@ -89,10 +112,18 @@ func (w *WizardServer) updateRoundOver() {
 }
 
 func (w *WizardServer) gameStart() {
-	w.AssignPlayerSpawns()
-	w.updateMovement()
+	if !w.spawnsAssigned {
+		w.AssignPlayerSpawns()
+		w.updateMovement()
+		w.spawnsAssigned = true
+	}
 
 	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+		w.phase = StartNewRound
+		w.BroadcastMsg(protocol.PhaseUpdate, &protocol.PhaseUpdateData{
+			Phase: int(w.phase),
+		})
+		w.spawnsAssigned = false
 		w.startNewRound()
 	}
 }
@@ -101,7 +132,11 @@ func (w *WizardServer) gameOver() {
 }
 
 func (w *WizardServer) waitForClients() {
-	if w.clientLoadedCount == uint8(len(w.Players)) {
+	playerList, err := w.GetPlayerList()
+	if err != nil {
+		log.Printf("error getting player list: %v\n", err)
+	}
+	if int(w.clientLoadedCount.Load()) >= (len(playerList)) {
 		w.phaseTimer = time.Now()
 	}
 

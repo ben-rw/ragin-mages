@@ -243,7 +243,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.GeoM.Translate(projectile.X, projectile.Y)
 
 			hx, hy := opts.GeoM.Apply(FBInnerBallX, FBInnerBallY)
-			CheckCollisionCircle(
+			wizServer.CheckCollisionCircle(
 				hx,
 				hy,
 				projectile.ScaledRadius,

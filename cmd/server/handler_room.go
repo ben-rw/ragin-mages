@@ -60,7 +60,7 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -88,7 +88,7 @@ func (cfg *config) handlerJoinRoom(w http.ResponseWriter, r *http.Request) {
 		err := cfg.templates.ExecuteTemplate(w, "landing.html", LandingPageError{JoinUsernameError: "player must provide a username"})
 		if err != nil {
 			http.Error(w, "unable to serve room page with error message", http.StatusInternalServerError)
-			log.Printf("unable to serve room page with error message: %v", err)
+			log.Printf("unable to serve room page with error message: %v\n", err)
 		}
 		return
 	}
@@ -123,7 +123,7 @@ func (cfg *config) handlerJoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -161,7 +161,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	currentRoom, ok := cfg.RoomReg.Get(roomID)

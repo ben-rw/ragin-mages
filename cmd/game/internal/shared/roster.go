@@ -54,7 +54,7 @@ func (r *Roster) HandlePlayerUpdate(message *protocol.Message) error {
 		r.Players[data.PlayerData.Username] = player
 	}
 
-	log.Printf("updated: %v", *r.Players[data.PlayerData.Username].Data)
+	log.Printf("updated: %v\n", *r.Players[data.PlayerData.Username].Data)
 
 	return nil
 }

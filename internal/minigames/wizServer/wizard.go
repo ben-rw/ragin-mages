@@ -2,18 +2,22 @@ package wizServer
 
 import "math/rand"
 
+const PlayerHealth = 3.0
+const ReflectFrames = 15
+
 type Wizard struct {
+	*Body
 	Username        string
-	X               float64
-	Y               float64
-	Dx              float64
-	Dy              float64
 	AttackCooldown  float64
 	ProjectileSpeed float64
 	ProjectileScale float64
 	Knockback       float64
 	Health          float64
 	Score           int
+	ReflectFrames   int
+	Reflecting      bool
+	CursorX         int
+	CursorY         int
 }
 
 // ordered to space out the spawns of the first 4 players
@@ -36,14 +40,39 @@ func (w *WizardServer) AssignPlayerSpawns() {
 		playerSpawnIndex[i] = i
 	}
 
-	for _, player := range w.wizards {
+	for _, wizard := range w.wizards {
 		i := rand.Intn(len(playerSpawnIndex))
 		s := playerSpawnIndex
 		spawnIndex := s[i]
 		s[i] = s[len(s)-1]
 		playerSpawnIndex = s[:len(s)-1]
 
-		player.X = PlayerSpawns[spawnIndex].X * TileSize
-		player.Y = PlayerSpawns[spawnIndex].Y * TileSize
+		w.Mu.Lock()
+		wizard.X = PlayerSpawns[spawnIndex].X * TileSize
+		wizard.Y = PlayerSpawns[spawnIndex].Y * TileSize
+		w.Mu.Unlock()
+	}
+}
+
+func NewWizard(username string) *Wizard {
+	return &Wizard{
+		Body:     &Body{},
+		Username: username,
+		Health:   PlayerHealth,
+	}
+}
+
+func (w *Wizard) StartReflecting() bool {
+	w.Reflecting = true
+	w.ReflectFrames = ReflectFrames
+	return w.Reflecting
+}
+
+func (w *Wizard) UpdateWizard() {
+	if w.ReflectFrames > 0 {
+		w.ReflectFrames -= 1
+		if w.ReflectFrames <= 0 {
+			w.Reflecting = false
+		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -33,7 +34,7 @@ var EnemySpriteIndex map[EnemyType]string = map[EnemyType]string{
 func NewEnemyImageCache(enemyTypes []EnemyType) (map[EnemyType]*ebiten.Image, error) {
 	imgs := make(map[EnemyType]*ebiten.Image, len(enemyTypes))
 	for _, enemyType := range enemyTypes {
-		enemyImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, EnemySpriteIndex[enemyType])
+		enemyImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, EnemySpriteIndex[enemyType])
 		if err != nil {
 			return nil, err
 		}
@@ -77,18 +78,16 @@ func NewEnemy(img *ebiten.Image, enemyType EnemyType, followsPlayer bool, x, y f
 	}
 }
 
-func (w *WizArena) SpawnEnemies(serverEnemies map[uint16]*wizServer.Enemy) {
-	i := 0
-	for k := range serverEnemies {
-		enemy := NewEnemy(
-			w.enemyImageCache[Skeleton],
-			Skeleton,
-			true,
-			serverEnemies[k].X,
-			serverEnemies[k].Y,
-			serverEnemies[k].ID,
-		)
-		w.enemies[enemy.ID] = enemy
-		i++
-	}
-}
+// func (w *WizArena) SpawnEnemies(serverEnemies map[uint16]*wizServer.Enemy) {
+// 	for k := range serverEnemies {
+// 		enemy := NewEnemy(
+// 			w.enemyImageCache[Skeleton],
+// 			Skeleton,
+// 			true,
+// 			serverEnemies[k].X,
+// 			serverEnemies[k].Y,
+// 			serverEnemies[k].ID,
+// 		)
+// 		w.enemies[enemy.ID] = enemy
+// 	}
+// }

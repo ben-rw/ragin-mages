@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
@@ -24,10 +25,9 @@ type MessageConn interface {
 }
 
 const (
-	tilemapPath = "assets/maps/ninja_dungeon.json"
-	heartPath   = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
-	songPath    = "assets/audio/music/void-construct-loop-0.6.ogg"
-	introLen    = 1 // 1 second song intro
+	heartPath = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
+	songPath  = "assets/audio/music/void-construct-loop-0.6.ogg"
+	introLen  = 1 // 1 second song intro
 )
 
 type WizArena struct {
@@ -43,7 +43,7 @@ type WizArena struct {
 	reflectFrameCache      map[ReflectType][]*ebiten.Image
 	dynamicText            map[DynamicText]string
 	dynamicTextImageCache  map[DynamicText]*ebiten.Image
-	tilemapJSON            *shared.TilemapJSON
+	tilemapJSON            *wizServer.TilemapJSON
 	tiles                  map[string][]*shared.Tile
 	staticTilemapTrapsUp   *ebiten.Image
 	staticTilemapTrapsDown *ebiten.Image
@@ -61,6 +61,7 @@ type WizArena struct {
 	chests                 []image.Rectangle
 	holes                  []image.Rectangle
 	traps                  []image.Rectangle
+	trapTimer              int
 	projectiles            map[uint16]*Projectile
 	sortedProjectiles      []*Projectile
 	scoreboard             string
@@ -74,42 +75,43 @@ type WizArena struct {
 	trapsUp                bool
 	debug                  bool
 	displayFPS             bool
+	scoreboardUpdated      bool
 }
 
 func NewWizArena(c MessageConn, roomID string) *WizArena {
-	tilemap, err := shared.NewTilemapJSON(tilemapPath)
+	tilemap, err := wizServer.NewTilemapJSON(wizServer.TilemapPath)
 	if err != nil {
-		log.Printf("couldn't load tilemap: %v", err)
+		log.Printf("couldn't load tilemap: %v\n", err)
 	}
 
 	tiles, err := shared.NewOrderedTileList(tilemap)
 	if err != nil {
-		log.Printf("couldn't build tile cache: %v", err)
+		log.Printf("couldn't build tile cache: %v\n", err)
 	}
 
 	audioPlayer, err := sound.NewAudioPlayer(songPath, true, introLen)
 	if err != nil {
-		log.Printf("couldn't create audio player: %v", err)
+		log.Printf("couldn't create audio player: %v\n", err)
 	}
 
 	projectileImgCache, err := NewProjectileImageCache([]ProjectileType{Fireball})
 	if err != nil {
-		log.Printf("couldn't load projectile image: %v", err)
+		log.Printf("couldn't load projectile image: %v\n", err)
 	}
 
-	heartImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, heartPath)
+	heartImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, heartPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v", err)
+		log.Printf("couldn't load image: %v\n", err)
 	}
 
-	reflectImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, ReflectPath)
+	reflectImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, ReflectPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v", err)
+		log.Printf("couldn't load image: %v\n", err)
 	}
 
 	enemyImgCache, err := NewEnemyImageCache([]EnemyType{Skeleton})
 	if err != nil {
-		log.Printf("couldn't load enemy image cache: $v", err)
+		log.Printf("couldn't load enemy image cache: %v\n", err)
 	}
 
 	w := &WizArena{
@@ -144,8 +146,10 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		roomID:               roomID,
 		backgroundAlpha:      255,
 		round:                1,
+		trapTimer:            100, // traps start up for 100 ticks
 		debug:                false,
 		displayFPS:           false,
+		scoreboardUpdated:    false,
 	}
 
 	// preload entity images
@@ -162,9 +166,9 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		reflectImg,
 	)
 	for i, path := range shared.PlayerSpriteIndex {
-		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, path)
+		img, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, path)
 		if err != nil {
-			log.Printf("wizarena init: couldnt' create wizard subimage: %v", err)
+			log.Printf("wizarena init: couldnt' create wizard subimage: %v\n", err)
 		}
 		w.wizardImgCache[i] = img
 		w.wizardFrameCache[i] = spritesheet.LoadFrames(shared.PlayerSpriteSheet, w.wizardImgCache[i])
@@ -267,12 +271,12 @@ func (w *WizArena) TileBounds() {
 			x *= wizServer.TileSize
 			y *= wizServer.TileSize
 
-			id &= ^(int(shared.FlagFlippedHorizontally) |
-				int(shared.FlagFlippedVertically) |
-				int(shared.FlagFlippedDiagonally) |
-				int(shared.FlagRotatedHexagonal120))
+			id &= ^(int(wizServer.FlagFlippedHorizontally) |
+				int(wizServer.FlagFlippedVertically) |
+				int(wizServer.FlagFlippedDiagonally) |
+				int(wizServer.FlagRotatedHexagonal120))
 
-			tilemapIndex := shared.GetTilesetIndex(id, w.tilemapJSON)
+			tilemapIndex := wizServer.GetTilesetIndex(id, w.tilemapJSON)
 			src := w.tilemapJSON.Tilesets[tilemapIndex].Source
 
 			if src == "TilesetHole.json" {

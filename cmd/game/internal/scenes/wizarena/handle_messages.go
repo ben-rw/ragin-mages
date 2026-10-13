@@ -63,6 +63,10 @@ func (w *WizArena) HandleWizArenaMovementUpdate(message *protocol.Message) error
 
 	for _, wizardData := range data.WizardsMovementData {
 		if _, ok := w.wizards[wizardData.Username]; ok {
+			if w.wizards[wizardData.Username].Data.Username == w.wizard.Data.Username &&
+				w.phase == wizServer.Playing {
+				continue
+			}
 			w.wizards[wizardData.Username].X = wizardData.X
 			w.wizards[wizardData.Username].Y = wizardData.Y
 			w.wizards[wizardData.Username].Dx = wizardData.Dx
@@ -76,6 +80,16 @@ func (w *WizArena) HandleWizArenaMovementUpdate(message *protocol.Message) error
 			w.enemies[enemyData.ID].Y = enemyData.Y
 			w.enemies[enemyData.ID].Dx = enemyData.Dx
 			w.enemies[enemyData.ID].Dy = enemyData.Dy
+		} else if !ok {
+			// add newly spawned enemies
+			w.enemies[enemyData.ID] = NewEnemy(
+				w.enemyImageCache[Skeleton],
+				Skeleton,
+				true,
+				enemyData.X,
+				enemyData.Y,
+				enemyData.ID,
+			)
 		}
 	}
 
@@ -135,12 +149,13 @@ func (w *WizArena) HandleNewProjectile(message *protocol.Message) error {
 	}
 
 	if wizard, ok := w.wizards[data.CasterName]; ok {
-		wizard.NewProjectile(
+		projectile := wizard.NewProjectile(
 			w.projectileImageCache[Fireball],
 			float64(data.CursorX),
 			float64(data.CursorY),
 			Fireball,
 		)
+		w.projectiles[projectile.ID] = projectile
 	}
 
 	return nil
@@ -257,7 +272,11 @@ func (w *WizArena) HandleChestUpdate(message *protocol.Message) error {
 		return err
 	}
 
-	w.openedChests[OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
+	if data.X == 0 && data.Y == 0 {
+		clear(w.openedChests)
+	} else {
+		w.openedChests[OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
+	}
 
 	return nil
 }

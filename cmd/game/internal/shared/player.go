@@ -5,6 +5,7 @@ import (
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -45,7 +46,7 @@ var PlayerSpriteSheet = spritesheet.NewSpriteSheet(4, 7, wizServer.TileSize, wiz
 
 func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 	imgPath := PlayerSpriteIndex[data.SpriteIndex]
-	playerImg, _, err := ebitenutil.NewImageFromFileSystem(AssetsFS, imgPath)
+	playerImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, imgPath)
 	if err != nil {
 		log.Fatal(err)
 	}

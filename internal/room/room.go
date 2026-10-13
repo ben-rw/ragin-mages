@@ -109,3 +109,12 @@ func (r *Room) BroadcastExcludeSender(msg *protocol.Message, senderName string) 
 		}
 	}
 }
+
+func (r *Room) BroadcastMsg(mt protocol.MessageType, msgData any) {
+	msg, err := protocol.MarshalToMessage(mt, msgData)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	r.Broadcast(msg)
+}

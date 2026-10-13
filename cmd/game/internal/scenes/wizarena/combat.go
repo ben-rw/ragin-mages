@@ -4,10 +4,11 @@ import (
 	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
 const (
-	PlayerHealth      = 3.0
+	PlayerHealth      = wizServer.PlayerHealth
 	PlayerAttackPower = 1.0
 	PlayerMoveSpeed   = 2.0
 	ReflectCooldown   = 180
@@ -39,7 +40,7 @@ const (
 )
 
 const (
-	EnemyMoveSpeed      = 1.5
+	EnemyMoveSpeed      = wizServer.EnemyMoveSpeed
 	EnemyHealth         = 2.0
 	EnemyAttackPower    = 1.0
 	EnemyAttackCooldown = 60
@@ -314,6 +315,7 @@ type WizardPlayer struct {
 }
 
 func (w *WizardPlayer) IFrameFlicker() {
+	w.Data.X = 0
 	w.FlickerFrames -= 1
 	if w.FlickerFrames <= 0 {
 		if w.Combat.IFrames() < FlickerFrames*2 {

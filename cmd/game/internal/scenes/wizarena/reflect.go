@@ -37,8 +37,10 @@ func NewReflect(x, y float64) *Reflect {
 	}
 	return &Reflect{
 		Sprite: &shared.Sprite{
-			X:               x + wizServer.HalfTile,
-			Y:               y + wizServer.HalfTile,
+			Body: &wizServer.Body{
+				X: x + wizServer.HalfTile,
+				Y: y + wizServer.HalfTile,
+			},
 			SpriteSheet:     ReflectSpriteSheet,
 			Animations:      ReflectAnimations,
 			ActiveAnimation: nil,

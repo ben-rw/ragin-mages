@@ -7,7 +7,7 @@ import (
 
 	"path/filepath"
 
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
@@ -19,7 +19,7 @@ const bytesPerSample = 4
 var audioContext = audio.NewContext(sampleRate)
 
 func NewAudioPlayer(path string, loop bool, introLen int64) (*audio.Player, error) {
-	data, err := shared.AssetsFS.ReadFile(path)
+	data, err := gameAssets.AssetsFS.ReadFile(path)
 	if err != nil {
 		return &audio.Player{}, err
 	}
@@ -73,7 +73,7 @@ func FadeOut(audioPlayer *audio.Player) bool {
 	}
 	err := audioPlayer.Close()
 	if err != nil {
-		log.Println("audio player already closed: %v", err)
+		log.Printf("audio player already closed: %v\n", err)
 	}
 	return true
 }

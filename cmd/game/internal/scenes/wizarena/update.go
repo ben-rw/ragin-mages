@@ -1,8 +1,6 @@
 package wizarena
 
 import (
-	"log"
-
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -33,7 +31,6 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 }
 
 func (w *WizArena) updatePlaying() {
-	log.Printf("%v, %v, %v, %v", w.wizard.X, w.wizard.Y, w.wizard.Combat.Health(), w.wizard.Combat.Fell)
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
 
@@ -111,8 +108,12 @@ func (w *WizArena) updatePlaying() {
 
 	}
 
-	// define enemy behavior
-	w.UpdateEnemies()
+	// fade enemies in and ramp movement speed after spawn
+	for _, enemy := range w.enemies {
+		if enemy.Alpha < 1.0 {
+			enemy.Alpha += 0.01
+		}
+	}
 
 	// check for enemies damaging player
 	w.CheckEnemyHitWizard()
@@ -127,9 +128,6 @@ func (w *WizArena) updatePlaying() {
 		w.wizard.KnockbackDx = 0
 		w.wizard.KnockbackDy = 0
 	}
-
-	// check enemy collisions
-	w.CheckEnemyCollisions()
 
 	// move player, check collisions with walls, holes, chests, and traps
 	w.UpdatePlayerMovementAndCheckCollisions()

@@ -8,13 +8,13 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
 	if !w.wizard.Noclip {
-		CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+		wizServer.CheckCollisionHorizontal(w.wizard.Body, w.colliders)
 	}
 
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
 	w.wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
 	if !w.wizard.Noclip {
-		CheckCollisionVertical(w.wizard.Sprite, w.colliders)
+		wizServer.CheckCollisionVertical(w.wizard.Body, w.colliders)
 	}
 
 	// send w.wizard location to server
@@ -25,18 +25,19 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.CheckChestCollisions()
 
 	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
-		if CheckPointInRect(
+		if wizServer.CheckPointInRect(
 			int(w.wizard.X+wizServer.HalfTile),
 			int(w.wizard.Y+14), // puts hitbox close to feet
 			w.traps,
 		) {
-			w.wizard.Combat.Damage(1.0)
+			w.wizard.Combat.Damage(TrapDamage)
+			w.WriteWizardStatUpdate()
 		}
 	}
 	w.UpdateTraps()
 
 	// check if wizard fell
-	w.wizard.Combat.Fell = CheckPointInRect(
+	w.wizard.Combat.Fell = wizServer.CheckPointInRect(
 		int(w.wizard.X+wizServer.HalfTile),
 		int(w.wizard.Y+14), // puts hitbox close to feet
 		w.holes,
@@ -49,5 +50,6 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	}
 	if w.wizard.Combat.Fell {
 		w.wizard.Combat.SetHealth(0)
+		w.WriteWizardStatUpdate()
 	}
 }
