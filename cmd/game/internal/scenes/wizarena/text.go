@@ -57,9 +57,9 @@ func (w *WizArena) NewDynamicTextMap() map[DynamicText]string {
 	return map[DynamicText]string{
 		// display stats to player starting at 1 and scaling by number of boosts applied to each stat
 		// to let player see how much they've increased each stat, rather than internal stat numbers
-		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %v", w.wizard.Combat.ProjectileSpeed()*(1/PSpeedMult)-(1/PSpeedMult*BaseProjectileSpeed-1)),
-		ProjectileScale: fmt.Sprintf("Fireball Size: %v", w.wizard.Combat.ProjectileScale()*(1/PScaleMult)-(1/PScaleMult*BaseProjectileScale-1)),
-		Knockback:       fmt.Sprintf("F.B. Knockback: %v", w.wizard.Combat.Knockback()*(1/KnockbackMult)-(1/KnockbackMult*BaseKnockback-1)),
+		ProjectileSpeed: fmt.Sprintf("Fireball Speed: %.0f", w.wizard.Combat.ProjectileSpeed()*(1/PSpeedMult)-(1/PSpeedMult*BaseProjectileSpeed-1)),
+		ProjectileScale: fmt.Sprintf("Fireball Size: %.0f", w.wizard.Combat.ProjectileScale()*(1/PScaleMult)-(1/PScaleMult*BaseProjectileScale-1)),
+		Knockback:       fmt.Sprintf("F.B. Knockback: %.0f", w.wizard.Combat.Knockback()*(1/KnockbackMult)-(1/KnockbackMult*BaseKnockback-1)),
 		AttackCooldown:  fmt.Sprintf("Attack Cooldown: %.2fs", float64(w.wizard.Combat.AttackCooldown())/60.0),
 	}
 }

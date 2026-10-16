@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type MessageType string
@@ -218,7 +219,9 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		return nil, errors.New("unrecognized message format")
 	}
 
-	// log.Printf("json: %s type: %v\n", m.Data, m.Type)
+	if m.Type != WizArenaMovement && m.Type != WizardMovementUpdate {
+		log.Printf("json: %s type: %v\n", m.Data, m.Type)
+	}
 
 	err := json.Unmarshal(m.Data, v)
 	if err != nil {

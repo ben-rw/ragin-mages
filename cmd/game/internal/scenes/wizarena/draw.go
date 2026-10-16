@@ -57,7 +57,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 
 		screen.DrawImage(
-			w.wizardFrameCache[w.wizard.Data.SpriteIndex][w.wizard.ActiveAnimation.Frame()],
+			w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],
 			&opts,
 		)
 

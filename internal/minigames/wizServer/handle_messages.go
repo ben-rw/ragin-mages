@@ -43,8 +43,6 @@ func (w *WizardServer) handleWizardMovementUpdate(message *protocol.Message) err
 		w.Mu.Unlock()
 	}
 
-	w.BroadcastExcludeSender(message, data.Username)
-
 	return nil
 }
 
@@ -198,7 +196,9 @@ func (w *WizardServer) handleReflecting(message *protocol.Message) error {
 		return err
 	}
 
-	w.wizards[data.ReflectorName].StartReflecting()
+	w.wizards[data.ReflectorName].startReflecting()
+
+	w.BroadcastExcludeSender(message, data.ReflectorName)
 
 	return nil
 }
@@ -232,6 +232,7 @@ func (w *WizardServer) handleProjectileHitWizard(message *protocol.Message) erro
 
 	w.Mu.Lock()
 	if _, ok := w.wizards[data.VictimStatData.Username]; ok {
+		w.wizards[data.VictimStatData.Username].Health = data.VictimStatData.Health
 		if w.wizards[data.VictimStatData.Username].Health <= 0 {
 			w.deadWizards[data.VictimStatData.Username] = struct{}{}
 		}

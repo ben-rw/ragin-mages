@@ -6,15 +6,18 @@ import (
 
 func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
 	if !w.wizard.Noclip {
 		wizServer.CheckCollisionHorizontal(w.wizard.Body, w.colliders)
 	}
 
 	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
 	if !w.wizard.Noclip {
 		wizServer.CheckCollisionVertical(w.wizard.Body, w.colliders)
+	}
+
+	for _, wizard := range w.wizards {
+		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
+		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
 	}
 
 	// send w.wizard location to server

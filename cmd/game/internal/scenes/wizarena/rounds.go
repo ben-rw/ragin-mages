@@ -17,6 +17,8 @@ func (w *WizArena) startNewRound() {
 		wizard.Combat.SetHealth(PlayerHealth)
 		wizard.Combat.SetIFrames(0)
 		wizard.Alpha = 1.0
+		wizard.KnockbackDx = 0
+		wizard.KnockbackDy = 0
 	}
 
 	clear(w.openedChests)
@@ -30,16 +32,19 @@ func (w *WizArena) startNewRound() {
 
 func (w *WizArena) updateRoundStart() {
 	w.scoreboardUpdated = false
-	w.wizard.Alpha = 1.0
 
-	w.wizard.Dx = 0
-	w.wizard.Dy = 0
+	for _, wizard := range w.wizards {
+		wizard.Alpha = 1.0
 
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
+		wizard.Dx = 0
+		wizard.Dy = 0
 
-	w.wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
-	w.wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
+		wizard.ActiveAnimation = wizard.GetActiveAnimation()
+		wizard.ActiveAnimation.Update()
+
+		wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
+		wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
+	}
 
 	w.camera.FollowTarget(
 		w.wizard.X,
@@ -59,25 +64,27 @@ func (w *WizArena) updateRoundOver() {
 		w.scoreboardUpdated = true
 	}
 
-	// add a fade effect when players die
-	if w.wizard.Combat.Dead {
-		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -wizServer.HalfTile {
-				w.wizard.Y -= 3.0
+	for _, wizard := range w.wizards {
+		// add a fade effect when players die
+		if wizard.Combat.Dead {
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3.0
+				}
 			}
 		}
-	}
-	if w.wizard.Alpha > 0.0 {
-		w.wizard.Alpha -= .02 //fade speed
-	} else {
-		w.wizard.Alpha = 0.0
-	}
+		if wizard.Alpha > 0.0 {
+			wizard.Alpha -= .02 //fade speed
+		} else {
+			wizard.Alpha = 0.0
+		}
 
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
+		wizard.ActiveAnimation = wizard.GetActiveAnimation()
+		wizard.ActiveAnimation.Update()
 
-	w.wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
-	w.wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
+		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
+		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
+	}
 
 	for _, enemy := range w.enemies {
 		if enemy.Combat.Dead {

@@ -161,6 +161,24 @@ func (w *WizArena) HandleNewProjectile(message *protocol.Message) error {
 	return nil
 }
 
+func (w *WizArena) HandleReflecting(message *protocol.Message) error {
+	reflectingData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := reflectingData.(*protocol.ReflectingData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	if wizard, ok := w.wizards[data.ReflectorName]; ok {
+		wizard.Combat.Reflect()
+	}
+
+	return nil
+}
+
 func (w *WizArena) HandleProjectileReflected(message *protocol.Message) error {
 	projectileReflectedData, err := message.UnmarshalMessageData()
 	if err != nil {

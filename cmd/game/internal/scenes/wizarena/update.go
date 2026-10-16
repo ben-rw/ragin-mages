@@ -34,20 +34,23 @@ func (w *WizArena) updatePlaying() {
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
 
-	if w.wizard.DieAnim {
-		// add a fade effect when players die
-		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -wizServer.HalfTile {
-				w.wizard.Y -= 3.0
+	for _, wizard := range w.wizards {
+		if wizard.DieAnim {
+			// add a fade effect when players die
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3.0
+				}
+			}
+			if wizard.Alpha > 0.0 {
+				wizard.Alpha -= .02 //fade speed
+			} else {
+				wizard.Alpha = 0.0
 			}
 		}
-		if w.wizard.Alpha > 0.0 {
-			w.wizard.Alpha -= .02 //fade speed
-		} else {
-			w.wizard.Alpha = 0.0
-		}
+	}
 
-	} else if w.wizard.Combat.Dead {
+	if w.wizard.Combat.Dead {
 		// define camera behavior for dead players
 		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
 			w.camera.X -= shared.FreeCamSpeed
@@ -100,12 +103,13 @@ func (w *WizArena) updatePlaying() {
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
 
-		w.wizard.Combat.Update()
-		if w.wizard.Combat.IFrames() > 0 {
-			w.wizard.IFrameFlicker()
+		for _, wizard := range w.wizards {
+			wizard.Combat.Update()
+			if w.wizard.Combat.IFrames() > 0 {
+				w.wizard.IFrameFlicker()
+			}
 		}
 		w.wizard.Noclip = false
-
 	}
 
 	// fade enemies in and ramp movement speed after spawn

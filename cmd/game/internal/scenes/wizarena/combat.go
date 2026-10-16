@@ -15,18 +15,18 @@ const (
 	IFrames           = 90
 	FlickerFrames     = 5
 	HurtboxRadius     = 8
-	ReflectFrames     = 15
+	ReflectFrames     = wizServer.ReflectFrames
 )
 
 // boostable stats
 const (
 	BaseProjectileSpeed = 3.0
 	BaseProjectileScale = 0.5
-	BaseKnockback       = 3.0
+	BaseKnockback       = 2.0
 	BaseAttackCooldown  = 60.0 //determines how many ticks projectile will persist
 	PSpeedMult          = .5
 	PScaleMult          = .25
-	KnockbackMult       = .5
+	KnockbackMult       = .25
 	AttackCDMult        = .5
 	StandardMult        = 0.0
 )
