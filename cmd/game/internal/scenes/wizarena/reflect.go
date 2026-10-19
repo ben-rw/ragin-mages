@@ -28,7 +28,9 @@ var ReflectSpriteSheet = spritesheet.NewSpriteSheet(ReflectWidthInTiles, Reflect
 
 type Reflect struct {
 	*shared.Sprite
-	Active bool
+	cursorX float64
+	cursorY float64
+	Active  bool
 }
 
 func NewReflect(x, y float64) *Reflect {
@@ -62,9 +64,9 @@ func (r *Reflect) GetActiveAnimation() *animations.Animation {
 	return anim
 }
 
-func (w *WizardPlayer) ReflectProjectile(p *Projectile, cursorX, cursorY float64) {
-	vX := cursorX - w.X
-	vY := cursorY - w.Y
+func (w *WizardPlayer) ReflectProjectile(p *Projectile) {
+	vX := w.Reflect.cursorX - w.X
+	vY := w.Reflect.cursorY - w.Y
 	vlen := math.Hypot(vX, vY)
 	if vlen == 0 {
 		p.Despawn()

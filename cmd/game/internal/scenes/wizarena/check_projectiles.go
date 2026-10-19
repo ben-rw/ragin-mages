@@ -57,6 +57,8 @@ func (w *WizArena) CheckProjectiles() {
 	if rightClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Reflect() {
 		w.wizard.ReflectAnim = true
 		w.wizard.Reflect.Active = true
+		w.wizard.Reflect.cursorX = float64(cX)
+		w.wizard.Reflect.cursorY = float64(cY)
 		w.WriteReflecting(cX, cY)
 	}
 
@@ -89,8 +91,10 @@ func (w *WizArena) CheckProjectiles() {
 					wizardRadius,
 				) {
 					if wizard.Combat.Reflecting() {
-						wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
-						w.WriteProjectileReflected(wizard.Data.Username, projectile.ID)
+						// TODO: needs to use cx/cy sent by server with reflect message, send msg to reflector to reset cooldown/let reflector know projectile is theirs now
+
+						w.WriteProjectileReflected(w.wizard.Data.Username, wizard.Data.Username, wizard.Reflect.cursorX, wizard.Reflect.cursorY, projectile.ID)
+						wizard.ReflectProjectile(projectile)
 						wizard.Combat.ResetReflectCooldown()
 					} else {
 						wizard.Combat.Damage(projectile.Damage)

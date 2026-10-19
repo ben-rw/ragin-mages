@@ -180,7 +180,7 @@ func (w *WizardServer) handleProjectileReflected(message *protocol.Message) erro
 		return err
 	}
 
-	w.BroadcastExcludeSender(message, data.ReflectorName)
+	w.BroadcastExcludeSender(message, data.ShooterName)
 
 	return nil
 }
@@ -196,7 +196,7 @@ func (w *WizardServer) handleReflecting(message *protocol.Message) error {
 		return err
 	}
 
-	w.wizards[data.ReflectorName].startReflecting()
+	// w.wizards[data.ReflectorName].startReflecting()
 
 	w.BroadcastExcludeSender(message, data.ReflectorName)
 

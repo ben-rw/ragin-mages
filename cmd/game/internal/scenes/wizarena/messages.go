@@ -43,9 +43,12 @@ func (w *WizArena) WriteReflecting(cx, cy int) {
 	})
 }
 
-func (w *WizArena) WriteProjectileReflected(reflectorName string, projectileID uint16) {
+func (w *WizArena) WriteProjectileReflected(shooterName string, reflectorName string, cursorX, cursorY float64, projectileID uint16) {
 	w.Conn.WriteMsg(protocol.ProjectileReflected, &protocol.ProjectileReflectedData{
+		ShooterName:   shooterName,
 		ReflectorName: reflectorName,
+		CursorX:       int(cursorX),
+		CursorY:       int(cursorY),
 		ProjectileID:  projectileID,
 	})
 }

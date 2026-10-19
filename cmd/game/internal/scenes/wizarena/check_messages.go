@@ -82,6 +82,12 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 				log.Println(err)
 				continue
 			}
+		case protocol.Reflecting:
+			err := w.HandleReflecting(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		case protocol.ProjectileDestroyed:
 			err := w.HandleProjectileDestroyed(message)
 			if err != nil {

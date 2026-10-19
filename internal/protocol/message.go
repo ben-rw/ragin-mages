@@ -107,6 +107,7 @@ type NewProjectileData struct {
 }
 
 type ProjectileReflectedData struct {
+	ShooterName   string `json:"shooter_name"`
 	ReflectorName string `json:"reflector_name"`
 	CursorX       int    `json:"cursor_x"`
 	CursorY       int    `json:"cursor_y"`

@@ -2,6 +2,7 @@ package wizarena
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
@@ -174,6 +175,9 @@ func (w *WizArena) HandleReflecting(message *protocol.Message) error {
 
 	if wizard, ok := w.wizards[data.ReflectorName]; ok {
 		wizard.Combat.Reflect()
+		wizard.Reflect.cursorX = float64(data.CursorX)
+		wizard.Reflect.cursorY = float64(data.CursorY)
+		log.Println(wizard.Reflect.cursorX, wizard.Reflect.cursorY)
 	}
 
 	return nil
@@ -193,9 +197,9 @@ func (w *WizArena) HandleProjectileReflected(message *protocol.Message) error {
 	if wizard, ok := w.wizards[data.ReflectorName]; ok {
 		wizard.ReflectProjectile(
 			w.projectiles[data.ProjectileID],
-			float64(data.CursorX),
-			float64(data.CursorY),
 		)
+		wizard.Combat.ResetReflectCooldown()
+		log.Printf("%v reflected successfully", wizard.Data.Username)
 	}
 
 	return nil
