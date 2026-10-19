@@ -61,7 +61,7 @@ type Projectile struct {
 
 var projectileID uint16 = 0
 
-func getProjectileID() uint16 {
+func newProjectileID() uint16 {
 	projectileID++
 	return projectileID
 }
@@ -81,13 +81,12 @@ func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileTy
 var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
 
 func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
-
 	ProjectileAnimations := map[shared.EntityState]*animations.Animation{
 		shared.FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
 	}
 
-	vX := cursorX - w.X
-	vY := cursorY - w.Y
+	vX := cursorX - (w.X + wizServer.HalfTile)
+	vY := cursorY - (w.Y + wizServer.HalfTile)
 	vlen := math.Hypot(vX, vY)
 	if vlen == 0 {
 		return &Projectile{}
@@ -105,8 +104,8 @@ func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64
 	return &Projectile{
 		Sprite: shared.NewSprite(
 			img,
-			w.X+wizServer.HalfTile+normX*wizServer.HalfTile-normX*wizServer.HalfTile*w.Combat.ProjectileScale(),
-			w.Y+wizServer.HalfTile+normY*wizServer.HalfTile-normY*wizServer.HalfTile*w.Combat.ProjectileScale(),
+			w.X+wizServer.HalfTile+normX*wizServer.HalfTile-normX*wizServer.HalfTile*w.Combat.ProjectileScale()-rotatedOffsetX,
+			w.Y+wizServer.HalfTile+normY*wizServer.HalfTile-normY*wizServer.HalfTile*w.Combat.ProjectileScale()-rotatedOffsetY,
 			normX*w.Combat.ProjectileSpeed(),
 			normY*w.Combat.ProjectileSpeed(),
 			ProjectileSpriteSheet,
@@ -134,7 +133,7 @@ func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64
 		ReflectCount:  0,
 		AlreadyHit:    make(map[any]struct{}),
 		Type:          projectileType,
-		ID:            getProjectileID(),
+		ID:            newProjectileID(),
 	}
 }
 
