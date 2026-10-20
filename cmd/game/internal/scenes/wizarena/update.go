@@ -65,7 +65,7 @@ func (w *WizArena) updatePlaying() {
 				float64(w.tilemapJSON.Layers[0].Height)*16.0,
 			)
 
-			tolerance := 0.1
+			tolerance := 1.0
 			if w.camera.X-w.wizard.DeathX < tolerance &&
 				w.camera.Y-w.wizard.DeathY < tolerance {
 				w.camera.DoneMoving = true

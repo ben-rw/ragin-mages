@@ -51,7 +51,7 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
 		w.wizard.Combat.Fell = true
 	}
-	if w.wizard.Combat.Fell {
+	if w.wizard.Combat.Fell && !w.wizard.Combat.Dead {
 		w.wizard.Combat.SetHealth(0)
 		w.WriteWizardStatUpdate()
 	}
