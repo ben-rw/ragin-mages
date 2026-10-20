@@ -39,20 +39,22 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	}
 	w.UpdateTraps()
 
-	// check if wizard fell
-	w.wizard.Combat.Fell = wizServer.CheckPointInRect(
-		int(w.wizard.X+wizServer.HalfTile),
-		int(w.wizard.Y+14), // puts hitbox close to feet
+}
+
+func (w *WizArena) checkIfFell(wizard *WizardPlayer) {
+	// check if wizard fell in a hole
+	wizard.Combat.Fell = wizServer.CheckPointInRect(
+		int(wizard.X+wizServer.HalfTile+wizard.KnockbackDx),
+		int(wizard.Y+14+wizard.KnockbackDy), // puts hitbox close to feet
 		w.holes,
 	)
-	if w.wizard.X < 0 ||
-		w.wizard.Y < 0 ||
-		w.wizard.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
-		w.wizard.Combat.Fell = true
+	if wizard.X+wizard.KnockbackDx < 0 ||
+		wizard.Y+wizard.KnockbackDy < 0 ||
+		wizard.X+wizard.KnockbackDx > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
+		wizard.Y+wizard.KnockbackDy > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
+		wizard.Combat.Fell = true
 	}
-	if w.wizard.Combat.Fell && !w.wizard.Combat.Dead {
-		w.wizard.Combat.SetHealth(0)
-		w.WriteWizardStatUpdate()
+	if wizard.Combat.Fell {
+		wizard.Combat.SetHealth(0)
 	}
 }

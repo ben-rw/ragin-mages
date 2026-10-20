@@ -12,6 +12,7 @@ import (
 func (w *WizArena) startNewRound() {
 	w.round += 1
 	for _, wizard := range w.wizards {
+		wizard.Alpha = 1.0
 		wizard.Combat.Dead = false
 		wizard.Combat.Fell = false
 		w.camera.DoneMoving = false
@@ -34,8 +35,6 @@ func (w *WizArena) updateRoundStart() {
 	w.scoreboardUpdated = false
 
 	for _, wizard := range w.wizards {
-		wizard.Alpha = 1.0
-
 		wizard.Dx = 0
 		wizard.Dy = 0
 

@@ -65,7 +65,7 @@ func (w *WizArena) updatePlaying() {
 				float64(w.tilemapJSON.Layers[0].Height)*16.0,
 			)
 
-			tolerance := 1.0
+			tolerance := 5.0
 			if w.camera.X-w.wizard.DeathX < tolerance &&
 				w.camera.Y-w.wizard.DeathY < tolerance {
 				w.camera.DoneMoving = true
@@ -159,6 +159,13 @@ func (w *WizArena) updatePlaying() {
 
 	// determine animations
 	w.UpdateAnimations()
+
+	// check if this client's wizard fell in a hole
+	w.checkIfFell(w.wizard)
+	if w.wizard.Combat.Fell && !w.wizard.Combat.Dead {
+		w.wizard.Combat.SetHealth(0)
+		w.WriteWizardStatUpdate()
+	}
 
 	// sort wizards, enemies, and projectiles for consistent draw ordering
 	w.SortEntities()

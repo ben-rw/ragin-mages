@@ -108,7 +108,7 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 	}
 
 	if wizard, ok := w.wizards[data.Username]; ok {
-		if wizard.Combat.Health() < data.Health {
+		if wizard.Combat.Health() > data.Health {
 			wizard.Combat.Damage(wizard.Combat.Health() - data.Health)
 		}
 		wizard.Data.Score = data.Score
@@ -247,6 +247,10 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 	}
 
 	if victim, ok := w.wizards[data.VictimStatData.Username]; ok {
+		if victim.Combat.Health() > data.VictimStatData.Health {
+			victim.Combat.Damage(victim.Combat.Health() - data.VictimStatData.Health)
+		}
+
 		victim.Data.Score = data.VictimStatData.Score
 		victim.Combat.SetAttackCooldown(data.VictimStatData.AttackCooldown)
 		victim.Combat.SetProjectileSpeed(data.VictimStatData.ProjectileSpeed)

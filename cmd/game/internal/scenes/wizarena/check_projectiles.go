@@ -1,6 +1,8 @@
 package wizarena
 
 import (
+	"log"
+
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -71,11 +73,15 @@ func (w *WizArena) CheckProjectiles() {
 						wizard.Combat.Damage(projectile.Damage)
 						projectile.AlreadyHit[wizard] = struct{}{}
 
-						wizard.Dx = projectile.NormX * wizServer.TileSize * projectile.Knockback
-						wizard.Dy = projectile.NormY * wizServer.TileSize * projectile.Knockback
+						wizard.KnockbackDx = projectile.NormX * wizServer.TileSize * projectile.Knockback
+						wizard.KnockbackDy = projectile.NormY * wizServer.TileSize * projectile.Knockback
 						wizard.Noclip = true
 
-						w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
+						// sets health to 0 if victim lands in a hole
+						w.checkIfFell(wizard)
+						log.Println(wizard.Combat.Health(), wizard.Combat.Fell)
+
+						w.WriteProjectileHitWizard(wizard, wizard.KnockbackDx, wizard.KnockbackDy)
 
 						if wizard.Combat.Health() <= 0 {
 							// player who last hit the player gets a flat stat boost + steals stats from victim
