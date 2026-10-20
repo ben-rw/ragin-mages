@@ -101,7 +101,6 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 		case AttackingLeft:
 			anim = s.Animations[AttackingLeft]
 		}
-
 		if anim.Over {
 			anim.Over = false
 			s.AttackAnim = false
@@ -110,13 +109,13 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 		}
 	}
 	switch {
-	case s.Body.Dx > 0:
+	case s.Dx > 0:
 		return s.Animations[WalkRight]
-	case s.Body.Dx < 0:
+	case s.Dx < 0:
 		return s.Animations[WalkLeft]
-	case s.Body.Dy > 0:
+	case s.Dy > 0:
 		return s.Animations[WalkDown]
-	case s.Body.Dy < 0:
+	case s.Dy < 0:
 		return s.Animations[WalkUp]
 	default:
 		return s.Animations[Idle]

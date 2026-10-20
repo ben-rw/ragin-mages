@@ -12,6 +12,8 @@ func (w *WizArena) UpdateAnimations() {
 
 		if wizard.Combat.Health() <= 0 && !wizard.Combat.Dead {
 			wizard.Combat.Dead = true
+			wizard.DeathX = wizard.X
+			wizard.DeathY = wizard.Y
 			wizard.DieAnim = true //starts death animation
 		}
 

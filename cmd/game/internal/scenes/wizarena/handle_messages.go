@@ -2,7 +2,6 @@ package wizarena
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
@@ -108,13 +107,16 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 		return err
 	}
 
-	if _, ok := w.wizards[data.Username]; ok {
-		w.wizards[data.Username].Data.Score = data.Score
-		w.wizards[data.Username].Combat.SetAttackCooldown(data.AttackCooldown)
-		w.wizards[data.Username].Combat.SetProjectileSpeed(data.ProjectileSpeed)
-		w.wizards[data.Username].Combat.SetProjectileScale(data.ProjectileScale)
-		w.wizards[data.Username].Combat.SetKnockback(data.Knockback)
-		w.wizards[data.Username].Combat.SetHealth(data.Health)
+	if wizard, ok := w.wizards[data.Username]; ok {
+		if wizard.Combat.Health() < data.Health {
+			wizard.Combat.Damage(wizard.Combat.Health() - data.Health)
+		}
+		wizard.Data.Score = data.Score
+		wizard.Combat.SetAttackCooldown(data.AttackCooldown)
+		wizard.Combat.SetProjectileSpeed(data.ProjectileSpeed)
+		wizard.Combat.SetProjectileScale(data.ProjectileScale)
+		wizard.Combat.SetKnockback(data.Knockback)
+		wizard.Combat.SetHealth(data.Health)
 	}
 
 	return nil
@@ -131,8 +133,8 @@ func (w *WizArena) HandleEnemyStatUpdate(message *protocol.Message) error {
 		return err
 	}
 
-	if _, ok := w.enemies[data.ID]; ok {
-		w.enemies[data.ID].Combat.SetHealth(data.Health)
+	if enemy, ok := w.enemies[data.ID]; ok {
+		enemy.Combat.Damage(enemy.Combat.Health() - data.Health)
 	}
 
 	return nil
@@ -157,6 +159,8 @@ func (w *WizArena) HandleNewProjectile(message *protocol.Message) error {
 			Fireball,
 		)
 		w.projectiles[projectile.ID] = projectile
+		wizard.Combat.Attack()
+		wizard.AttackAnim = true
 	}
 
 	return nil
@@ -175,9 +179,10 @@ func (w *WizArena) HandleReflecting(message *protocol.Message) error {
 
 	if wizard, ok := w.wizards[data.ReflectorName]; ok {
 		wizard.Combat.Reflect()
+		wizard.ReflectAnim = true
+		wizard.Reflect.Active = true
 		wizard.Reflect.cursorX = float64(data.CursorX)
 		wizard.Reflect.cursorY = float64(data.CursorY)
-		log.Println(wizard.Reflect.cursorX, wizard.Reflect.cursorY)
 	}
 
 	return nil
@@ -199,7 +204,6 @@ func (w *WizArena) HandleProjectileReflected(message *protocol.Message) error {
 			w.projectiles[data.ProjectileID],
 		)
 		wizard.Combat.ResetReflectCooldown()
-		log.Printf("%v reflected successfully", wizard.Data.Username)
 	}
 
 	return nil

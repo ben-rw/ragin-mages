@@ -8,8 +8,8 @@ func (w *WizArena) WriteWizardMovementUpdate() {
 	w.Conn.WriteMsg(protocol.WizardMovementUpdate, &protocol.WizardMovementUpdateData{
 		X:        w.wizard.X,
 		Y:        w.wizard.Y,
-		Dx:       w.wizard.Y,
-		Dy:       w.wizard.Y,
+		Dx:       w.wizard.Dx,
+		Dy:       w.wizard.Dy,
 		Username: w.wizard.Data.Username,
 	})
 }

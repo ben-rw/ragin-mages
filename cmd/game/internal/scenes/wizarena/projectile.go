@@ -101,6 +101,20 @@ func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64
 	rotatedOffsetX := (scaledOffsetX * normX) - (scaledOffsetY * normY)
 	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
 
+	if math.Abs(normX) > math.Abs(normY) {
+		if normX > 0 {
+			w.AttackDirection = shared.AttackingRight
+		} else {
+			w.AttackDirection = shared.AttackingLeft
+		}
+	} else {
+		if normY > 0 {
+			w.AttackDirection = shared.AttackingDown
+		} else {
+			w.AttackDirection = shared.AttackingUp
+		}
+	}
+
 	return &Projectile{
 		Sprite: shared.NewSprite(
 			img,

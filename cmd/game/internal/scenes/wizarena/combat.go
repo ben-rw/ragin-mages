@@ -312,6 +312,8 @@ type WizardPlayer struct {
 	Reflect       *Reflect
 	FlickerFrames int
 	HurtboxRadius float64
+	DeathX        float64
+	DeathY        float64
 }
 
 func (w *WizardPlayer) IFrameFlicker() {
@@ -357,6 +359,8 @@ func NewWizard(player *shared.Player) *WizardPlayer {
 		NewReflect(player.X, player.Y),
 		FlickerFrames,
 		HurtboxRadius,
+		0,
+		0,
 	}
 }
 

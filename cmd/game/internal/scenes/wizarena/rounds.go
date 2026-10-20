@@ -14,9 +14,9 @@ func (w *WizArena) startNewRound() {
 	for _, wizard := range w.wizards {
 		wizard.Combat.Dead = false
 		wizard.Combat.Fell = false
+		w.camera.DoneMoving = false
 		wizard.Combat.SetHealth(PlayerHealth)
 		wizard.Combat.SetIFrames(0)
-		wizard.Alpha = 1.0
 		wizard.KnockbackDx = 0
 		wizard.KnockbackDy = 0
 	}
@@ -42,8 +42,8 @@ func (w *WizArena) updateRoundStart() {
 		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		wizard.ActiveAnimation.Update()
 
-		wizard.NameTag.X = w.wizard.X + wizServer.TileSize/2
-		wizard.NameTag.Y = w.wizard.Y + wizServer.TileSize + 2
+		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
+		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
 	}
 
 	w.camera.FollowTarget(
@@ -62,6 +62,28 @@ func (w *WizArena) updateRoundOver() {
 	if !w.scoreboardUpdated {
 		w.NewScoreboard()
 		w.scoreboardUpdated = true
+	}
+
+	if w.wizard.Combat.Dead {
+		if !w.camera.DoneMoving {
+			// keep following player to position knockback puts them
+			w.camera.FollowTarget(
+				w.wizard.DeathX,
+				w.wizard.DeathY,
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
+			w.camera.Constrain(
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
+
+			tolerance := 0.1
+			if w.camera.X-w.wizard.DeathX < tolerance &&
+				w.camera.Y-w.wizard.DeathY < tolerance {
+				w.camera.DoneMoving = true
+			}
+		}
 	}
 
 	for _, wizard := range w.wizards {

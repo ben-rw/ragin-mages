@@ -1,9 +1,6 @@
 package wizarena
 
 import (
-	"math"
-
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -27,30 +24,6 @@ func (w *WizArena) CheckProjectiles() {
 		)
 		w.WriteNewProjectile(cX, cY)
 		w.projectiles[projectile.ID] = projectile
-
-		// figure out attack direction for animation
-		vX := float64(cX) - w.wizard.X
-		vY := float64(cY) - w.wizard.Y
-		vlen := math.Hypot(vX, vY)
-		if vlen == 0 {
-			projectile.Despawn() // prevents division by zero
-		}
-		normX := vX / vlen
-		normY := vY / vlen
-
-		if math.Abs(normX) > math.Abs(normY) {
-			if normX > 0 {
-				w.wizard.AttackDirection = shared.AttackingRight
-			} else {
-				w.wizard.AttackDirection = shared.AttackingLeft
-			}
-		} else {
-			if normY > 0 {
-				w.wizard.AttackDirection = shared.AttackingDown
-			} else {
-				w.wizard.AttackDirection = shared.AttackingUp
-			}
-		}
 	}
 
 	// spawn new reflects
@@ -91,15 +64,12 @@ func (w *WizArena) CheckProjectiles() {
 					wizardRadius,
 				) {
 					if wizard.Combat.Reflecting() {
-						// TODO: needs to use cx/cy sent by server with reflect message, send msg to reflector to reset cooldown/let reflector know projectile is theirs now
-
 						w.WriteProjectileReflected(w.wizard.Data.Username, wizard.Data.Username, wizard.Reflect.cursorX, wizard.Reflect.cursorY, projectile.ID)
 						wizard.ReflectProjectile(projectile)
 						wizard.Combat.ResetReflectCooldown()
 					} else {
 						wizard.Combat.Damage(projectile.Damage)
 						projectile.AlreadyHit[wizard] = struct{}{}
-						StealStats(projectile.Caster.Combat, wizard.Combat)
 
 						wizard.Dx = projectile.NormX * wizServer.TileSize * projectile.Knockback
 						wizard.Dy = projectile.NormY * wizServer.TileSize * projectile.Knockback
@@ -108,8 +78,9 @@ func (w *WizArena) CheckProjectiles() {
 						w.WriteProjectileHitWizard(wizard, wizard.Dx, wizard.Dy)
 
 						if wizard.Combat.Health() <= 0 {
-							// player who last hit the player gets a stat boost
-							projectile.Caster.Combat.RandomBoost(KillPlayerBoost, StandardMult)
+							// player who last hit the player gets a flat stat boost + steals stats from victim
+							StealStats(projectile.Caster.Combat, wizard.Combat)
+							w.wizard.Combat.RandomBoost(KillPlayerBoost, StandardMult)
 							w.WriteWizardStatUpdate()
 						}
 

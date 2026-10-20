@@ -9,13 +9,15 @@ import (
 const FreeCamSpeed = 10
 
 type Camera struct {
-	X, Y float64
+	X, Y       float64
+	DoneMoving bool
 }
 
 func NewCamera(x, y float64) *Camera {
 	return &Camera{
-		X: x,
-		Y: y,
+		X:          x,
+		Y:          y,
+		DoneMoving: false,
 	}
 }
 

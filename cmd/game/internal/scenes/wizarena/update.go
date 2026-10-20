@@ -31,10 +31,10 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 }
 
 func (w *WizArena) updatePlaying() {
-	w.wizard.Dx = 0
-	w.wizard.Dy = 0
-
 	for _, wizard := range w.wizards {
+		w.wizard.Dx = 0
+		w.wizard.Dy = 0
+
 		if wizard.DieAnim {
 			// add a fade effect when players die
 			if !wizard.Combat.Fell {
@@ -47,29 +47,50 @@ func (w *WizArena) updatePlaying() {
 			} else {
 				wizard.Alpha = 0.0
 			}
+
 		}
 	}
 
 	if w.wizard.Combat.Dead {
-		// define camera behavior for dead players
-		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
-			w.camera.X -= shared.FreeCamSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
-			w.camera.X += shared.FreeCamSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
-			w.camera.Y += shared.FreeCamSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
-			w.camera.Y -= shared.FreeCamSpeed
-		}
+		if !w.camera.DoneMoving {
+			// keep following player to position knockback puts them
+			w.camera.FollowTarget(
+				w.wizard.DeathX,
+				w.wizard.DeathY,
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
+			w.camera.Constrain(
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
 
-		w.camera.Constrain(
-			float64(w.tilemapJSON.Layers[0].Width)*16.0,
-			float64(w.tilemapJSON.Layers[0].Height)*16.0,
-		)
+			tolerance := 0.1
+			if w.camera.X-w.wizard.DeathX < tolerance &&
+				w.camera.Y-w.wizard.DeathY < tolerance {
+				w.camera.DoneMoving = true
+			}
 
+		} else {
+			// define camera behavior for dead players
+			if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
+				w.camera.X -= shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
+				w.camera.X += shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
+				w.camera.Y += shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
+				w.camera.Y -= shared.FreeCamSpeed
+			}
+
+			w.camera.Constrain(
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
+		}
 	} else {
 		// add velocity to wizard based on player input
 		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
@@ -105,8 +126,8 @@ func (w *WizArena) updatePlaying() {
 
 		for _, wizard := range w.wizards {
 			wizard.Combat.Update()
-			if w.wizard.Combat.IFrames() > 0 {
-				w.wizard.IFrameFlicker()
+			if wizard.Combat.IFrames() > 0 {
+				wizard.IFrameFlicker()
 			}
 		}
 		w.wizard.Noclip = false
