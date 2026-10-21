@@ -364,7 +364,11 @@ func (w *WizArena) HandleGivePoints(message *protocol.Message) error {
 	}
 
 	if wizard, ok := w.wizards[data.RecipientName]; ok {
-		wizard.Combat.RandomBoost(float64(data.Amount), StandardMult)
+		wizard.Combat.RandomBoost(float64(data.Random), StandardMult)
+		wizard.Combat.BoostProjectileScale(float64(data.ProjectileScale), 1)
+		wizard.Combat.BoostProjectileSpeed(float64(data.ProjectileSpeed), 1)
+		wizard.Combat.BoostKnockback(float64(data.Knockback), 1)
+		wizard.Combat.BoostAttackCooldown(float64(data.AttackCooldown), 1)
 	}
 
 	return nil

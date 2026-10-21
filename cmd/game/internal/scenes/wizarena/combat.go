@@ -36,7 +36,7 @@ const (
 	KillPlayerBoost  = 3.0
 	ChestBoost       = 3.0
 	WinRoundBoost    = wizServer.WinRoundBoost
-	StatTheftDivisor = 4
+	StatTheftDivisor = 2
 )
 
 const (
@@ -218,9 +218,9 @@ func (wc *WizardCombat) SetAttackCooldown(amount float64) {
 }
 
 func (wc *WizardCombat) GetTotalPower() int {
-	return int((wc.projectileSpeed*(1/PSpeedMult) - (1/PSpeedMult*BaseProjectileSpeed - 1)) +
-		(wc.projectileScale*(1/PScaleMult) - (1/PScaleMult*BaseProjectileScale - 1)) +
-		(wc.knockback*(1/KnockbackMult) - (1/KnockbackMult*BaseKnockback - 1)) +
+	return int((wc.projectileSpeed*(1/PSpeedMult) - (1 / PSpeedMult * BaseProjectileSpeed)) +
+		(wc.projectileScale*(1/PScaleMult) - (1 / PScaleMult * BaseProjectileScale)) +
+		(wc.knockback*(1/KnockbackMult) - (1 / KnockbackMult * BaseKnockback)) +
 		((60 - wc.attackCooldown) * 1 / AttackCDMult))
 }
 
@@ -367,25 +367,31 @@ func NewWizard(player *shared.Player) *WizardPlayer {
 	}
 }
 
-func StealStats(thief *WizardCombat, victim *WizardCombat) {
+func StealStats(thief *WizardCombat, victim *WizardCombat) (float64, float64, float64, float64) {
+	var stolenPScale float64 = 0
+	var stolenPSpeed float64 = 0
+	var stolenKnockback float64 = 0
+	var stolenAttackCooldown float64 = 0
 	if thief.ProjectileScale() < victim.ProjectileScale() {
-		stolen := (victim.ProjectileScale() - thief.ProjectileScale()) / StatTheftDivisor
-		thief.BoostProjectileScale(stolen, 1) // 1 for all mults as existing player stats have had already had mult applied
-		victim.BoostProjectileScale(-stolen, 1)
+		stolenPScale = (victim.ProjectileScale() - thief.ProjectileScale()) / StatTheftDivisor
+		thief.BoostProjectileScale(stolenPScale, 1) // 1 for all mults as existing player stats have had already had mult applied
+		victim.BoostProjectileScale(-stolenPScale, 1)
 	}
 	if thief.ProjectileSpeed() < victim.ProjectileSpeed() {
-		stolen := (victim.ProjectileSpeed() - thief.ProjectileSpeed()) / StatTheftDivisor
-		thief.BoostProjectileSpeed(stolen, 1)
-		victim.BoostProjectileSpeed(-stolen, 1)
+		stolenPSpeed = (victim.ProjectileSpeed() - thief.ProjectileSpeed()) / StatTheftDivisor
+		thief.BoostProjectileSpeed(stolenPSpeed, 1)
+		victim.BoostProjectileSpeed(-stolenPSpeed, 1)
 	}
 	if thief.Knockback() < victim.Knockback() {
-		stolen := (victim.Knockback() - thief.Knockback()) / StatTheftDivisor
-		thief.BoostKnockback(stolen, 1)
-		victim.BoostKnockback(-stolen, 1)
+		stolenKnockback = (victim.Knockback() - thief.Knockback()) / StatTheftDivisor
+		thief.BoostKnockback(stolenKnockback, 1)
+		victim.BoostKnockback(-stolenKnockback, 1)
 	}
 	if thief.AttackCooldown() > victim.AttackCooldown() {
-		stolen := (thief.AttackCooldown() - victim.AttackCooldown()) / StatTheftDivisor
-		thief.BoostAttackCooldown(float64(stolen), 1)
-		victim.BoostAttackCooldown(float64(-stolen), 1)
+		stolenAttackCooldown = (thief.AttackCooldown() - victim.AttackCooldown()) / StatTheftDivisor
+		thief.BoostAttackCooldown(float64(stolenAttackCooldown), 1)
+		victim.BoostAttackCooldown(float64(-stolenAttackCooldown), 1)
 	}
+
+	return stolenPScale, stolenPSpeed, stolenKnockback, stolenAttackCooldown
 }

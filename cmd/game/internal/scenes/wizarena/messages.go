@@ -113,10 +113,14 @@ func (w *WizArena) WriteChestUpdate(x, y int) {
 	})
 }
 
-func (w *WizArena) WriteGivePoints(recipientName string, amount int) {
+func (w *WizArena) WriteGivePoints(recipientName string, random int, pScale, pSpeed, kb, ac float64) {
 	w.Conn.WriteMsg(protocol.GivePoints, protocol.GivePointsData{
-		SenderName:    w.wizard.Data.Username,
-		RecipientName: recipientName,
-		Amount:        amount,
+		SenderName:      w.wizard.Data.Username,
+		RecipientName:   recipientName,
+		Random:          random,
+		ProjectileScale: pScale,
+		ProjectileSpeed: pSpeed,
+		Knockback:       kb,
+		AttackCooldown:  ac,
 	})
 }

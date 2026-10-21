@@ -28,7 +28,7 @@ func (w *WizArena) CheckEnemyHitWizard() {
 		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
 			if enemy.Combat.Attack() {
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
-				w.wizard.Combat.LastHitBy = "" // prevent a player from getting credit for an enemy's kill
+				// w.wizard.Combat.LastHitBy = "" // prevent a player from getting credit for an enemy's kill
 				w.WriteWizardStatUpdate()
 
 				// player pushed away by enemy

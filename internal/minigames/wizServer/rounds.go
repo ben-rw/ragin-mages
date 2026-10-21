@@ -179,7 +179,7 @@ func (w *WizardServer) determineAndAwardWinner() {
 	} else if len(aliveAtRoundEnd) == 1 {
 		w.BroadcastMsg(protocol.GivePoints, &protocol.GivePointsData{
 			RecipientName: aliveAtRoundEnd[0],
-			Amount:        WinRoundBoost,
+			Random:        WinRoundBoost,
 		})
 	} else {
 		// undecided - for now, nobody gets points if multiple wizards are alive at round end

@@ -155,9 +155,13 @@ type PhaseUpdateData struct {
 }
 
 type GivePointsData struct {
-	RecipientName string `json:"recipient_name"`
-	SenderName    string `json:"sender_name"`
-	Amount        int    `json:"amount"`
+	RecipientName   string  `json:"recipient_name"`
+	SenderName      string  `json:"sender_name"`
+	Random          int     `json:"random"`
+	ProjectileScale float64 `json:"projectile_scale"`
+	ProjectileSpeed float64 `json:"projectile_speed"`
+	Knockback       float64 `json:"knockback"`
+	AttackCooldown  float64 `json:"attack_cooldown"`
 }
 
 type Scene struct {

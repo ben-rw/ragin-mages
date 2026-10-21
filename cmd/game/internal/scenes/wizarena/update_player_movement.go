@@ -1,8 +1,6 @@
 package wizarena
 
 import (
-	"log"
-
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
@@ -36,12 +34,11 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 			w.traps,
 		) {
 			w.wizard.Combat.Damage(TrapDamage)
-			w.WriteWizardStatUpdate()
 			if w.wizard.Combat.Health() <= 0 && w.wizard.Combat.LastHitBy != "" {
-				log.Println("SENDING POINTS")
-				log.Println(w.wizard.Combat.LastHitBy)
-				w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost))
+				pScale, pSpeed, kb, ac := StealStats(w.wizards[w.wizard.Combat.LastHitBy].Combat, w.wizard.Combat)
+				w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac)
 			}
+			w.WriteWizardStatUpdate()
 		}
 	}
 	w.UpdateTraps()

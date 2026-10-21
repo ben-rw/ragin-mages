@@ -75,14 +75,13 @@ func (w *WizArena) CheckProjectiles() {
 						wizard.KnockbackDy = projectile.NormY * wizServer.TileSize * projectile.Knockback
 						wizard.Noclip = true
 
-						w.WriteProjectileHitWizard(wizard, wizard.KnockbackDx, wizard.KnockbackDy)
-
 						if wizard.Combat.Health() <= 0 {
 							// player who last hit the player gets a flat stat boost + steals stats from victim
 							StealStats(projectile.Caster.Combat, wizard.Combat)
 							w.wizard.Combat.RandomBoost(KillPlayerBoost, StandardMult)
-							w.WriteWizardStatUpdate()
 						}
+
+						w.WriteProjectileHitWizard(wizard, wizard.KnockbackDx, wizard.KnockbackDy)
 
 						w.dynamicText = w.NewDynamicTextMap()
 					}

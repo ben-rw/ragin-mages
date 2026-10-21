@@ -20,6 +20,7 @@ func (w *WizArena) CheckChestCollisions() {
 				w.wizard.Combat.RandomBoost(ChestBoost, StandardMult)
 				w.openedChests[OpenedChest{X: chest.Min.X, Y: chest.Min.Y}] = struct{}{}
 				w.WriteWizardStatUpdate()
+				w.WriteChestUpdate(chest.Min.X, chest.Min.Y)
 				w.dynamicText = w.NewDynamicTextMap()
 			}
 		}

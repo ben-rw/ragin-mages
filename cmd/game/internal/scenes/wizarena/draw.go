@@ -153,40 +153,40 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
 		textOpts.GeoM.Reset()
 
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat0BottomLeft())
-		text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat1BottomLeft())
-		text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat2BottomLeft())
-		text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat3BottomLeft())
-		text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
-		opts.GeoM.Translate(shared.TopRightFurther())
-		screen.DrawImage(StaticTextMap[instructionText1], &opts)
-		opts.GeoM.Reset()
-
-		opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
-		opts.GeoM.Translate(shared.BottomRightFurther())
-		screen.DrawImage(StaticTextMap[instructionText2], &opts)
-		opts.GeoM.Reset()
-
 		if w.wizard.Combat.Dead {
 			opts.GeoM.Translate(shared.Center())
 			opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
 			screen.DrawImage(StaticTextMap[deadText], &opts)
+			opts.GeoM.Reset()
+		} else {
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat0BottomLeft())
+			text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat1BottomLeft())
+			text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat2BottomLeft())
+			text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat3BottomLeft())
+			text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
+			opts.GeoM.Translate(shared.TopRightFurther())
+			screen.DrawImage(StaticTextMap[instructionText1], &opts)
+			opts.GeoM.Reset()
+
+			opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
+			opts.GeoM.Translate(shared.BottomRightFurther())
+			screen.DrawImage(StaticTextMap[instructionText2], &opts)
 			opts.GeoM.Reset()
 		}
 
