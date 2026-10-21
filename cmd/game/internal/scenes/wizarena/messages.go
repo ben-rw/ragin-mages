@@ -112,3 +112,11 @@ func (w *WizArena) WriteChestUpdate(x, y int) {
 		Y: y,
 	})
 }
+
+func (w *WizArena) WriteGivePoints(recipientName string, amount int) {
+	w.Conn.WriteMsg(protocol.GivePoints, protocol.GivePointsData{
+		SenderName:    w.wizard.Data.Username,
+		RecipientName: recipientName,
+		Amount:        amount,
+	})
+}

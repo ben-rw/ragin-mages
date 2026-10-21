@@ -33,6 +33,8 @@ func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
 				w.gameStart()
 			case WaitingForClients:
 				w.waitForClients()
+			case SyncScores:
+				w.syncScores()
 			default:
 				log.Printf("wizServer: unrecognized round phase: %v\n", w.phase)
 			}

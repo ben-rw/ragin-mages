@@ -277,3 +277,19 @@ func (w *WizardServer) handleClientLoaded(message *protocol.Message) error {
 	w.clientLoadedCount.Add(1)
 	return nil
 }
+
+func (w *WizardServer) handleGivePoints(message *protocol.Message) error {
+	// givePointsData, err := message.UnmarshalMessageData()
+	// if err != nil {
+	// 	return err
+	// }
+	// data, ok := givePointsData.(*protocol.GivePointsData)
+	// if !ok {
+	// 	err = errors.New("failed type assertion")
+	// 	return err
+	// }
+
+	w.Broadcast(message)
+
+	return nil
+}

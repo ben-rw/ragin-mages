@@ -124,6 +124,12 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 				log.Println(err)
 				continue
 			}
+		case protocol.GivePoints:
+			err := w.HandleGivePoints(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
 		case protocol.SceneChange:
 			log.Println("scene changed to WizArena")
 

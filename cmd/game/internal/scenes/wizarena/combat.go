@@ -35,7 +35,7 @@ const (
 	KillEnemyBoost   = 1.0
 	KillPlayerBoost  = 3.0
 	ChestBoost       = 3.0
-	WinRoundBoost    = 10.0
+	WinRoundBoost    = wizServer.WinRoundBoost
 	StatTheftDivisor = 4
 )
 
@@ -190,12 +190,12 @@ func NewEnemyCombat(attackCooldown, health, attackPower, moveSpeed, projectileSp
 
 type WizardCombat struct {
 	*BasicCombat
+	LastHitBy        string
 	reflectCooldown  int
 	timeSinceAttack  int
 	timeSinceReflect int
 	iFrames          int
 	reflectFrames    int
-	totalPower       int
 	Dead             bool
 	Fell             bool
 	reflecting       bool
@@ -218,7 +218,10 @@ func (wc *WizardCombat) SetAttackCooldown(amount float64) {
 }
 
 func (wc *WizardCombat) GetTotalPower() int {
-	return wc.totalPower
+	return int((wc.projectileSpeed*(1/PSpeedMult) - (1/PSpeedMult*BaseProjectileSpeed - 1)) +
+		(wc.projectileScale*(1/PScaleMult) - (1/PScaleMult*BaseProjectileScale - 1)) +
+		(wc.knockback*(1/KnockbackMult) - (1/KnockbackMult*BaseKnockback - 1)) +
+		((60 - wc.attackCooldown) * 1 / AttackCDMult))
 }
 
 func (wc *WizardCombat) AttackCooldown() float64 {
@@ -237,7 +240,6 @@ func (wc *WizardCombat) BoostAttackCooldown(amount float64, mult float64) {
 
 // pass StandardMult unless stats have already had their corresponding mult applied
 func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
-	wc.totalPower += int(amount)
 	boosts := map[int]func(amount float64, mult float64){
 		0: wc.BoostProjectileSpeed,
 		1: wc.BoostProjectileScale,
@@ -347,6 +349,7 @@ func NewWizard(player *shared.Player) *WizardPlayer {
 				BaseAttackCooldown,
 				0,
 			),
+			LastHitBy:        "",
 			reflectCooldown:  ReflectCooldown,
 			timeSinceAttack:  BaseAttackCooldown, // set timeSinceAttack so player can attack immediately
 			timeSinceReflect: ReflectCooldown,    // set timeSinceReflect so player can reflect immediately

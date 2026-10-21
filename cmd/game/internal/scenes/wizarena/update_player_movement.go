@@ -1,6 +1,8 @@
 package wizarena
 
 import (
+	"log"
+
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
@@ -35,15 +37,20 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 		) {
 			w.wizard.Combat.Damage(TrapDamage)
 			w.WriteWizardStatUpdate()
+			if w.wizard.Combat.Health() <= 0 && w.wizard.Combat.LastHitBy != "" {
+				log.Println("SENDING POINTS")
+				log.Println(w.wizard.Combat.LastHitBy)
+				w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost))
+			}
 		}
 	}
 	w.UpdateTraps()
 
 }
 
-func (w *WizArena) checkIfFell(wizard *WizardPlayer) {
+func (w *WizArena) checkIfFell(wizard *WizardPlayer) bool {
 	// check if wizard fell in a hole
-	wizard.Combat.Fell = wizServer.CheckPointInRect(
+	fell := wizServer.CheckPointInRect(
 		int(wizard.X+wizServer.HalfTile+wizard.KnockbackDx),
 		int(wizard.Y+14+wizard.KnockbackDy), // puts hitbox close to feet
 		w.holes,
@@ -52,9 +59,8 @@ func (w *WizArena) checkIfFell(wizard *WizardPlayer) {
 		wizard.Y+wizard.KnockbackDy < 0 ||
 		wizard.X+wizard.KnockbackDx > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
 		wizard.Y+wizard.KnockbackDy > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
-		wizard.Combat.Fell = true
+		fell = true
 	}
-	if wizard.Combat.Fell {
-		wizard.Combat.SetHealth(0)
-	}
+
+	return fell
 }

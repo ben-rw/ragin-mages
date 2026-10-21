@@ -13,6 +13,7 @@ func (w *WizArena) startNewRound() {
 	w.round += 1
 	for _, wizard := range w.wizards {
 		wizard.Alpha = 1.0
+		wizard.Combat.LastHitBy = ""
 		wizard.Combat.Dead = false
 		wizard.Combat.Fell = false
 		w.camera.DoneMoving = false
@@ -32,8 +33,6 @@ func (w *WizArena) startNewRound() {
 }
 
 func (w *WizArena) updateRoundStart() {
-	w.scoreboardUpdated = false
-
 	for _, wizard := range w.wizards {
 		wizard.Dx = 0
 		wizard.Dy = 0
@@ -57,12 +56,66 @@ func (w *WizArena) updateRoundStart() {
 	)
 }
 
-func (w *WizArena) updateRoundOver() {
-	if !w.scoreboardUpdated {
+func (w *WizArena) syncScores() {
+	w.updateRoundEndAnimations()
+
+	if !w.scoresUpdated {
+		w.waitForScores()
+	} else if w.scoresUpdated && !w.scoreboardUpdated {
 		w.NewScoreboard()
 		w.scoreboardUpdated = true
 	}
 
+	// for _, wizard := range w.wizards {
+	// 	log.Println(wizard.Combat.AttackCooldown(), wizard.Combat.Knockback(), wizard.Combat.ProjectileSpeed(), wizard.Combat.ProjectileScale())
+	// }
+}
+
+func (w *WizArena) updateRoundOver() {
+	w.scoreboardUpdated = false
+	w.scoresUpdated = false
+
+	w.updateRoundEndAnimations()
+	w.UpdateTraps()
+}
+
+func (w *WizArena) gameStart() {
+	w.camera.FollowTarget(
+		w.wizard.X,
+		w.wizard.Y,
+		float64(w.tilemapJSON.Layers[0].Width)*16.0,
+		float64(w.tilemapJSON.Layers[0].Height)*16.0,
+	)
+	w.camera.Constrain(
+		float64(w.tilemapJSON.Layers[0].Width)*16.0,
+		float64(w.tilemapJSON.Layers[0].Height)*16.0,
+	)
+
+	w.backgroundAlpha = 255
+}
+
+func (w *WizArena) gameOver() {
+	if time.Until(w.phaseTimer) <= 2*time.Second {
+		_ = sound.FadeOut(w.audioPlayer)
+	}
+
+	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+		w.Conn.WriteMsg(
+			protocol.SceneChange,
+			&protocol.SceneChangeData{
+				SceneType: protocol.LobbyScene,
+			},
+		)
+	}
+}
+
+func (w *WizArena) waitForScores() {
+	if int(w.scoresUpdatedCount.Load()) >= (len(w.wizards) - 1) { // excludes this client's wizard
+		w.scoresUpdated = true
+	}
+}
+
+func (w *WizArena) updateRoundEndAnimations() {
 	if w.wizard.Combat.Dead {
 		if !w.camera.DoneMoving {
 			// keep following player to position knockback puts them
@@ -143,37 +196,5 @@ func (w *WizArena) updateRoundOver() {
 			wizard.Reflect.X = wizard.X + wizServer.HalfTile
 			wizard.Reflect.Y = wizard.Y + wizServer.HalfTile
 		}
-	}
-
-	w.UpdateTraps()
-}
-
-func (w *WizArena) gameStart() {
-	w.camera.FollowTarget(
-		w.wizard.X,
-		w.wizard.Y,
-		float64(w.tilemapJSON.Layers[0].Width)*16.0,
-		float64(w.tilemapJSON.Layers[0].Height)*16.0,
-	)
-	w.camera.Constrain(
-		float64(w.tilemapJSON.Layers[0].Width)*16.0,
-		float64(w.tilemapJSON.Layers[0].Height)*16.0,
-	)
-
-	w.backgroundAlpha = 255
-}
-
-func (w *WizArena) gameOver() {
-	if time.Until(w.phaseTimer) <= 2*time.Second {
-		_ = sound.FadeOut(w.audioPlayer)
-	}
-
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		w.Conn.WriteMsg(
-			protocol.SceneChange,
-			&protocol.SceneChangeData{
-				SceneType: protocol.LobbyScene,
-			},
-		)
 	}
 }

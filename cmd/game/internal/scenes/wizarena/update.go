@@ -25,6 +25,8 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 		w.gameOver()
 	case wizServer.GameStart:
 		w.gameStart()
+	case wizServer.SyncScores:
+		w.syncScores()
 	}
 
 	return nil
@@ -159,13 +161,6 @@ func (w *WizArena) updatePlaying() {
 
 	// determine animations
 	w.UpdateAnimations()
-
-	// check if this client's wizard fell in a hole
-	w.checkIfFell(w.wizard)
-	if w.wizard.Combat.Fell && !w.wizard.Combat.Dead {
-		w.wizard.Combat.SetHealth(0)
-		w.WriteWizardStatUpdate()
-	}
 
 	// sort wizards, enemies, and projectiles for consistent draw ordering
 	w.SortEntities()

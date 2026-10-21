@@ -116,6 +116,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			&opts,
 		)
 
+		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 

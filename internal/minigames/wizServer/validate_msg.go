@@ -30,6 +30,8 @@ func ValidateMsg(msg *protocol.Message, w *WizardServer) error {
 		w.handleClientLoaded(msg)
 	case protocol.Reflecting:
 		w.handleReflecting(msg)
+	case protocol.GivePoints:
+		w.handleGivePoints(msg)
 	default:
 		log.Printf("unexpected protocol.MessageType: %#v\n", msg.Type)
 	}

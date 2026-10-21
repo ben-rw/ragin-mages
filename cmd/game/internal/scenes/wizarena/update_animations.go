@@ -1,6 +1,8 @@
 package wizarena
 
 import (
+	"log"
+
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 )
 
@@ -8,6 +10,16 @@ func (w *WizArena) UpdateAnimations() {
 	for _, wizard := range w.wizards {
 		if wizard.Combat.Attacking() {
 			wizard.AttackAnim = true //starts attack animation
+		}
+
+		// check if this client's wizard fell in a hole
+		w.wizard.Combat.Fell = w.checkIfFell(w.wizard)
+		// check health rather that dead bool to avoid giving shooter double points
+		if w.wizard.Combat.Fell && w.wizard.Combat.Health() > 0 {
+			w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost))
+			log.Println("points given")
+			w.wizard.Combat.SetHealth(0)
+			w.WriteWizardStatUpdate()
 		}
 
 		if wizard.Combat.Health() <= 0 && !wizard.Combat.Dead {

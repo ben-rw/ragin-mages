@@ -3,6 +3,7 @@ package wizarena
 import (
 	"image"
 	"log"
+	"sync/atomic"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/gameAssets"
@@ -76,6 +77,8 @@ type WizArena struct {
 	debug                  bool
 	displayFPS             bool
 	scoreboardUpdated      bool
+	scoresUpdated          bool
+	scoresUpdatedCount     atomic.Int32
 }
 
 func NewWizArena(c MessageConn, roomID string) *WizArena {
@@ -150,6 +153,7 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		debug:                false,
 		displayFPS:           false,
 		scoreboardUpdated:    false,
+		scoresUpdated:        false,
 	}
 
 	// preload entity images

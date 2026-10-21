@@ -119,6 +119,8 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 		wizard.Combat.SetHealth(data.Health)
 	}
 
+	w.scoresUpdatedCount.Add(1)
+
 	return nil
 }
 
@@ -260,6 +262,8 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 
 		victim.KnockbackDx = data.VictimDx
 		victim.KnockbackDy = data.VictimDy
+
+		victim.Combat.LastHitBy = data.ShooterStatData.Username
 	}
 
 	return nil
@@ -339,6 +343,29 @@ func (w *WizArena) HandlePhaseUpdate(message *protocol.Message) error {
 	}
 
 	w.phase = wizServer.RoundPhase(data.Phase)
+
+	if w.phase == wizServer.SyncScores {
+		w.WriteWizardStatUpdate()
+		w.scoresUpdatedCount.Store(0)
+	}
+
+	return nil
+}
+
+func (w *WizArena) HandleGivePoints(message *protocol.Message) error {
+	givePointsData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := givePointsData.(*protocol.GivePointsData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	if wizard, ok := w.wizards[data.RecipientName]; ok {
+		wizard.Combat.RandomBoost(float64(data.Amount), StandardMult)
+	}
 
 	return nil
 }

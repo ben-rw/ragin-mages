@@ -13,7 +13,7 @@ import (
 )
 
 func (w *WizArena) NewScoreboard() {
-	wizSlice := make([]*WizardPlayer, 0, 8)
+	wizSlice := make([]*WizardPlayer, 0, len(w.wizards))
 	for _, wizard := range w.wizards {
 		wizSlice = append(wizSlice, wizard)
 	}
@@ -29,8 +29,9 @@ func (w *WizArena) NewScoreboard() {
 	for i, wizard := range wizSlice {
 		if i == 0 && w.round <= wizServer.Rounds {
 			// round winner gets stats boosted
-			w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Username, wizard.Combat.GetTotalPower(), WinRoundBoost)
-			wizard.Combat.RandomBoost(WinRoundBoost, StandardMult)
+			// TODO: display round win points added to winner's total
+			// w.scoreboard += fmt.Sprintf("%v - %v + %v\n", wizard.Data.Username, wizard.Combat.GetTotalPower(), WinRoundBoost)
+			w.scoreboard += fmt.Sprintf("%v - %v\n", wizard.Data.Username, wizard.Combat.GetTotalPower())
 			w.WriteWizardStatUpdate()
 			w.dynamicText = w.NewDynamicTextMap()
 		} else {

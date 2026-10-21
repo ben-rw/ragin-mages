@@ -58,17 +58,17 @@ func (w *WizardServer) enemyRespawn() {
 }
 
 func (w *WizardServer) spawnEnemies() {
-	i := 0
-	for range EnemySpawnCount {
-		enemy := w.newEnemy(
-			EnemySpawns[i].X*TileSize,
-			EnemySpawns[i].Y*TileSize,
-		)
-		w.Mu.Lock()
-		w.enemies[enemy.ID] = enemy
-		w.Mu.Unlock()
-		i++
-	}
+	// i := 0
+	// for range EnemySpawnCount {
+	// 	enemy := w.newEnemy(
+	// 		EnemySpawns[i].X*TileSize,
+	// 		EnemySpawns[i].Y*TileSize,
+	// 	)
+	// 	w.Mu.Lock()
+	// 	w.enemies[enemy.ID] = enemy
+	// 	w.Mu.Unlock()
+	// 	i++
+	// }
 }
 
 func (w *WizardServer) newEnemy(x, y float64) *Enemy {
