@@ -29,6 +29,10 @@ func (w *WizArena) CheckEnemyHitWizard() {
 			if enemy.Combat.Attack() {
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
 				// w.wizard.Combat.LastHitBy = "" // prevent a player from getting credit for an enemy's kill
+				if w.wizard.Combat.Health() <= 0 && w.wizard.Combat.LastHitBy != "" {
+					pScale, pSpeed, kb, ac := StealStats(w.wizards[w.wizard.Combat.LastHitBy].Combat, w.wizard.Combat)
+					w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac)
+				}
 				w.WriteWizardStatUpdate()
 
 				// player pushed away by enemy

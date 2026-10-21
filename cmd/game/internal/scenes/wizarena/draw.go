@@ -147,7 +147,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
 	}
 
-	if w.phase == wizServer.Playing {
+	if w.phase == wizServer.Playing || w.phase == wizServer.SyncScores {
 		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.GeoM.Translate(shared.TopCenterFurther())
 		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
