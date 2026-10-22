@@ -34,14 +34,14 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 
 func (w *WizArena) updatePlaying() {
 	for _, wizard := range w.wizards {
-		w.wizard.Dx = 0
-		w.wizard.Dy = 0
+		wizard.Dx = 0
+		wizard.Dy = 0
 
 		if wizard.DieAnim {
 			// add a fade effect when players die
-			if !wizard.Combat.Fell {
-				if wizard.Y > -wizServer.HalfTile {
-					wizard.Y -= 3.0
+			if !w.wizard.Combat.Fell {
+				if w.wizard.Y > -wizServer.HalfTile {
+					w.wizard.Y -= 3.0
 				}
 			}
 			if wizard.Alpha > 0.0 {
@@ -160,7 +160,7 @@ func (w *WizArena) updatePlaying() {
 	w.UpdatePlayerMovementAndCheckCollisions()
 
 	// determine animations
-	w.UpdateAnimations()
+	w.CheckIfDeadAndUpdateAnimations()
 
 	// sort wizards, enemies, and projectiles for consistent draw ordering
 	w.SortEntities()

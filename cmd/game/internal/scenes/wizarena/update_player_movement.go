@@ -21,7 +21,7 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 	}
 
 	// send w.wizard location to server
-	if !w.wizard.Combat.Dead {
+	if !w.wizard.Combat.Dead || w.wizard.DieAnim {
 		w.WriteWizardMovementUpdate()
 	}
 

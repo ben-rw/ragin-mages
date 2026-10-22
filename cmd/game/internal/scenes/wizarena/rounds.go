@@ -1,6 +1,7 @@
 package wizarena
 
 import (
+	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
@@ -65,10 +66,6 @@ func (w *WizArena) syncScores() {
 		w.NewScoreboard()
 		w.scoreboardUpdated = true
 	}
-
-	// for _, wizard := range w.wizards {
-	// 	log.Println(wizard.Combat.AttackCooldown(), wizard.Combat.Knockback(), wizard.Combat.ProjectileSpeed(), wizard.Combat.ProjectileScale())
-	// }
 }
 
 func (w *WizArena) updateRoundOver() {
@@ -139,19 +136,23 @@ func (w *WizArena) updateRoundEndAnimations() {
 	}
 
 	for _, wizard := range w.wizards {
+		wizard.Dx = 0
+		wizard.Dy = 0
+		log.Println(wizard.Combat.Dead, wizard.Combat.Fell)
 		// add a fade effect when players die
 		if wizard.Combat.Dead {
-			if !wizard.Combat.Fell {
-				if wizard.Y > -wizServer.HalfTile {
-					wizard.Y -= 3.0
+			if !w.wizard.Combat.Fell {
+				if w.wizard.Y > -wizServer.HalfTile {
+					w.wizard.Y -= .05
 				}
 			}
+			if wizard.Alpha > 0.0 {
+				wizard.Alpha -= .002 //fade speed
+			} else {
+				wizard.Alpha = 0.0
+			}
 		}
-		if wizard.Alpha > 0.0 {
-			wizard.Alpha -= .02 //fade speed
-		} else {
-			wizard.Alpha = 0.0
-		}
+		log.Println(wizard.Y, wizard.Alpha)
 
 		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		wizard.ActiveAnimation.Update()
@@ -174,6 +175,10 @@ func (w *WizArena) updateRoundEndAnimations() {
 			enemy.Alpha -= .01 //fade speed
 		}
 
+	}
+
+	if w.wizard.DieAnim {
+		w.WriteWizardMovementUpdate()
 	}
 
 	for _, projectile := range w.projectiles {
