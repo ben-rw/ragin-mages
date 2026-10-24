@@ -39,9 +39,9 @@ func (w *WizArena) updatePlaying() {
 
 		if wizard.DieAnim {
 			// add a fade effect when players die
-			if !w.wizard.Combat.Fell {
-				if w.wizard.Y > -wizServer.HalfTile {
-					w.wizard.Y -= 3.0
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3.0
 				}
 			}
 			if wizard.Alpha > 0.0 {
@@ -56,22 +56,7 @@ func (w *WizArena) updatePlaying() {
 	if w.wizard.Combat.Dead {
 		if !w.camera.DoneMoving {
 			// keep following player to position knockback puts them
-			w.camera.FollowTarget(
-				w.wizard.DeathX,
-				w.wizard.DeathY,
-				float64(w.tilemapJSON.Layers[0].Width)*16.0,
-				float64(w.tilemapJSON.Layers[0].Height)*16.0,
-			)
-			w.camera.Constrain(
-				float64(w.tilemapJSON.Layers[0].Width)*16.0,
-				float64(w.tilemapJSON.Layers[0].Height)*16.0,
-			)
-
-			tolerance := 5.0
-			if w.camera.X-w.wizard.DeathX < tolerance &&
-				w.camera.Y-w.wizard.DeathY < tolerance {
-				w.camera.DoneMoving = true
-			}
+			w.FollowDeathKnockback()
 
 		} else {
 			// define camera behavior for dead players
@@ -137,7 +122,7 @@ func (w *WizArena) updatePlaying() {
 
 	// fade enemies in and ramp movement speed after spawn
 	for _, enemy := range w.enemies {
-		if enemy.Alpha < 1.0 {
+		if enemy.Alpha < 1.0 && enemy.DieAnim == false {
 			enemy.Alpha += 0.01
 		}
 	}

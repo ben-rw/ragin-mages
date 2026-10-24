@@ -56,6 +56,8 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
+		log.Println(wizard.Data.Username)
+
 		screen.DrawImage(
 			w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],
 			&opts,
@@ -225,7 +227,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	if w.debug {
 
 		if w.wizard.Combat.Reflecting() {
-			log.Println("reflecting")
 			vector.StrokeCircle(
 				screen,
 				float32(w.wizard.X+wizServer.HalfTile+w.camera.X),

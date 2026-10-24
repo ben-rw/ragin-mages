@@ -110,7 +110,7 @@ func (w *WizArena) CheckProjectiles() {
 					w.WriteProjectileHitEnemy(enemy, enemy.Dx, enemy.Dy)
 
 					if enemy.Combat.Health() <= 0 {
-						delete(w.enemies, enemy.ID)
+						enemy.DieAnim = true
 						// player who last hit the enemy gets a stat boost
 						projectile.Caster.Combat.RandomBoost(KillEnemyBoost, StandardMult)
 						w.WriteWizardStatUpdate()

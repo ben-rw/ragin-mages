@@ -112,6 +112,8 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 			wizard.Combat.Damage(wizard.Combat.Health() - data.Health)
 			if wizard.Combat.Health() <= 0 {
 				wizard.Combat.Dead = true
+				wizard.Alpha = 1.0
+				wizard.Combat.SetIFrames(0)
 				wizard.DeathX = wizard.X
 				wizard.DeathY = wizard.Y
 				wizard.DieAnim = true //starts death animation
@@ -259,6 +261,8 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 			victim.Combat.Damage(victim.Combat.Health() - data.VictimStatData.Health)
 			if victim.Combat.Health() <= 0 {
 				victim.Combat.Dead = true
+				victim.Alpha = 1.0
+				victim.Combat.SetIFrames(0)
 				victim.DeathX = victim.X
 				victim.DeathY = victim.Y
 				victim.DieAnim = true //starts death animation

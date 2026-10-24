@@ -11,7 +11,7 @@ func (w *WizArena) SortEntities() {
 	w.sortedProjectiles = make([]*Projectile, 0, 16)
 
 	for _, wizard := range w.wizards {
-		if !wizard.Combat.Dead {
+		if !wizard.Combat.Dead || wizard.DieAnim {
 			w.sortedWizards = append(w.sortedWizards, wizard)
 		}
 	}

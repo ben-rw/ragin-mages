@@ -40,6 +40,7 @@ func (w *WizArena) updateRoundStart() {
 
 		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		wizard.ActiveAnimation.Update()
+		log.Println(wizard.ActiveAnimation, wizard.ActiveAnimation.Frame())
 
 		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
 		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
@@ -116,43 +117,26 @@ func (w *WizArena) updateRoundEndAnimations() {
 	if w.wizard.Combat.Dead {
 		if !w.camera.DoneMoving {
 			// keep following player to position knockback puts them
-			w.camera.FollowTarget(
-				w.wizard.DeathX,
-				w.wizard.DeathY,
-				float64(w.tilemapJSON.Layers[0].Width)*16.0,
-				float64(w.tilemapJSON.Layers[0].Height)*16.0,
-			)
-			w.camera.Constrain(
-				float64(w.tilemapJSON.Layers[0].Width)*16.0,
-				float64(w.tilemapJSON.Layers[0].Height)*16.0,
-			)
-
-			tolerance := 0.1
-			if w.camera.X-w.wizard.DeathX < tolerance &&
-				w.camera.Y-w.wizard.DeathY < tolerance {
-				w.camera.DoneMoving = true
-			}
+			w.FollowDeathKnockback()
 		}
 	}
 
 	for _, wizard := range w.wizards {
 		wizard.Dx = 0
 		wizard.Dy = 0
-		log.Println(wizard.Combat.Dead, wizard.Combat.Fell)
 		// add a fade effect when players die
 		if wizard.Combat.Dead {
-			if !w.wizard.Combat.Fell {
-				if w.wizard.Y > -wizServer.HalfTile {
-					w.wizard.Y -= .05
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3
 				}
 			}
 			if wizard.Alpha > 0.0 {
-				wizard.Alpha -= .002 //fade speed
+				wizard.Alpha -= .02 //fade speed
 			} else {
 				wizard.Alpha = 0.0
 			}
 		}
-		log.Println(wizard.Y, wizard.Alpha)
 
 		wizard.ActiveAnimation = wizard.GetActiveAnimation()
 		wizard.ActiveAnimation.Update()
@@ -162,8 +146,28 @@ func (w *WizArena) updateRoundEndAnimations() {
 	}
 
 	for _, enemy := range w.enemies {
-		if enemy.Combat.Dead {
+		if enemy.Combat.Health() <= 0 {
+			enemy.Combat.Dead = true
 			enemy.DieAnim = true
+
+			enemy.Dx = 0
+			enemy.Dy = 0
+
+			if enemy.DieAnim {
+				// add a fade effect when enemies die
+				if enemy.Y > -wizServer.HalfTile {
+					enemy.Y -= 3.0
+				}
+				if enemy.Alpha > 0.0 {
+					enemy.Alpha -= .02 //fade speed
+				} else {
+					enemy.Alpha = 0.0
+				}
+			}
+
+			if enemy.DieAnim == false {
+				delete(w.enemies, enemy.ID)
+			}
 		}
 		enemy.ActiveAnimation = enemy.GetActiveAnimation()
 		enemy.ActiveAnimation.Update()
@@ -171,15 +175,14 @@ func (w *WizArena) updateRoundEndAnimations() {
 		enemy.X += enemy.Dx / 2 // slow motion woahhhh
 		enemy.Y += enemy.Dy / 2
 
-		if enemy.Alpha > 0.0 {
+		if enemy.Alpha > 0.0 && enemy.DieAnim == false {
 			enemy.Alpha -= .01 //fade speed
 		}
-
 	}
 
-	if w.wizard.DieAnim {
-		w.WriteWizardMovementUpdate()
-	}
+	// if w.wizard.DieAnim {
+	// 	w.WriteWizardMovementUpdate()
+	// }
 
 	for _, projectile := range w.projectiles {
 		projectile.ActiveAnimation.Update()
@@ -202,4 +205,7 @@ func (w *WizArena) updateRoundEndAnimations() {
 			wizard.Reflect.Y = wizard.Y + wizServer.HalfTile
 		}
 	}
+
+	// sort wizards, enemies, and projectiles for consistent draw ordering
+	w.SortEntities()
 }

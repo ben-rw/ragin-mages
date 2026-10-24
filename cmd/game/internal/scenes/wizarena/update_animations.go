@@ -22,15 +22,22 @@ func (w *WizArena) CheckIfDeadAndUpdateAnimations() {
 			wizard.AttackAnim = true //starts attack animation
 		}
 
-		if wizard != w.wizard {
-			wizard.Combat.Fell = w.checkIfFell(wizard)
-		}
+		//TODO: clients don't agree on falls, need to replace this. send fall message?
+
+		// if wizard != w.wizard {
+		// 	wizard.Combat.Fell = w.checkIfFell(wizard)
+		// 	if wizard.Combat.Fell && wizard.Combat.Health() > 0 {
+		// 		wizard.Combat.SetHealth(0)
+		// 	}
+		// }
 
 		if wizard.Combat.Health() <= 0 && !wizard.Combat.Dead {
 			if wizard == w.wizard {
 				w.dynamicText = w.NewDynamicTextMap()
 			}
 			wizard.Combat.Dead = true
+			wizard.Alpha = 1.0
+			wizard.Combat.SetIFrames(0)
 			wizard.DeathX = wizard.X
 			wizard.DeathY = wizard.Y
 			wizard.DieAnim = true //starts death animation

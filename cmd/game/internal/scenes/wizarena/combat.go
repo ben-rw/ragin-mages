@@ -319,7 +319,6 @@ type WizardPlayer struct {
 }
 
 func (w *WizardPlayer) IFrameFlicker() {
-	w.Data.X = 0
 	w.FlickerFrames -= 1
 	if w.FlickerFrames <= 0 {
 		if w.Combat.IFrames() < FlickerFrames*2 {

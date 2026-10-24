@@ -25,6 +25,27 @@ func (w *WizArena) CheckEnemyHitWizard() {
 			int(enemy.Y)+wizServer.TileSize,
 		)
 
+		if enemy.Combat.Health() <= 0 {
+			enemy.Dx = 0
+			enemy.Dy = 0
+
+			if enemy.DieAnim {
+				// add a fade effect when enemies die
+				if enemy.Y > -wizServer.HalfTile {
+					enemy.Y -= 3.0
+				}
+				if enemy.Alpha > 0.0 {
+					enemy.Alpha -= .02 //fade speed
+				} else {
+					enemy.Alpha = 0.0
+				}
+			}
+
+			if enemy.DieAnim == false {
+				delete(w.enemies, enemy.ID)
+			}
+		}
+
 		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
 			if enemy.Combat.Attack() {
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
