@@ -155,6 +155,7 @@ type PhaseUpdateData struct {
 }
 
 type GivePointsData struct {
+	Fell            bool    `json:"fell"`
 	RecipientName   string  `json:"recipient_name"`
 	SenderName      string  `json:"sender_name"`
 	Random          int     `json:"random"`

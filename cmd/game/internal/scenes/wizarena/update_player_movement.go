@@ -36,7 +36,7 @@ func (w *WizArena) UpdatePlayerMovementAndCheckCollisions() {
 			w.wizard.Combat.Damage(TrapDamage)
 			if w.wizard.Combat.Health() <= 0 && w.wizard.Combat.LastHitBy != "" {
 				pScale, pSpeed, kb, ac := StealStats(w.wizards[w.wizard.Combat.LastHitBy].Combat, w.wizard.Combat)
-				w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac)
+				w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac, false)
 			}
 			w.WriteWizardStatUpdate()
 		}

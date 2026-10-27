@@ -1,7 +1,6 @@
 package wizarena
 
 import (
-	"log"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
@@ -11,18 +10,9 @@ import (
 
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizArena) startNewRound() {
+	// wizard state is reset in HandlePhaseUpdate
 	w.round += 1
-	for _, wizard := range w.wizards {
-		wizard.Alpha = 1.0
-		wizard.Combat.LastHitBy = ""
-		wizard.Combat.Dead = false
-		wizard.Combat.Fell = false
-		w.camera.DoneMoving = false
-		wizard.Combat.SetHealth(PlayerHealth)
-		wizard.Combat.SetIFrames(0)
-		wizard.KnockbackDx = 0
-		wizard.KnockbackDy = 0
-	}
+	w.camera.DoneMoving = false
 
 	clear(w.openedChests)
 	w.enemies = make(map[uint16]*Enemy, 32)
@@ -38,12 +28,7 @@ func (w *WizArena) updateRoundStart() {
 		wizard.Dx = 0
 		wizard.Dy = 0
 
-		wizard.ActiveAnimation = wizard.GetActiveAnimation()
-		wizard.ActiveAnimation.Update()
-		log.Println(wizard.ActiveAnimation, wizard.ActiveAnimation.Frame())
-
-		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
-		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
+		w.updateRoundEndAnimations()
 	}
 
 	w.camera.FollowTarget(
@@ -124,6 +109,7 @@ func (w *WizArena) updateRoundEndAnimations() {
 	for _, wizard := range w.wizards {
 		wizard.Dx = 0
 		wizard.Dy = 0
+
 		// add a fade effect when players die
 		if wizard.Combat.Dead {
 			if !wizard.Combat.Fell {
@@ -135,6 +121,11 @@ func (w *WizArena) updateRoundEndAnimations() {
 				wizard.Alpha -= .02 //fade speed
 			} else {
 				wizard.Alpha = 0.0
+			}
+		} else {
+			wizard.Combat.Update()
+			if wizard.Combat.IFrames() > 0 {
+				wizard.IFrameFlicker()
 			}
 		}
 

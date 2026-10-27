@@ -11,8 +11,11 @@ func (w *WizArena) CheckIfDeadAndUpdateAnimations() {
 	if w.wizard.Combat.Fell && w.wizard.Combat.Health() > 0 {
 		if w.wizard.Combat.LastHitBy != "" {
 			pScale, pSpeed, kb, ac := StealStats(w.wizards[w.wizard.Combat.LastHitBy].Combat, w.wizard.Combat)
-			w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac)
+			w.WriteGivePoints(w.wizard.Combat.LastHitBy, int(KillPlayerBoost), pScale, pSpeed, kb, ac, true)
+		} else if w.wizard.Combat.LastHitBy == "" {
+			w.WriteGivePoints(w.wizard.Combat.LastHitBy, 0, 0, 0, 0, 0, true)
 		}
+
 		w.wizard.Combat.SetHealth(0)
 		w.WriteWizardStatUpdate()
 	}
@@ -22,22 +25,11 @@ func (w *WizArena) CheckIfDeadAndUpdateAnimations() {
 			wizard.AttackAnim = true //starts attack animation
 		}
 
-		//TODO: clients don't agree on falls, need to replace this. send fall message?
-
-		// if wizard != w.wizard {
-		// 	wizard.Combat.Fell = w.checkIfFell(wizard)
-		// 	if wizard.Combat.Fell && wizard.Combat.Health() > 0 {
-		// 		wizard.Combat.SetHealth(0)
-		// 	}
-		// }
-
 		if wizard.Combat.Health() <= 0 && !wizard.Combat.Dead {
 			if wizard == w.wizard {
 				w.dynamicText = w.NewDynamicTextMap()
 			}
 			wizard.Combat.Dead = true
-			wizard.Alpha = 1.0
-			wizard.Combat.SetIFrames(0)
 			wizard.DeathX = wizard.X
 			wizard.DeathY = wizard.Y
 			wizard.DieAnim = true //starts death animation

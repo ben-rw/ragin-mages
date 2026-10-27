@@ -112,8 +112,6 @@ func (w *WizArena) HandleWizardStatUpdate(message *protocol.Message) error {
 			wizard.Combat.Damage(wizard.Combat.Health() - data.Health)
 			if wizard.Combat.Health() <= 0 {
 				wizard.Combat.Dead = true
-				wizard.Alpha = 1.0
-				wizard.Combat.SetIFrames(0)
 				wizard.DeathX = wizard.X
 				wizard.DeathY = wizard.Y
 				wizard.DieAnim = true //starts death animation
@@ -261,8 +259,6 @@ func (w *WizArena) HandleProjectileHitWizard(message *protocol.Message) error {
 			victim.Combat.Damage(victim.Combat.Health() - data.VictimStatData.Health)
 			if victim.Combat.Health() <= 0 {
 				victim.Combat.Dead = true
-				victim.Alpha = 1.0
-				victim.Combat.SetIFrames(0)
 				victim.DeathX = victim.X
 				victim.DeathY = victim.Y
 				victim.DieAnim = true //starts death animation
@@ -363,6 +359,17 @@ func (w *WizArena) HandlePhaseUpdate(message *protocol.Message) error {
 	if w.phase == wizServer.SyncScores {
 		w.WriteWizardStatUpdate()
 		w.scoresUpdatedCount.Store(0)
+	} else if w.phase == wizServer.RoundStart {
+		for _, wizard := range w.wizards {
+			wizard.Combat.LastHitBy = ""
+			wizard.Combat.Dead = false
+			wizard.Combat.Fell = false
+			wizard.Combat.SetHealth(PlayerHealth)
+			wizard.Combat.SetIFrames(0)
+			wizard.Alpha = 1.0
+			wizard.KnockbackDx = 0
+			wizard.KnockbackDy = 0
+		}
 	}
 
 	return nil
@@ -377,6 +384,15 @@ func (w *WizArena) HandleGivePoints(message *protocol.Message) error {
 	if !ok {
 		err = errors.New("failed type assertion")
 		return err
+	}
+
+	if sender, ok := w.wizards[data.SenderName]; ok {
+		sender.Combat.Fell = data.Fell
+		if sender.Combat.Fell && sender.Combat.Health() > 0 {
+			sender.Combat.SetHealth(0)
+			sender.Combat.Dead = true
+			sender.DieAnim = true
+		}
 	}
 
 	if wizard, ok := w.wizards[data.RecipientName]; ok {
