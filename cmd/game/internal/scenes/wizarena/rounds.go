@@ -171,10 +171,6 @@ func (w *WizArena) updateRoundEndAnimations() {
 		}
 	}
 
-	// if w.wizard.DieAnim {
-	// 	w.WriteWizardMovementUpdate()
-	// }
-
 	for _, projectile := range w.projectiles {
 		projectile.ActiveAnimation.Update()
 

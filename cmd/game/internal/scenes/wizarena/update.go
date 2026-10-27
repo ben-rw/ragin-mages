@@ -33,10 +33,9 @@ func (w *WizArena) Update(messages []*protocol.Message) error {
 }
 
 func (w *WizArena) updatePlaying() {
+	w.wizard.Dx = 0
+	w.wizard.Dy = 0
 	for _, wizard := range w.wizards {
-		wizard.Dx = 0
-		wizard.Dy = 0
-
 		if wizard.DieAnim {
 			// add a fade effect when players die
 			if !wizard.Combat.Fell {
