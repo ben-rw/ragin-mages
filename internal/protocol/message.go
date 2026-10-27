@@ -1,20 +1,36 @@
 package protocol
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 )
 
 type MessageType string
 
 const (
-	Unset        MessageType = "Unset"
-	JoinRequest  MessageType = "JoinRequest"
-	JoinResponse MessageType = "JoinResponse"
-	SceneChange  MessageType = "SceneChange"
-	PlayerUpdate MessageType = "PlayerUpdate"
+	Unset                MessageType = "Unset"
+	JoinRequest          MessageType = "JoinRequest"
+	JoinResponse         MessageType = "JoinResponse"
+	SceneChange          MessageType = "SceneChange"
+	PlayerUpdate         MessageType = "PlayerUpdate"
+	ClientLoaded         MessageType = "ClientLoaded"
+	WizardMovementUpdate MessageType = "WizardMovementUpdate"
+	WizardStatUpdate     MessageType = "WizardStatUpdate"
+	EnemyMovementUpdate  MessageType = "EnemyMovementUpdate"
+	EnemyStatUpdate      MessageType = "EnemyStatUpdate"
+	WizArenaMovement     MessageType = "WizArenaState"
+	NewProjectile        MessageType = "NewProjectile"
+	ProjectileHitWizard  MessageType = "ProjectileHitWizard"
+	ProjectileHitEnemy   MessageType = "ProjectileHitEnemy"
+	ProjectileReflected  MessageType = "ProjectileReflected"
+	ProjectileDestroyed  MessageType = "ProjectileDestroyed"
+	Reflecting           MessageType = "Reflecting"
+	ChestUpdate          MessageType = "ChestUpdate"
+	RoundTimerUpdate     MessageType = "RoundTimerUpdate"
+	PhaseUpdate          MessageType = "PhaseUpdate"
+	GivePoints           MessageType = "GivePoints"
 )
 
 type Message struct {
@@ -27,12 +43,12 @@ type JoinRequestData struct {
 }
 
 type PlayerData struct {
-	Name        string  `json:"username"`
 	Score       int     `json:"score"`
-	Host        bool    `json:"host"`
 	SpriteIndex int     `json:"sprite_index"`
+	Host        bool    `json:"host"`
 	X           float64 `json:"x"`
 	Y           float64 `json:"y"`
+	Username    string  `json:"username"`
 }
 
 type JoinResponseData struct {
@@ -42,6 +58,116 @@ type JoinResponseData struct {
 
 type PlayerUpdateData struct {
 	PlayerData *PlayerData `json:"player_data"`
+}
+
+type ClientLoadedData struct {
+	Loaded bool `json:"loaded"`
+}
+
+type WizardMovementUpdateData struct {
+	X        float64 `json:"x"`
+	Y        float64 `json:"y"`
+	Dx       float64 `json:"dx"`
+	Dy       float64 `json:"dy"`
+	Username string  `json:"username"`
+}
+
+type WizardStatUpdateData struct {
+	Score           int     `json:"score"`
+	AttackCooldown  float64 `json:"attack_cooldown"`
+	ProjectileSpeed float64 `json:"projectile_speed"`
+	ProjectileScale float64 `json:"projectile_scale"`
+	Knockback       float64 `json:"knockback"`
+	Username        string  `json:"username"`
+	Health          float64 `json:"health"`
+}
+
+type EnemyMovementUpdateData struct {
+	X  float64 `json:"x"`
+	Y  float64 `json:"y"`
+	Dx float64 `json:"dx"`
+	Dy float64 `json:"dy"`
+	ID uint16  `json:"id"`
+}
+
+type EnemyStatUpdateData struct {
+	Health float64 `json:"health"`
+	ID     uint16  `json:"id"`
+}
+
+type WizArenaMovementData struct {
+	WizardsMovementData []*WizardMovementUpdateData `json:"wizard_movement_data"`
+	EnemiesMovementData []*EnemyMovementUpdateData  `json:"enemies_movement_data"`
+}
+
+type NewProjectileData struct {
+	CasterName string `json:"caster_name"`
+	CursorX    int    `json:"cursor_x"`
+	CursorY    int    `json:"cursor_y"`
+}
+
+type ProjectileReflectedData struct {
+	ShooterName   string `json:"shooter_name"`
+	ReflectorName string `json:"reflector_name"`
+	CursorX       int    `json:"cursor_x"`
+	CursorY       int    `json:"cursor_y"`
+	ProjectileID  uint16 `json:"projectile_id"`
+}
+
+type ProjectileDestroyedData struct {
+	CasterName   string `json:"caster_name"`
+	ProjectileID uint16 `json:"projectile_id"`
+}
+
+type ReflectingData struct {
+	ReflectorName string `json:"reflector_name"`
+	CursorX       int    `json:"cursor_x"`
+	CursorY       int    `json:"cursor_y"`
+}
+
+type ProjectileHitWizardData struct {
+	ShooterStatData *WizardStatUpdateData `json:"shooter_stat_data"`
+	VictimStatData  *WizardStatUpdateData `json:"victim_stat_data"`
+	VictimDx        float64               `json:"victim_dx"`
+	VictimDy        float64               `json:"victim_dy"`
+	VictimNoclip    bool                  `json:"victim_noclip"`
+}
+
+type ProjectileHitEnemyData struct {
+	ShooterStatData *WizardStatUpdateData `json:"shooter_stat_data"`
+	VictimStatData  *EnemyStatUpdateData  `json:"victim_stat_data"`
+	VictimDx        float64               `json:"victim_dx"`
+	VictimDy        float64               `json:"victim_dy"`
+}
+
+type ChestUpdateData struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
+type RoundTimerUpdateData struct {
+	TimeRemaining int `json:"time_remaining"`
+}
+
+type PhaseUpdateData struct {
+	Phase int `json:"phase"`
+}
+
+type GivePointsData struct {
+	Fell            bool    `json:"fell"`
+	RecipientName   string  `json:"recipient_name"`
+	SenderName      string  `json:"sender_name"`
+	Random          int     `json:"random"`
+	ProjectileScale float64 `json:"projectile_scale"`
+	ProjectileSpeed float64 `json:"projectile_speed"`
+	Knockback       float64 `json:"knockback"`
+	AttackCooldown  float64 `json:"attack_cooldown"`
+}
+
+type Scene struct {
+	Type   SceneType
+	State  any
+	Cancel context.CancelFunc
 }
 
 type SceneType int
@@ -69,11 +195,47 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &SceneChangeData{}
 	case PlayerUpdate:
 		v = &PlayerUpdateData{}
+	case ChestUpdate:
+		v = &ChestUpdateData{}
+	case ClientLoaded:
+		v = &ClientLoadedData{}
+	case RoundTimerUpdate:
+		v = &RoundTimerUpdateData{}
+	case EnemyMovementUpdate:
+		v = &EnemyMovementUpdateData{}
+	case EnemyStatUpdate:
+		v = &EnemyStatUpdateData{}
+	case NewProjectile:
+		v = &NewProjectileData{}
+	case ProjectileHitEnemy:
+		v = &ProjectileHitEnemyData{}
+	case ProjectileHitWizard:
+		v = &ProjectileHitWizardData{}
+	case ProjectileReflected:
+		v = &ProjectileReflectedData{}
+	case ProjectileDestroyed:
+		v = &ProjectileDestroyedData{}
+	case Reflecting:
+		v = &ReflectingData{}
+	case WizArenaMovement:
+		v = &WizArenaMovementData{}
+	case WizardMovementUpdate:
+		v = &WizardMovementUpdateData{}
+	case WizardStatUpdate:
+		v = &WizardStatUpdateData{}
+	case PhaseUpdate:
+		v = &PhaseUpdateData{}
+	case GivePoints:
+		v = &GivePointsData{}
+	case Unset:
+		return nil, errors.New("can't unmarshal message with type unset")
 	default:
 		return nil, errors.New("unrecognized message format")
 	}
 
-	log.Printf("json: %s type: %v\n", m.Data, m.Type)
+	// if m.Type != WizArenaMovement && m.Type != WizardMovementUpdate {
+	// 	log.Printf("json: %s type: %v\n", m.Data, m.Type)
+	// }
 
 	err := json.Unmarshal(m.Data, v)
 	if err != nil {

@@ -11,7 +11,7 @@ type Roster struct {
 	Player  *Player
 }
 
-func (r *Roster) HandleJoinResponse(message protocol.Message) error {
+func (r *Roster) HandleJoinResponse(message *protocol.Message) error {
 	joinResponseData, err := message.UnmarshalMessageData()
 	if err != nil {
 		return err
@@ -24,19 +24,19 @@ func (r *Roster) HandleJoinResponse(message protocol.Message) error {
 	}
 
 	for _, playerData := range data.PlayerList {
-		if _, ok := r.Players[playerData.Name]; ok {
-			r.Players[playerData.Name].Data = playerData
+		if _, ok := r.Players[playerData.Username]; ok {
+			r.Players[playerData.Username].Data = playerData
 		} else {
 			player := NewPlayer(playerData, len(r.Players))
-			r.Players[playerData.Name] = player
+			r.Players[playerData.Username] = player
 		}
 	}
 
-	r.Player = r.Players[data.PlayerData.Name]
+	r.Player = r.Players[data.PlayerData.Username]
 	return nil
 }
 
-func (r *Roster) HandlePlayerUpdate(message protocol.Message) error {
+func (r *Roster) HandlePlayerUpdate(message *protocol.Message) error {
 	playerUpdateData, err := message.UnmarshalMessageData()
 	if err != nil {
 		return err
@@ -47,14 +47,14 @@ func (r *Roster) HandlePlayerUpdate(message protocol.Message) error {
 		return err
 	}
 
-	if _, ok := r.Players[data.PlayerData.Name]; ok {
-		r.Players[data.PlayerData.Name].Data = data.PlayerData
+	if _, ok := r.Players[data.PlayerData.Username]; ok {
+		r.Players[data.PlayerData.Username].Data = data.PlayerData
 	} else {
 		player := NewPlayer(data.PlayerData, len(r.Players))
-		r.Players[data.PlayerData.Name] = player
+		r.Players[data.PlayerData.Username] = player
 	}
 
-	log.Printf("updated: %v", *r.Players[data.PlayerData.Name].Data)
+	log.Printf("updated: %v\n", *r.Players[data.PlayerData.Username].Data)
 
 	return nil
 }

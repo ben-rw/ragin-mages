@@ -1,77 +1,32 @@
 package wizarena
 
 import (
-	"image"
-	"math"
-
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	"log"
 )
 
-func (w *WizArena) Update(messages []protocol.Message) error {
-	for _, message := range messages {
-		switch message.Type {
-		case protocol.JoinResponse:
-			err := w.HandleJoinResponse(message)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			for _, player := range w.Players {
-				if _, ok := w.wizards[player.Data.Name]; !ok {
-					wizard := shared.NewWizard(player)
-					wizard.JoinAnim = false
-					w.wizards[wizard.Data.Name] = wizard
-				}
-			}
-
-			// dummy test player
-			// w.wizards["CPU"] = shared.NewWizard(shared.NewPlayer(&protocol.PlayerData{Name: "CPU"}, 7))
-			// w.wizards["CPU"].X = 100
-			// w.wizards["CPU"].Y = 100
-
-			w.wizard = w.wizards[w.Player.Data.Name]
-			w.dynamicText = w.NewDynamicTextMap()
-
-			w.camera = shared.NewCamera(
-				-(w.wizard.X+shared.HalfTile)+shared.ScreenWidth/2.0,
-				-(w.wizard.Y+shared.HalfTile)+shared.ScreenHeight/2.0,
-			)
-
-			// playerUpdateData := protocol.PlayerUpdateData{
-			// 	PlayerData: w.wizard.Data,
-			// }
-			//
-			// w.Conn.WriteMsg(protocol.PlayerUpdate, playerUpdateData)
-
-		case protocol.PlayerUpdate:
-			err := w.HandlePlayerUpdate(message)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-		default:
-		}
-	}
+func (w *WizArena) Update(messages []*protocol.Message) error {
+	w.CheckMessages(messages)
 
 	switch w.phase {
-	case Playing:
+	case wizServer.Playing:
 		w.updatePlaying()
-	case RoundOver:
+	case wizServer.RoundOver:
 		w.updateRoundOver()
-	case RoundStart:
+	case wizServer.RoundStart:
 		w.updateRoundStart()
-	case GameOver:
+	case wizServer.StartNewRound:
+		w.startNewRound()
+	case wizServer.GameOver:
 		w.gameOver()
-	case GameStart:
+	case wizServer.GameStart:
 		w.gameStart()
+	case wizServer.SyncScores:
+		w.syncScores()
 	}
 
 	return nil
@@ -80,40 +35,48 @@ func (w *WizArena) Update(messages []protocol.Message) error {
 func (w *WizArena) updatePlaying() {
 	w.wizard.Dx = 0
 	w.wizard.Dy = 0
-
-	if w.wizard.DieAnim {
-		// add a fade effect when players die
-		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -shared.HalfTile {
-				w.wizard.Y -= 3.0
+	for _, wizard := range w.wizards {
+		if wizard.DieAnim {
+			// add a fade effect when players die
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3.0
+				}
 			}
+			if wizard.Alpha > 0.0 {
+				wizard.Alpha -= .02 //fade speed
+			} else {
+				wizard.Alpha = 0.0
+			}
+
 		}
-		if w.wizard.Alpha > 0.0 {
-			w.wizard.Alpha -= .02 //fade speed
+	}
+
+	if w.wizard.Combat.Dead {
+		if !w.camera.DoneMoving {
+			// keep following player to position knockback puts them
+			w.FollowDeathKnockback()
+
 		} else {
-			w.wizard.Alpha = 0.0
-		}
+			// define camera behavior for dead players
+			if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
+				w.camera.X -= shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
+				w.camera.X += shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
+				w.camera.Y += shared.FreeCamSpeed
+			}
+			if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
+				w.camera.Y -= shared.FreeCamSpeed
+			}
 
-	} else if w.wizard.Combat.Dead {
-		// define camera behavior for dead players
-		if ebiten.IsKeyPressed(ebiten.KeyRight) || ebiten.IsKeyPressed(ebiten.KeyD) {
-			w.camera.X -= shared.FreeCamSpeed
+			w.camera.Constrain(
+				float64(w.tilemapJSON.Layers[0].Width)*16.0,
+				float64(w.tilemapJSON.Layers[0].Height)*16.0,
+			)
 		}
-		if ebiten.IsKeyPressed(ebiten.KeyLeft) || ebiten.IsKeyPressed(ebiten.KeyA) {
-			w.camera.X += shared.FreeCamSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
-			w.camera.Y += shared.FreeCamSpeed
-		}
-		if ebiten.IsKeyPressed(ebiten.KeyDown) || ebiten.IsKeyPressed(ebiten.KeyS) {
-			w.camera.Y -= shared.FreeCamSpeed
-		}
-
-		w.camera.Constrain(
-			float64(w.tilemapJSON.Layers[0].Width)*16.0,
-			float64(w.tilemapJSON.Layers[0].Height)*16.0,
-		)
-
 	} else {
 		// add velocity to wizard based on player input
 		if ebiten.IsKeyPressed(ebiten.KeyUp) || ebiten.IsKeyPressed(ebiten.KeyW) {
@@ -129,13 +92,13 @@ func (w *WizArena) updatePlaying() {
 			w.wizard.Dx += -1
 		}
 
-		//normalize diagonal movement
+		// normalize diagonal movement
 		if w.wizard.Dx != 0 && w.wizard.Dy != 0 {
 			w.wizard.Dx *= 0.70710678
 			w.wizard.Dy *= 0.70710678
 		}
 
-		//define normal camera behavior
+		// define normal camera behavior
 		w.camera.FollowTarget(
 			w.wizard.X,
 			w.wizard.Y,
@@ -147,414 +110,53 @@ func (w *WizArena) updatePlaying() {
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
 
-		w.wizard.Combat.Update()
-		if w.wizard.Combat.IFrames() > 0 {
-			w.wizard.IFrameFlicker()
+		for _, wizard := range w.wizards {
+			wizard.Combat.Update()
+			if wizard.Combat.IFrames() > 0 {
+				wizard.IFrameFlicker()
+			}
 		}
 		w.wizard.Noclip = false
-
 	}
 
-	// define enemy behavior
+	// fade enemies in and ramp movement speed after spawn
 	for _, enemy := range w.enemies {
-		enemy.Combat.Update()
-		enemy.Dx = 0
-		enemy.Dy = 0
-		if enemy.FollowsPlayer {
-			// make enemy follow nearest living player
-			var dx, dy, dist float64
-			var minDx, minDy float64
-			var minDist = 10000.0 // arbitrary big number
-			for _, w := range w.wizards {
-				if w.Combat.Dead {
-					continue
-				}
-				dx = w.X - enemy.X
-				dy = w.Y - enemy.Y
-				dist = math.Hypot(dx, dy)
-				if dist < minDist {
-					minDist = dist
-					minDx = dx
-					minDy = dy
-				}
-			}
-
-			closeEnough := 8.0 //8px
-
-			if minDist > closeEnough {
-				normX := minDx / minDist
-				normY := minDy / minDist
-
-				speed := enemy.Combat.MoveSpeed()
-
-				if enemy.Combat.MoveSpeed() > minDist {
-					speed = minDist
-				}
-
-				enemy.Dx = normX * speed
-				enemy.Dy = normY * speed
-
-			}
-		}
-	}
-
-	// check for enemies colliding with/damaging player
-	wizardRect := image.Rect(
-		int(w.wizard.X),
-		int(w.wizard.Y),
-		int(w.wizard.X)+shared.TileSize,
-		int(w.wizard.Y)+shared.TileSize,
-	)
-
-	for _, enemy := range w.enemies {
-		rect := image.Rect(
-			int(enemy.X),
-			int(enemy.Y),
-			int(enemy.X)+shared.TileSize,
-			int(enemy.Y)+shared.TileSize,
-		)
-
-		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
-			if enemy.Combat.Attack() {
-				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
-
-				// player pushed away by enemy
-				// find vector, divide by vector length, add to player's velocity
-				vX := w.wizard.X - enemy.X
-				vY := w.wizard.Y - enemy.Y
-				vlen := math.Sqrt(vX*vX + vY*vY)
-				normX := vX / vlen
-				normY := vY / vlen
-
-				w.wizard.Dx = normX * shared.TileSize * enemy.Combat.Knockback()
-				w.wizard.Dy = normY * shared.TileSize * enemy.Combat.Knockback()
-				w.wizard.Noclip = true
-
-				if math.Abs(normX) > math.Abs(normY) {
-					if normX > 0 {
-						enemy.AttackDirection = shared.AttackingRight
-					} else {
-						enemy.AttackDirection = shared.AttackingLeft
-					}
-				} else {
-					if normY > 0 {
-						enemy.AttackDirection = shared.AttackingDown
-					} else {
-						enemy.AttackDirection = shared.AttackingUp
-					}
-				}
-			}
-		}
-	}
-
-	deadEnemies := make(map[int]struct{})
-	deadProjectiles := make(map[int]struct{})
-
-	leftClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)
-	rightClicked := inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight)
-	cX, cY := ebiten.CursorPosition()
-	cX -= int(w.camera.X)
-	cY -= int(w.camera.Y)
-
-	// spawn new fireballs
-	if leftClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Attack() {
-		projectile := w.wizard.ShootProjectile(
-			w.projectileImageCache[shared.Fireball],
-			float64(cX),
-			float64(cY),
-			shared.Fireball,
-		)
-		w.projectiles = append(w.projectiles, projectile)
-
-		// figure out attack direction for animation
-		vX := float64(cX) - w.wizard.X
-		vY := float64(cY) - w.wizard.Y
-		vlen := math.Hypot(vX, vY)
-		if vlen == 0 {
-			projectile.Despawn() // prevents division by zero
-		}
-		normX := vX / vlen
-		normY := vY / vlen
-
-		if math.Abs(normX) > math.Abs(normY) {
-			if normX > 0 {
-				w.wizard.AttackDirection = shared.AttackingRight
-			} else {
-				w.wizard.AttackDirection = shared.AttackingLeft
-			}
-		} else {
-			if normY > 0 {
-				w.wizard.AttackDirection = shared.AttackingDown
-			} else {
-				w.wizard.AttackDirection = shared.AttackingUp
-			}
-		}
-	}
-
-	// spawn new reflects
-	if rightClicked && !w.wizard.Combat.Dead && w.wizard.Combat.Reflect() {
-		w.wizard.ReflectAnim = true
-		w.wizard.Reflect.Active = true
-	}
-
-	// check fireball collisions
-	for i, projectile := range w.projectiles {
-		projectile.Update()
-		for _, wizard := range w.wizards {
-			if wizard == projectile.Caster {
-				continue
-			}
-			if wizard.Combat.IFrames() > 0 {
-				continue
-			}
-			if _, ok := projectile.AlreadyHit[wizard]; ok {
-				continue
-			}
-
-			var wizardRadius = w.wizard.HurtboxRadius
-			if wizard.Combat.Reflecting() {
-				wizardRadius *= 2
-			}
-
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				wizard.X+shared.HalfTile,
-				wizard.Y+shared.HalfTile,
-				wizardRadius,
-			) {
-				if wizard.Combat.Reflecting() {
-					wizard.ReflectProjectile(projectile, float64(cX), float64(cY))
-					wizard.Combat.ResetReflectCooldown()
-					// } else if wizard.Data.Name == "CPU" {
-					// 	wizard.ReflectProjectile(projectile, 200, 100)
-				} else {
-					wizard.Combat.Damage(projectile.Damage)
-					projectile.AlreadyHit[wizard] = struct{}{}
-					shared.StealStats(projectile.Caster.Combat, wizard.Combat)
-
-					w.wizard.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-					w.wizard.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-					w.wizard.Noclip = true
-
-					if wizard.Combat.Health() <= 0 {
-						// player who last hit the player gets a stat boost
-						projectile.Caster.Combat.RandomBoost(shared.KillPlayerBoost, shared.StandardMult)
-						w.dynamicText = w.NewDynamicTextMap()
-					}
-				}
-
-			}
-		}
-		for i, enemy := range w.enemies {
-			if _, ok := projectile.AlreadyHit[enemy]; ok {
-				continue
-			}
-
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				enemy.X+shared.HalfTile,
-				enemy.Y+shared.HalfTile,
-				enemy.HurtboxRadius,
-			) {
-				enemy.Combat.Damage(projectile.Damage)
-				projectile.AlreadyHit[enemy] = struct{}{}
-
-				enemy.Dx = projectile.NormX * shared.TileSize * projectile.Knockback
-				enemy.Dy = projectile.NormY * shared.TileSize * projectile.Knockback
-
-				if enemy.Combat.Health() <= 0 {
-					deadEnemies[i] = struct{}{}
-					// player who last hit the enemy gets a stat boost
-					projectile.Caster.Combat.RandomBoost(shared.KillEnemyBoost, shared.StandardMult)
-					w.dynamicText = w.NewDynamicTextMap()
-				}
-			}
-		}
-		for j, otherProjectile := range w.projectiles {
-			if projectile == otherProjectile {
-				continue
-			}
-
-			if shared.CheckCollisionCircle(
-				projectile.X+projectile.HitboxOffsetX,
-				projectile.Y+projectile.HitboxOffsetY,
-				projectile.ScaledRadius,
-				otherProjectile.X+otherProjectile.HitboxOffsetX,
-				otherProjectile.Y+otherProjectile.HitboxOffsetY,
-				otherProjectile.ScaledRadius,
-			) {
-				if projectile.Scale > otherProjectile.Scale {
-					deadProjectiles[j] = struct{}{}
-				} else if projectile.Scale < otherProjectile.Scale {
-					deadProjectiles[i] = struct{}{}
-				} else {
-					deadProjectiles[j] = struct{}{}
-					deadProjectiles[i] = struct{}{}
-				}
-			}
-		}
-
-		if projectile.TicksToLive < 1 {
-			deadProjectiles[i] = struct{}{}
-		}
-	}
-
-	// despawn dead entities
-	if len(deadProjectiles) > 0 {
-		newProjectiles := make([]*shared.Projectile, 0)
-		for i, projectile := range w.projectiles {
-			if _, ok := deadProjectiles[i]; !ok {
-				newProjectiles = append(newProjectiles, projectile)
-			}
-		}
-		w.projectiles = newProjectiles
-	}
-
-	if len(deadEnemies) > 0 {
-		newEnemies := make([]*shared.Enemy, 0)
-		for i, enemy := range w.enemies {
-			if _, ok := deadEnemies[i]; !ok {
-				newEnemies = append(newEnemies, enemy)
-			}
-		}
-		w.enemies = newEnemies
-	}
-
-	// check enemy collisions
-	for _, enemy := range w.enemies {
-		// lets enemies noclip until they're fully out of the hole
-
-		if enemy.X < 0 ||
-			enemy.Y < 0 ||
-			enemy.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-			enemy.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
-			enemy.Noclip = true
-		} else if enemy.Noclip {
-			if !shared.CheckCollisionHorizontal(enemy.Sprite, w.holes) &&
-				!shared.CheckCollisionVertical(enemy.Sprite, w.holes) {
-				enemy.Noclip = false
-			}
-		}
-
-		// turn noclip back on if enemy gets knocked into hole
-		if shared.CheckPointInRect(
-			int(enemy.X+shared.HalfTile),
-			int(enemy.Y+14), // between 13 and 15, which are the y coords used in CheckCollisionHorizontal/Vertical
-			w.holes,
-		) {
-			enemy.Noclip = true
-		}
-
-		// fade in and ramp movement speed after spawn
-		if enemy.Alpha < 1.0 {
+		if enemy.Alpha < 1.0 && enemy.DieAnim == false {
 			enemy.Alpha += 0.01
 		}
-		if enemy.Combat.MoveSpeed() < shared.EnemyMoveSpeed {
-			enemy.Combat.SetMoveSpeed(enemy.Combat.MoveSpeed() + shared.EnemyMoveSpeed/150)
-		}
-
-		enemy.X += enemy.Dx
-		if !enemy.Noclip {
-			shared.CheckCollisionHorizontal(enemy.Sprite, w.holes)
-		}
-		enemy.Y += enemy.Dy
-		if !enemy.Noclip {
-			shared.CheckCollisionVertical(enemy.Sprite, w.holes)
-		}
 	}
 
-	// check player collisions
-	w.wizard.X += w.wizard.Dx * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	if !w.wizard.Noclip {
-		shared.CheckCollisionHorizontal(w.wizard.Sprite, w.colliders)
+	// check for enemies damaging player
+	w.CheckEnemyHitWizard()
+
+	// spawn projectiles and check projectile collisions
+	w.CheckProjectiles()
+
+	// apply knockback when hit
+	if w.wizard.KnockbackDx != 0 || w.wizard.KnockbackDy != 0 {
+		w.wizard.Dx += w.wizard.KnockbackDx
+		w.wizard.Dy += w.wizard.KnockbackDy
+		w.wizard.KnockbackDx = 0
+		w.wizard.KnockbackDy = 0
 	}
 
-	w.wizard.Y += w.wizard.Dy * w.wizard.Combat.MoveSpeed()
-	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
-	if !w.wizard.Noclip {
-		shared.CheckCollisionVertical(w.wizard.Sprite, w.colliders)
-	}
-
-	w.CheckChestCollisions()
-
-	if w.trapsUp && w.wizard.Combat.IFrames() == 0 {
-		if shared.CheckPointInRect(
-			int(w.wizard.X+shared.HalfTile),
-			int(w.wizard.Y+14), // puts hitbox close to feet
-			w.traps,
-		) {
-			w.wizard.Combat.Damage(1.0)
-		}
-	}
-	w.UpdateTraps()
-
-	// check if wizard fell
-	w.wizard.Combat.Fell = shared.CheckPointInRect(
-		int(w.wizard.X+shared.HalfTile),
-		int(w.wizard.Y+14), // puts hitbox close to feet
-		w.holes,
-	)
-	if w.wizard.X < 0 ||
-		w.wizard.Y < 0 ||
-		w.wizard.X > float64(w.tilemapJSON.Layers[0].Width)*16.0 ||
-		w.wizard.Y > float64(w.tilemapJSON.Layers[0].Height)*16.0 {
-		w.wizard.Combat.Fell = true
-	}
-	if w.wizard.Combat.Fell {
-		w.wizard.Combat.SetHealth(0)
-	}
+	// move player, check collisions with walls, holes, chests, and traps
+	w.UpdatePlayerMovementAndCheckCollisions()
 
 	// determine animations
-	if w.wizard.Combat.Attacking() {
-		w.wizard.AttackAnim = true //starts attack animation
-	}
+	w.CheckIfDeadAndUpdateAnimations()
 
-	if w.wizard.Combat.Health() <= 0 && !w.wizard.Combat.Dead {
-		w.wizard.Combat.Dead = true
-		w.wizard.DieAnim = true //starts death animation
-	}
-
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
-
-	for _, wizard := range w.wizards {
-		wizard.Reflect.ActiveAnimation = wizard.Reflect.GetActiveAnimation()
-
-		if wizard.Reflect.ActiveAnimation != nil {
-			wizard.Reflect.ActiveAnimation.Update()
-
-			wizard.Reflect.X = wizard.X + shared.HalfTile
-			wizard.Reflect.Y = wizard.Y + shared.HalfTile
-		}
-	}
-
-	for _, enemy := range w.enemies {
-		if enemy.Combat.Attacking() {
-			enemy.AttackAnim = true
-		}
-		if enemy.Combat.Dead {
-			enemy.DieAnim = true
-		}
-		enemy.ActiveAnimation = enemy.GetActiveAnimation()
-		enemy.ActiveAnimation.Update()
-	}
-
-	for _, projectile := range w.projectiles {
-		projectile.ActiveAnimation.Update()
-	}
-
-	// spawn timers
-	w.EnemyRespawn()
-	w.ChestRespawn()
+	// sort wizards, enemies, and projectiles for consistent draw ordering
+	w.SortEntities()
 
 	// toggle hitbox indicators
 	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
 		w.debug = !w.debug
+	}
+
+	// toggle FPS/TPS display
+	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
+		w.displayFPS = !w.displayFPS
 	}
 
 	// play background music
@@ -563,8 +165,6 @@ func (w *WizArena) updatePlaying() {
 		w.audioPlayer.SetBufferSize(8192)
 		w.audioPlayer.Play()
 	}
-
-	w.updateRound()
 
 	w.UpdateRoundTimerText()
 }

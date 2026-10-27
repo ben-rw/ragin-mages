@@ -6,6 +6,7 @@ import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/ws"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -51,28 +52,28 @@ type Lobby struct {
 }
 
 func NewLobby(c *ws.Connection, roomID string) *Lobby {
-	bgImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, backgroundPath)
+	bgImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, backgroundPath)
 	if err != nil {
-		log.Printf("couldn't load background: %v")
+		log.Printf("couldn't load background: %v\n")
 	}
 	bg := &Background{
 		img:   bgImg,
 		alpha: 1.0,
 	}
 
-	mlImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, mouseLeftPath)
+	mlImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, mouseLeftPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v")
+		log.Printf("couldn't load image: %v\n")
 	}
 
-	mrImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, mouseRightPath)
+	mrImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, mouseRightPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v")
+		log.Printf("couldn't load image: %v\n")
 	}
 
 	audioPlayer, err := sound.NewAudioPlayer(songPath, true, 0)
 	if err != nil {
-		log.Printf("couldn't create audio player: %v", err)
+		log.Printf("couldn't create audio player: %v\n", err)
 	}
 
 	lobbyImage := ebiten.NewImage(int(shared.ScreenWidth/2), int(shared.ScreenHeight/2))
@@ -96,7 +97,7 @@ func NewLobby(c *ws.Connection, roomID string) *Lobby {
 	}
 }
 
-func (l *Lobby) Update(messages []protocol.Message) error {
+func (l *Lobby) Update(messages []*protocol.Message) error {
 	for _, message := range messages {
 		switch message.Type {
 		case protocol.JoinResponse:
@@ -221,7 +222,7 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 	for _, player := range l.Players {
 		textOpts.LayoutOptions = player.NameTag.LayoutOptions
 		textOpts.GeoM.Translate(player.NameTag.X, player.NameTag.Y)
-		text.Draw(l.lobbyImage, player.Data.Name, player.NameTag.Face, &textOpts)
+		text.Draw(l.lobbyImage, player.Data.Username, player.NameTag.Face, &textOpts)
 		textOpts.GeoM.Reset()
 	}
 

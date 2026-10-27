@@ -12,7 +12,7 @@ import (
 )
 
 type Scene interface {
-	Update(messages []protocol.Message) error
+	Update(messages []*protocol.Message) error
 	Draw(screen *ebiten.Image)
 }
 
@@ -28,7 +28,7 @@ func (g *Game) Update() error {
 		if msg.Type == protocol.SceneChange {
 			sceneChangeData, err := msg.UnmarshalMessageData()
 			if err != nil {
-				log.Printf("couldn't start new scene: %v", err)
+				log.Printf("couldn't start new scene: %v\n", err)
 				continue
 			}
 			data, ok := sceneChangeData.(*protocol.SceneChangeData)
@@ -55,7 +55,7 @@ func main() {
 	conn, roomID, err := ws.ConnectToWebsocket()
 	if err != nil {
 		ws.FailedToJoin()
-		log.Printf("couldn't connect to websocket: %v", err)
+		log.Printf("couldn't connect to websocket: %v\n", err)
 		return
 	}
 

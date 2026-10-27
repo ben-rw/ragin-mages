@@ -3,7 +3,11 @@ package wizarena
 import (
 	"image"
 	"log"
+	"sync/atomic"
 	"time"
+
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
@@ -17,116 +21,117 @@ import (
 // wrap ws.Connection to avoid syscall/js import
 // this allows for benchmarking with go test -bench
 type MessageConn interface {
-	Check() []protocol.Message
+	Check() []*protocol.Message
 	WriteMsg(mt protocol.MessageType, data any)
 }
 
 const (
-	tilemapPath = "assets/maps/ninja_dungeon.json"
-	heartPath   = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
-	songPath    = "assets/audio/music/void-construct-loop-0.6.ogg"
-	introLen    = 1 // 1 second song intro
+	heartPath = "assets/images/ninja_adventure/Ui/Receptacle/IconHeart.png"
+	songPath  = "assets/audio/music/void-construct-loop-0.6.ogg"
+	introLen  = 1 // 1 second song intro
 )
 
 type WizArena struct {
-	enemyRespawnTimer time.Time
-	phaseTimer        time.Time
-	chestRespawnTimer time.Time
+	phaseTimer time.Time
 	shared.Roster
 	Conn                   MessageConn
-	wizard                 *shared.WizardPlayer
-	wizards                map[string]*shared.WizardPlayer
+	wizard                 *WizardPlayer
+	wizards                map[string]*WizardPlayer
 	wizardImgCache         map[int]*ebiten.Image
 	wizardFrameCache       map[int][]*ebiten.Image
-	enemyFrameCache        map[shared.EnemyType][]*ebiten.Image
-	projectileFrameCache   map[shared.ProjectileType][]*ebiten.Image
-	reflectFrameCache      map[shared.ReflectType][]*ebiten.Image
+	enemyFrameCache        map[EnemyType][]*ebiten.Image
+	projectileFrameCache   map[ProjectileType][]*ebiten.Image
+	reflectFrameCache      map[ReflectType][]*ebiten.Image
 	dynamicText            map[DynamicText]string
 	dynamicTextImageCache  map[DynamicText]*ebiten.Image
-	tilemapJSON            *shared.TilemapJSON
+	tilemapJSON            *wizServer.TilemapJSON
 	tiles                  map[string][]*shared.Tile
 	staticTilemapTrapsUp   *ebiten.Image
 	staticTilemapTrapsDown *ebiten.Image
 	camera                 *shared.Camera
 	openedChests           map[OpenedChest]struct{}
 	audioPlayer            *audio.Player
-	projectileImageCache   map[shared.ProjectileType]*ebiten.Image
-	enemyImageCache        map[shared.EnemyType]*ebiten.Image
+	projectileImageCache   map[ProjectileType]*ebiten.Image
+	enemyImageCache        map[EnemyType]*ebiten.Image
 	heartImage             *ebiten.Image
 	reflectImage           *ebiten.Image
-	enemies                []*shared.Enemy
+	enemies                map[uint16]*Enemy
+	sortedEnemies          []*Enemy
+	sortedWizards          []*WizardPlayer
 	colliders              []image.Rectangle
 	chests                 []image.Rectangle
 	holes                  []image.Rectangle
 	traps                  []image.Rectangle
-	projectiles            []*shared.Projectile
+	trapTimer              int
+	projectiles            map[uint16]*Projectile
+	sortedProjectiles      []*Projectile
 	scoreboard             string
 	roundTimerString       string
 	roomID                 string
-	phase                  RoundPhase
+	phase                  wizServer.RoundPhase
 	screenAlpha            float32
 	backgroundAlpha        uint8
 	lastFormattedSecond    int
 	round                  uint8
 	trapsUp                bool
 	debug                  bool
+	displayFPS             bool
+	scoreboardUpdated      bool
+	scoresUpdated          bool
+	scoresUpdatedCount     atomic.Int32
 }
 
 func NewWizArena(c MessageConn, roomID string) *WizArena {
-	log.Println("scene changed to Wizards")
-
-	tilemap, err := shared.NewTilemapJSON(tilemapPath)
+	tilemap, err := wizServer.NewTilemapJSON(wizServer.TilemapPath)
 	if err != nil {
-		log.Printf("couldn't load tilemap: %v", err)
+		log.Printf("couldn't load tilemap: %v\n", err)
 	}
 
 	tiles, err := shared.NewOrderedTileList(tilemap)
 	if err != nil {
-		log.Printf("couldn't build tile cache: %v", err)
+		log.Printf("couldn't build tile cache: %v\n", err)
 	}
 
 	audioPlayer, err := sound.NewAudioPlayer(songPath, true, introLen)
 	if err != nil {
-		log.Printf("couldn't create audio player: %v", err)
+		log.Printf("couldn't create audio player: %v\n", err)
 	}
 
-	projectileImgCache, err := shared.NewProjectileImageCache([]shared.ProjectileType{shared.Fireball})
+	projectileImgCache, err := NewProjectileImageCache([]ProjectileType{Fireball})
 	if err != nil {
-		log.Printf("couldn't load projectile image: %v", err)
+		log.Printf("couldn't load projectile image: %v\n", err)
 	}
 
-	heartImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, heartPath)
+	heartImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, heartPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v", err)
+		log.Printf("couldn't load image: %v\n", err)
 	}
 
-	reflectImg, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, shared.ReflectPath)
+	reflectImg, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, ReflectPath)
 	if err != nil {
-		log.Printf("couldn't load image: %v", err)
+		log.Printf("couldn't load image: %v\n", err)
 	}
 
-	enemyImgCache, err := shared.NewEnemyImageCache([]shared.EnemyType{shared.Skeleton})
+	enemyImgCache, err := NewEnemyImageCache([]EnemyType{Skeleton})
 	if err != nil {
-		log.Printf("couldn't load enemy image cache: $v", err)
+		log.Printf("couldn't load enemy image cache: %v\n", err)
 	}
 
 	w := &WizArena{
-		phaseTimer: time.Now().Add(GameStartTime * time.Second),
-		phase:      GameStart,
+		phase: wizServer.WaitingForClients,
 		Roster: shared.Roster{
 			Players: make(map[string]*shared.Player, 8), // max 8 players
 			Player:  shared.NewPlayer(&protocol.PlayerData{}, 0),
 		},
 		Conn:                 c,
-		wizards:              make(map[string]*shared.WizardPlayer, 8),                       // max 8 wizards
-		enemies:              make([]*shared.Enemy, 0, 32),                                   // 16 enemies spawn at at time, doubled for headroom
-		wizardImgCache:       make(map[int]*ebiten.Image, 8),                                 // 8 players
-		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),                               // 8 player sprites
-		enemyFrameCache:      make(map[shared.EnemyType][]*ebiten.Image, 1),                  // 1 enemy type
-		projectileFrameCache: make(map[shared.ProjectileType][]*ebiten.Image, 1),             // 1 projectile type
-		reflectFrameCache:    make(map[shared.ReflectType][]*ebiten.Image, 1),                // 1 reflect img
-		enemyRespawnTimer:    time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
-		projectiles:          make([]*shared.Projectile, 0, 16),                              // there shouldn't ever be more than 16 projectiles at one time
+		wizards:              make(map[string]*WizardPlayer, 8),           // max 8 wizards
+		enemies:              make(map[uint16]*Enemy, 32),                 // 16 enemies spawn at at time, doubled for headroom
+		wizardImgCache:       make(map[int]*ebiten.Image, 8),              // 8 players
+		wizardFrameCache:     make(map[int][]*ebiten.Image, 8),            // 8 player sprites
+		enemyFrameCache:      make(map[EnemyType][]*ebiten.Image, 1),      // 1 enemy type
+		projectileFrameCache: make(map[ProjectileType][]*ebiten.Image, 1), // 1 projectile type
+		reflectFrameCache:    make(map[ReflectType][]*ebiten.Image, 1),    // 1 reflect img
+		projectiles:          make(map[uint16]*Projectile, 16),            // there shouldn't ever be more than 16 projectiles at one time
 		projectileImageCache: projectileImgCache,
 		enemyImageCache:      enemyImgCache,
 		tilemapJSON:          tilemap,
@@ -144,34 +149,46 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		roomID:               roomID,
 		backgroundAlpha:      255,
 		round:                1,
+		trapTimer:            100, // traps start up for 100 ticks
 		debug:                false,
+		displayFPS:           false,
+		scoreboardUpdated:    false,
+		scoresUpdated:        false,
 	}
 
-	w.enemyFrameCache[shared.Skeleton] = spritesheet.LoadFrames(
-		shared.EnemySpriteSheet,
-		enemyImgCache[shared.Skeleton],
+	// preload entity images
+	w.enemyFrameCache[Skeleton] = spritesheet.LoadFrames(
+		EnemySpriteSheet,
+		enemyImgCache[Skeleton],
 	)
-	w.projectileFrameCache[shared.Fireball] = spritesheet.LoadFrames(
-		shared.ProjectileSpriteSheet,
-		projectileImgCache[shared.Fireball],
+	w.projectileFrameCache[Fireball] = spritesheet.LoadFrames(
+		ProjectileSpriteSheet,
+		projectileImgCache[Fireball],
 	)
-	w.reflectFrameCache[shared.Circle] = spritesheet.LoadFrames(
-		shared.ReflectSpriteSheet,
+	w.reflectFrameCache[Circle] = spritesheet.LoadFrames(
+		ReflectSpriteSheet,
 		reflectImg,
 	)
 	for i, path := range shared.PlayerSpriteIndex {
-		img, _, err := ebitenutil.NewImageFromFileSystem(shared.AssetsFS, path)
+		img, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, path)
 		if err != nil {
-			log.Printf("wizarena init: couldnt' create wizard subimage: %v", err)
+			log.Printf("wizarena init: couldnt' create wizard subimage: %v\n", err)
 		}
 		w.wizardImgCache[i] = img
 		w.wizardFrameCache[i] = spritesheet.LoadFrames(shared.PlayerSpriteSheet, w.wizardImgCache[i])
 	}
 
+	// set up tile collisions
 	w.TileBounds()
 
+	// preload map images
 	w.staticTilemapTrapsUp = w.NewStaticTilemapTrapsUp()
 	w.staticTilemapTrapsDown = w.NewStaticTilemapTrapsDown()
+
+	// tell server this client is ready
+	w.Conn.WriteMsg(protocol.ClientLoaded, &protocol.ClientLoadedData{
+		Loaded: true,
+	})
 
 	return w
 }
@@ -179,8 +196,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 func (w *WizArena) NewStaticTilemapTrapsUp() *ebiten.Image {
 	var opts ebiten.DrawImageOptions
 	img := ebiten.NewImage(
-		w.tilemapJSON.Layers[0].Width*shared.TileSize,
-		w.tilemapJSON.Layers[0].Height*shared.TileSize,
+		w.tilemapJSON.Layers[0].Width*wizServer.TileSize,
+		w.tilemapJSON.Layers[0].Height*wizServer.TileSize,
 	)
 
 	for _, layer := range w.tilemapJSON.Layers {
@@ -214,8 +231,8 @@ func (w *WizArena) NewStaticTilemapTrapsUp() *ebiten.Image {
 func (w *WizArena) NewStaticTilemapTrapsDown() *ebiten.Image {
 	var opts ebiten.DrawImageOptions
 	img := ebiten.NewImage(
-		w.tilemapJSON.Layers[0].Width*shared.TileSize,
-		w.tilemapJSON.Layers[0].Height*shared.TileSize,
+		w.tilemapJSON.Layers[0].Width*wizServer.TileSize,
+		w.tilemapJSON.Layers[0].Height*wizServer.TileSize,
 	)
 
 	for _, layer := range w.tilemapJSON.Layers {
@@ -255,45 +272,45 @@ func (w *WizArena) TileBounds() {
 			x := i % layer.Width
 			y := i / layer.Width
 
-			x *= shared.TileSize
-			y *= shared.TileSize
+			x *= wizServer.TileSize
+			y *= wizServer.TileSize
 
-			id &= ^(int(shared.FlagFlippedHorizontally) |
-				int(shared.FlagFlippedVertically) |
-				int(shared.FlagFlippedDiagonally) |
-				int(shared.FlagRotatedHexagonal120))
+			id &= ^(int(wizServer.FlagFlippedHorizontally) |
+				int(wizServer.FlagFlippedVertically) |
+				int(wizServer.FlagFlippedDiagonally) |
+				int(wizServer.FlagRotatedHexagonal120))
 
-			tilemapIndex := shared.GetTilesetIndex(id, w.tilemapJSON)
+			tilemapIndex := wizServer.GetTilesetIndex(id, w.tilemapJSON)
 			src := w.tilemapJSON.Tilesets[tilemapIndex].Source
 
 			if src == "TilesetHole.json" {
 				w.holes = append(w.holes, image.Rect(
 					x,
 					y,
-					x+shared.TileSize,
-					y+shared.TileSize,
+					x+wizServer.TileSize,
+					y+wizServer.TileSize,
 				))
 				if id != 387 {
 					w.colliders = append(w.colliders, image.Rect(
 						x,
 						y,
-						x+shared.TileSize,
-						y+shared.TileSize,
+						x+wizServer.TileSize,
+						y+wizServer.TileSize,
 					))
 				}
 			} else if layer.Name == "traps_up" {
 				w.traps = append(w.traps, image.Rect(
 					x,
 					y,
-					x+shared.TileSize,
-					y+shared.TileSize,
+					x+wizServer.TileSize,
+					y+wizServer.TileSize,
 				))
 			} else if layer.Name == "chests" {
 				w.chests = append(w.chests, image.Rect(
 					x,
 					y,
-					x+shared.TileSize,
-					y+shared.TileSize,
+					x+wizServer.TileSize,
+					y+wizServer.TileSize,
 				))
 			}
 		}

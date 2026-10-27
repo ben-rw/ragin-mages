@@ -1,24 +1,30 @@
 package shared
 
-import "math"
+import (
+	"math"
+
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
+)
 
 const FreeCamSpeed = 10
 
 type Camera struct {
-	X, Y float64
+	X, Y       float64
+	DoneMoving bool
 }
 
 func NewCamera(x, y float64) *Camera {
 	return &Camera{
-		X: x,
-		Y: y,
+		X:          x,
+		Y:          y,
+		DoneMoving: false,
 	}
 }
 
 func (c *Camera) FollowTarget(targetX, targetY, tilemapWidthPixels, tilemapHeightPixels float64) {
 	//center of the player
-	destX := -(targetX + HalfTile) + ScreenWidth/2.0
-	destY := -(targetY + HalfTile) + ScreenHeight/2.0
+	destX := -(targetX + wizServer.HalfTile) + ScreenWidth/2.0
+	destY := -(targetY + wizServer.HalfTile) + ScreenHeight/2.0
 
 	minX := ScreenWidth - tilemapWidthPixels
 	minY := ScreenHeight - tilemapHeightPixels

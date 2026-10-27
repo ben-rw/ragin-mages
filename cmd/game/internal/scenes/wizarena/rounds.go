@@ -3,76 +3,33 @@ package wizarena
 import (
 	"time"
 
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/sound"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
-)
-
-type RoundPhase int
-
-const (
-	Playing RoundPhase = iota
-	RoundOver
-	RoundStart
-	GameOver
-	GameStart
-)
-
-const (
-	Rounds         = 3   // 3 rounds
-	RoundTime      = 150 // 2.5 min per round
-	RoundOverTime  = 3   // 3 seconds displaying scoreboard
-	RoundStartTime = 1   // 1 seconds displaying round number
-	GameOverTime   = 5   // 8 (3 from intermission + 5 additional) seconds at the end of the game
-	GameStartTime  = 1
 )
 
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizArena) startNewRound() {
-	for _, wizard := range w.wizards {
-		wizard.Combat.Dead = false
-		wizard.Combat.Fell = false
-		wizard.Combat.SetHealth(shared.PlayerHealth)
-		wizard.Combat.SetIFrames(0)
-		wizard.Alpha = 1.0
-	}
+	// wizard state is reset in HandlePhaseUpdate
+	w.round += 1
+	w.camera.DoneMoving = false
 
 	clear(w.openedChests)
-	w.enemies = make([]*shared.Enemy, 0, 32)
-	w.projectiles = make([]*shared.Projectile, 0, 16)
-
-	w.phaseTimer = time.Now().Add(RoundTime * time.Second)
-	w.enemyRespawnTimer = time.Now().Add(shared.RoundStartEnemySpawnTimer * time.Second)
-	w.chestRespawnTimer = time.Now().Add(ChestRespawnTimer * time.Second)
-
-	w.phase = Playing
+	w.enemies = make(map[uint16]*Enemy, 32)
+	w.projectiles = make(map[uint16]*Projectile, 16)
 
 	w.backgroundAlpha = 0
-}
 
-func (w *WizArena) updateRound() {
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 || w.wizard.Combat.Dead {
-		w.round += 1
-
-		w.phase = RoundOver
-		w.phaseTimer = time.Now().Add(RoundOverTime * time.Second)
-		w.NewScoreboard()
-	}
+	w.phase = wizServer.Playing
 }
 
 func (w *WizArena) updateRoundStart() {
-	w.AssignPlayerSpawns()
+	for _, wizard := range w.wizards {
+		wizard.Dx = 0
+		wizard.Dy = 0
 
-	w.wizard.Alpha = 1.0
-
-	w.wizard.Dx = 0
-	w.wizard.Dy = 0
-
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
-
-	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
+		w.updateRoundEndAnimations()
+	}
 
 	w.camera.FollowTarget(
 		w.wizard.X,
@@ -84,36 +41,124 @@ func (w *WizArena) updateRoundStart() {
 		float64(w.tilemapJSON.Layers[0].Width)*16.0,
 		float64(w.tilemapJSON.Layers[0].Height)*16.0,
 	)
+}
 
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		w.startNewRound()
+func (w *WizArena) syncScores() {
+	w.updateRoundEndAnimations()
+
+	if !w.scoresUpdated {
+		w.waitForScores()
+	} else if w.scoresUpdated && !w.scoreboardUpdated {
+		w.NewScoreboard()
+		w.scoreboardUpdated = true
 	}
 }
 
 func (w *WizArena) updateRoundOver() {
-	// add a fade effect when players die
+	w.scoreboardUpdated = false
+	w.scoresUpdated = false
+
+	w.updateRoundEndAnimations()
+	w.UpdateTraps()
+}
+
+func (w *WizArena) gameStart() {
+	w.camera.FollowTarget(
+		w.wizard.X,
+		w.wizard.Y,
+		float64(w.tilemapJSON.Layers[0].Width)*16.0,
+		float64(w.tilemapJSON.Layers[0].Height)*16.0,
+	)
+	w.camera.Constrain(
+		float64(w.tilemapJSON.Layers[0].Width)*16.0,
+		float64(w.tilemapJSON.Layers[0].Height)*16.0,
+	)
+
+	w.backgroundAlpha = 255
+}
+
+func (w *WizArena) gameOver() {
+	if time.Until(w.phaseTimer) <= 2*time.Second {
+		_ = sound.FadeOut(w.audioPlayer)
+	}
+
+	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+		w.Conn.WriteMsg(
+			protocol.SceneChange,
+			&protocol.SceneChangeData{
+				SceneType: protocol.LobbyScene,
+			},
+		)
+	}
+}
+
+func (w *WizArena) waitForScores() {
+	if int(w.scoresUpdatedCount.Load()) >= (len(w.wizards) - 1) { // excludes this client's wizard
+		w.scoresUpdated = true
+	}
+}
+
+func (w *WizArena) updateRoundEndAnimations() {
 	if w.wizard.Combat.Dead {
-		if !w.wizard.Combat.Fell {
-			if w.wizard.Y > -shared.HalfTile {
-				w.wizard.Y -= 3.0
-			}
+		if !w.camera.DoneMoving {
+			// keep following player to position knockback puts them
+			w.FollowDeathKnockback()
 		}
 	}
-	if w.wizard.Alpha > 0.0 {
-		w.wizard.Alpha -= .02 //fade speed
-	} else {
-		w.wizard.Alpha = 0.0
+
+	for _, wizard := range w.wizards {
+		wizard.Dx = 0
+		wizard.Dy = 0
+
+		// add a fade effect when players die
+		if wizard.Combat.Dead {
+			if !wizard.Combat.Fell {
+				if wizard.Y > -wizServer.HalfTile {
+					wizard.Y -= 3
+				}
+			}
+			if wizard.Alpha > 0.0 {
+				wizard.Alpha -= .02 //fade speed
+			} else {
+				wizard.Alpha = 0.0
+			}
+		} else {
+			wizard.Combat.Update()
+			if wizard.Combat.IFrames() > 0 {
+				wizard.IFrameFlicker()
+			}
+		}
+
+		wizard.ActiveAnimation = wizard.GetActiveAnimation()
+		wizard.ActiveAnimation.Update()
+
+		wizard.NameTag.X = wizard.X + wizServer.TileSize/2
+		wizard.NameTag.Y = wizard.Y + wizServer.TileSize + 2
 	}
 
-	w.wizard.ActiveAnimation = w.wizard.GetActiveAnimation()
-	w.wizard.ActiveAnimation.Update()
-
-	w.wizard.NameTag.X = w.wizard.X + shared.TileSize/2
-	w.wizard.NameTag.Y = w.wizard.Y + shared.TileSize + 2
-
 	for _, enemy := range w.enemies {
-		if enemy.Combat.Dead {
+		if enemy.Combat.Health() <= 0 {
+			enemy.Combat.Dead = true
 			enemy.DieAnim = true
+
+			enemy.Dx = 0
+			enemy.Dy = 0
+
+			if enemy.DieAnim {
+				// add a fade effect when enemies die
+				if enemy.Y > -wizServer.HalfTile {
+					enemy.Y -= 3.0
+				}
+				if enemy.Alpha > 0.0 {
+					enemy.Alpha -= .02 //fade speed
+				} else {
+					enemy.Alpha = 0.0
+				}
+			}
+
+			if enemy.DieAnim == false {
+				delete(w.enemies, enemy.ID)
+			}
 		}
 		enemy.ActiveAnimation = enemy.GetActiveAnimation()
 		enemy.ActiveAnimation.Update()
@@ -121,10 +166,9 @@ func (w *WizArena) updateRoundOver() {
 		enemy.X += enemy.Dx / 2 // slow motion woahhhh
 		enemy.Y += enemy.Dy / 2
 
-		if enemy.Alpha > 0.0 {
+		if enemy.Alpha > 0.0 && enemy.DieAnim == false {
 			enemy.Alpha -= .01 //fade speed
 		}
-
 	}
 
 	for _, projectile := range w.projectiles {
@@ -144,57 +188,11 @@ func (w *WizArena) updateRoundOver() {
 		if wizard.Reflect.ActiveAnimation != nil {
 			wizard.Reflect.ActiveAnimation.Update()
 
-			wizard.Reflect.X = wizard.X + shared.HalfTile
-			wizard.Reflect.Y = wizard.Y + shared.HalfTile
+			wizard.Reflect.X = wizard.X + wizServer.HalfTile
+			wizard.Reflect.Y = wizard.Y + wizServer.HalfTile
 		}
 	}
 
-	w.UpdateTraps()
-
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		if w.round > Rounds {
-			w.phase = GameOver
-			w.phaseTimer = time.Now().Add(GameOverTime * time.Second)
-			w.gameOver()
-			return
-		}
-
-		w.phase = RoundStart
-		w.phaseTimer = time.Now().Add(RoundStartTime * time.Second)
-	}
-}
-
-func (w *WizArena) gameStart() {
-	w.AssignPlayerSpawns()
-
-	w.camera.FollowTarget(
-		w.wizard.X,
-		w.wizard.Y,
-		float64(w.tilemapJSON.Layers[0].Width)*16.0,
-		float64(w.tilemapJSON.Layers[0].Height)*16.0,
-	)
-	w.camera.Constrain(
-		float64(w.tilemapJSON.Layers[0].Width)*16.0,
-		float64(w.tilemapJSON.Layers[0].Height)*16.0,
-	)
-
-	w.backgroundAlpha = 255
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		w.startNewRound()
-	}
-}
-
-func (w *WizArena) gameOver() {
-	if time.Until(w.phaseTimer) <= 2*time.Second {
-		_ = sound.FadeOut(w.audioPlayer)
-	}
-
-	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
-		w.Conn.WriteMsg(
-			protocol.SceneChange,
-			&protocol.SceneChangeData{
-				SceneType: protocol.LobbyScene,
-			},
-		)
-	}
+	// sort wizards, enemies, and projectiles for consistent draw ordering
+	w.SortEntities()
 }

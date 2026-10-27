@@ -1,17 +1,17 @@
 package shared
 
-var imgRootPath string = "assets/images/ninja_adventure/Actor/Character/"
-var imgPathEnd string = "/SpriteSheet.png"
+var ImgRootPath string = "assets/images/ninja_adventure/Actor/Character/"
+var ImgPathEnd string = "/SpriteSheet.png"
 
 var PlayerSpriteIndex map[int]string = map[int]string{
-	0: imgRootPath + "OldMan3" + imgPathEnd,
-	1: imgRootPath + "Monk" + imgPathEnd,
-	2: imgRootPath + "Samurai" + imgPathEnd,
-	3: imgRootPath + "Sultan" + imgPathEnd,
-	4: imgRootPath + "Master" + imgPathEnd,
-	5: imgRootPath + "NinjaMageBlack" + imgPathEnd,
-	6: imgRootPath + "MaskRaccoon" + imgPathEnd,
-	7: imgRootPath + "MaskFrog" + imgPathEnd,
+	0: ImgRootPath + "OldMan3" + ImgPathEnd,
+	1: ImgRootPath + "Monk" + ImgPathEnd,
+	2: ImgRootPath + "Samurai" + ImgPathEnd,
+	3: ImgRootPath + "Sultan" + ImgPathEnd,
+	4: ImgRootPath + "Master" + ImgPathEnd,
+	5: ImgRootPath + "NinjaMageBlack" + ImgPathEnd,
+	6: ImgRootPath + "MaskRaccoon" + ImgPathEnd,
+	7: ImgRootPath + "MaskFrog" + ImgPathEnd,
 }
 
 var StartingPositions = map[int]struct{ X, Y float64 }{
@@ -23,8 +23,4 @@ var StartingPositions = map[int]struct{ X, Y float64 }{
 	5: {X: 54, Y: 56},
 	6: {X: 54, Y: 92},
 	7: {X: 54, Y: 128},
-}
-
-var EnemySpriteIndex map[EnemyType]string = map[EnemyType]string{
-	Skeleton: imgRootPath + "Skeleton" + imgPathEnd,
 }

@@ -3,6 +3,7 @@ package shared
 import (
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -26,14 +27,13 @@ const (
 )
 
 type Sprite struct {
+	*wizServer.Body
 	Img             *ebiten.Image
 	SpriteSheet     *spritesheet.SpriteSheet
 	Animations      map[EntityState]*animations.Animation
 	ActiveAnimation *animations.Animation
-	X, Y, Dx, Dy    float64
 	AttackDirection EntityState
 	Alpha           float32
-	Noclip          bool
 	JoinAnim        bool
 	DieAnim         bool
 	ReflectAnim     bool
@@ -42,15 +42,17 @@ type Sprite struct {
 
 func NewSprite(img *ebiten.Image, x, y, dx, dy float64, spritesheet *spritesheet.SpriteSheet, animations map[EntityState]*animations.Animation, activeAnimation *animations.Animation, noclip, joinAnim bool, alpha float32) *Sprite {
 	return &Sprite{
+		Body: &wizServer.Body{
+			X:      x,
+			Y:      y,
+			Dx:     dx,
+			Dy:     dy,
+			Noclip: noclip,
+		},
 		Img:             img,
-		X:               x,
-		Y:               y,
-		Dx:              dx,
-		Dy:              dy,
 		SpriteSheet:     spritesheet,
 		Animations:      animations,
 		ActiveAnimation: activeAnimation,
-		Noclip:          noclip,
 		JoinAnim:        joinAnim,
 		Alpha:           alpha,
 	}
@@ -99,7 +101,6 @@ func (s *Sprite) GetActiveAnimation() *animations.Animation {
 		case AttackingLeft:
 			anim = s.Animations[AttackingLeft]
 		}
-
 		if anim.Over {
 			anim.Over = false
 			s.AttackAnim = false

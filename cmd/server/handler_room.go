@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/google/uuid"
@@ -44,10 +45,10 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 		ID:                roomID,
 		Players:           []*room.Player{},
 		PlayerSpriteIndex: room.NewPlayerSpriteIndex(),
-		Scene:             protocol.LobbyScene,
+		Scene:             &protocol.Scene{Type: protocol.LobbyScene},
 		Mu:                &sync.RWMutex{},
 	}
-
+	lobby.Init(newRoom)
 	cfg.RoomReg.Set(roomID, newRoom)
 
 	http.SetCookie(w, &http.Cookie{
@@ -59,7 +60,7 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -87,7 +88,7 @@ func (cfg *config) handlerJoinRoom(w http.ResponseWriter, r *http.Request) {
 		err := cfg.templates.ExecuteTemplate(w, "landing.html", LandingPageError{JoinUsernameError: "player must provide a username"})
 		if err != nil {
 			http.Error(w, "unable to serve room page with error message", http.StatusInternalServerError)
-			log.Printf("unable to serve room page with error message: %v", err)
+			log.Printf("unable to serve room page with error message: %v\n", err)
 		}
 		return
 	}
@@ -122,7 +123,7 @@ func (cfg *config) handlerJoinRoom(w http.ResponseWriter, r *http.Request) {
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	http.SetCookie(w, &http.Cookie{
@@ -160,7 +161,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 
 	id, err := uuid.NewUUID()
 	if err != nil {
-		log.Printf("couldn't create uuid: %v", err)
+		log.Printf("couldn't create uuid: %v\n", err)
 	}
 
 	currentRoom, ok := cfg.RoomReg.Get(roomID)
@@ -179,15 +180,16 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 		newRoom := &room.Room{
 			ID:                roomID,
 			Players:           []*room.Player{},
-			Scene:             protocol.LobbyScene,
+			Scene:             &protocol.Scene{Type: protocol.LobbyScene},
 			PlayerSpriteIndex: psi,
 			Mu:                &sync.RWMutex{},
 		}
+		lobby.Init(newRoom)
 		cfg.RoomReg.Set(roomID, newRoom)
 
 		err := newRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
-			Name:        username,
+			Username:    username,
 			Score:       0,
 			Host:        true,
 			SpriteIndex: newRoom.AssignPlayerSprite(),
@@ -198,7 +200,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 	} else {
 		err := currentRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
-			Name:        username,
+			Username:    username,
 			Score:       0,
 			Host:        false,
 			SpriteIndex: currentRoom.AssignPlayerSprite(),

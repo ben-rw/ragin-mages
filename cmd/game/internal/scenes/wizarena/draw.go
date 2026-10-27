@@ -1,10 +1,14 @@
 package wizarena
 
 import (
+	"fmt"
 	"image/color"
+	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -22,7 +26,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	opts.GeoM.Reset()
 
 	for _, tile := range w.tiles["chests"] {
-		if _, ok := w.openedChests[OpenedChest{tile.X, tile.Y}]; ok {
+		if _, ok := w.openedChests[OpenedChest{X: tile.X, Y: tile.Y}]; ok {
 			continue
 		}
 
@@ -43,7 +47,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		opts.GeoM.Translate(wizard.X, wizard.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
@@ -52,8 +56,10 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
+		log.Println(wizard.Data.Username)
+
 		screen.DrawImage(
-			w.wizardFrameCache[w.wizard.Data.SpriteIndex][w.wizard.ActiveAnimation.Frame()],
+			w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],
 			&opts,
 		)
 
@@ -61,9 +67,9 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		if wizard.Reflect.ActiveAnimation != nil {
-			opts.GeoM.Translate(-shared.ReflectWidth/2, -shared.ReflectHeight/2)
+			opts.GeoM.Translate(-ReflectWidth/2, -ReflectHeight/2)
 			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
 			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
@@ -76,7 +82,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	for _, enemy := range w.enemies {
+	for _, enemy := range w.sortedEnemies {
 		opts.GeoM.Translate(enemy.X, enemy.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
@@ -94,8 +100,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, projectile := range w.projectiles {
-
+	for _, projectile := range w.sortedProjectiles {
 		opts.GeoM.Translate(-projectile.CenterX, -projectile.CenterY)
 
 		opts.GeoM.Scale(projectile.Scale, projectile.Scale)
@@ -113,6 +118,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			&opts,
 		)
 
+		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
 	}
 
@@ -123,7 +129,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		opts.GeoM.Reset()
 	}
 
-	for _, wizard := range w.wizards {
+	for _, wizard := range w.sortedWizards {
 		textOpts.PrimaryAlign = wizard.NameTag.LayoutOptions.PrimaryAlign
 
 		textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
@@ -133,7 +139,7 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			textOpts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
 
-		text.Draw(screen, wizard.Data.Name, wizard.NameTag.Face, &textOpts)
+		text.Draw(screen, wizard.Data.Username, wizard.NameTag.Face, &textOpts)
 
 		textOpts.ColorScale.Reset()
 		textOpts.GeoM.Reset()
@@ -143,50 +149,50 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
 	}
 
-	if w.phase == Playing {
+	if w.phase == wizServer.Playing || w.phase == wizServer.SyncScores {
 		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.GeoM.Translate(shared.TopCenterFurther())
 		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
 		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat0BottomLeft())
-		text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat1BottomLeft())
-		text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat2BottomLeft())
-		text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		textOpts.PrimaryAlign = text.AlignStart
-		textOpts.GeoM.Translate(shared.Stat3BottomLeft())
-		text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
-		textOpts.GeoM.Reset()
-
-		opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
-		opts.GeoM.Translate(shared.TopRightFurther())
-		screen.DrawImage(StaticTextMap[instructionText1], &opts)
-		opts.GeoM.Reset()
-
-		opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
-		opts.GeoM.Translate(shared.BottomRightFurther())
-		screen.DrawImage(StaticTextMap[instructionText2], &opts)
-		opts.GeoM.Reset()
 
 		if w.wizard.Combat.Dead {
 			opts.GeoM.Translate(shared.Center())
 			opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
 			screen.DrawImage(StaticTextMap[deadText], &opts)
 			opts.GeoM.Reset()
+		} else {
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat0BottomLeft())
+			text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat1BottomLeft())
+			text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat2BottomLeft())
+			text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			textOpts.PrimaryAlign = text.AlignStart
+			textOpts.GeoM.Translate(shared.Stat3BottomLeft())
+			text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
+			textOpts.GeoM.Reset()
+
+			opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
+			opts.GeoM.Translate(shared.TopRightFurther())
+			screen.DrawImage(StaticTextMap[instructionText1], &opts)
+			opts.GeoM.Reset()
+
+			opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
+			opts.GeoM.Translate(shared.BottomRightFurther())
+			screen.DrawImage(StaticTextMap[instructionText2], &opts)
+			opts.GeoM.Reset()
 		}
 
-	} else if w.phase == RoundStart || w.phase == GameStart {
+	} else if w.phase == wizServer.RoundStart || w.phase == wizServer.GameStart {
 		var roundImg *ebiten.Image
 		if w.round == 1 {
 			roundImg = Round1TextImg
@@ -200,28 +206,51 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		screen.DrawImage(roundImg, &opts)
 		opts.GeoM.Reset()
 
-	} else if w.phase == RoundOver || w.phase == GameOver {
+	} else if w.phase == wizServer.RoundOver || w.phase == wizServer.GameOver {
 		textOpts.PrimaryAlign = text.AlignCenter
 		textOpts.LineSpacing = 24
 		textOpts.GeoM.Translate(shared.TopCenter())
 		text.Draw(screen, w.scoreboard, fontFace16, &textOpts)
 		textOpts.GeoM.Reset()
+	} else if w.phase == wizServer.WaitingForClients {
+		opts.GeoM.Translate(shared.Center())
+		opts.GeoM.Translate(-float64(WaitingTextImg.Bounds().Dx())/2, -float64(WaitingTextImg.Bounds().Dy())/2)
+		screen.DrawImage(WaitingTextImg, &opts)
+		opts.GeoM.Reset()
+	}
+
+	if w.displayFPS {
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f FPS", ebiten.ActualFPS()), 6, 15)
+		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f TPS", ebiten.ActualTPS()), 6, 25)
 	}
 
 	if w.debug {
-		for _, projectile := range w.projectiles {
-			opts.GeoM.Translate(-shared.FBCenterX, -shared.FBCenterY)
+
+		if w.wizard.Combat.Reflecting() {
+			vector.StrokeCircle(
+				screen,
+				float32(w.wizard.X+wizServer.HalfTile+w.camera.X),
+				float32(w.wizard.Y+wizServer.HalfTile+w.camera.Y),
+				float32(w.wizard.HurtboxRadius)*2,
+				1.0,
+				color.RGBA{255, 0, 0, 255},
+				false,
+			)
+		}
+
+		for _, projectile := range w.sortedProjectiles {
+			opts.GeoM.Translate(-FBCenterX, -FBCenterY)
 			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
 			opts.GeoM.Rotate(projectile.Rotation)
 			opts.GeoM.Translate(projectile.X, projectile.Y)
 
-			hx, hy := opts.GeoM.Apply(shared.FBInnerBallX, shared.FBInnerBallY)
-			shared.CheckCollisionCircle(
+			hx, hy := opts.GeoM.Apply(FBInnerBallX, FBInnerBallY)
+			wizServer.CheckCollisionCircle(
 				hx,
 				hy,
 				projectile.ScaledRadius,
-				w.wizard.X+shared.HalfTile,
-				w.wizard.Y+shared.HalfTile,
+				w.wizard.X+wizServer.HalfTile,
+				w.wizard.Y+wizServer.HalfTile,
 				w.wizard.HurtboxRadius,
 			)
 
@@ -237,12 +266,12 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 			opts.GeoM.Reset()
 		}
 
-		for _, enemies := range w.enemies {
+		for _, enemy := range w.sortedEnemies {
 			vector.StrokeCircle(
 				screen,
-				float32(enemies.X+shared.HalfTile+w.camera.X),
-				float32(enemies.Y+shared.HalfTile+w.camera.Y),
-				float32(enemies.HurtboxRadius),
+				float32(enemy.X+wizServer.HalfTile+w.camera.X),
+				float32(enemy.Y+wizServer.HalfTile+w.camera.Y),
+				float32(enemy.HurtboxRadius),
 				1.0,
 				color.RGBA{255, 0, 0, 255},
 				false,

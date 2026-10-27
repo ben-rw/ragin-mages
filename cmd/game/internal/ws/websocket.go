@@ -51,12 +51,12 @@ func (c *Connection) writeLoop() {
 }
 
 // check for messages to pass to Update in main
-func (c *Connection) Check() []protocol.Message {
-	msgs := []protocol.Message{}
+func (c *Connection) Check() []*protocol.Message {
+	msgs := []*protocol.Message{}
 	for {
 		select {
 		case msg := <-c.incomingMsgs:
-			msgs = append(msgs, msg)
+			msgs = append(msgs, &msg)
 		default:
 			return msgs
 		}
@@ -102,10 +102,6 @@ func ConnectToWebsocket() (*Connection, string, error) {
 		return nil, "", err
 	}
 
-	joinData := protocol.JoinRequestData{
-		RoomID: roomID,
-	}
-
 	overlay := js.Global().Get("document").Call("getElementById", "start-overlay")
 	var callback js.Func
 	callback = js.FuncOf(func(this js.Value, args []js.Value) any {
@@ -123,6 +119,10 @@ func ConnectToWebsocket() (*Connection, string, error) {
 	overlay.Call("addEventListener", "click", callback, js.ValueOf(map[string]any{
 		"once": true,
 	}))
+
+	joinData := protocol.JoinRequestData{
+		RoomID: roomID,
+	}
 
 	msg, err := protocol.MarshalToMessage(protocol.JoinRequest, joinData)
 	if err != nil {

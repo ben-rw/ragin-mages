@@ -1,0 +1,162 @@
+package wizarena
+
+import (
+	"math"
+
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/animations"
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared/spritesheet"
+	"github.com/ben-rw/ragin-mages/internal/gameAssets"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+)
+
+type ProjectileType int
+
+const (
+	Fireball ProjectileType = iota
+)
+
+const (
+	FireballPath          = "assets/images/warped_shooting_fx/charged/spritesheet.png"
+	FireballWidth         = 63.0
+	FireballHeight        = 48.0
+	FireballWidthInTiles  = 6
+	FireballHeightInTiles = 1
+	FireballAnimSpeed     = 1
+	FireballHitboxRadius  = 12.0 // radius of ball at the tip of projectile
+	FBInnerBallX          = 47.0 // 47x24 px from the sprites's top left corner to center of blast ball
+	FBInnerBallY          = 24.0
+	FBCenterX             = FireballWidth * .5
+	FBCenterY             = FireballHeight * .5
+)
+
+var projectileImgPaths = map[ProjectileType]string{
+	Fireball: FireballPath,
+}
+
+type Projectile struct {
+	*shared.Sprite
+	Caster        *WizardPlayer
+	AlreadyHit    map[any]struct{}
+	Damage        float64
+	Speed         float64
+	Knockback     float64
+	NormX         float64
+	NormY         float64
+	Radius        float64
+	ScaledRadius  float64
+	Scale         float64
+	HitboxOffsetX float64
+	HitboxOffsetY float64
+	Rotation      float64
+	CenterX       float64
+	CenterY       float64
+	TicksToLive   int
+	ReflectCount  int
+	Type          ProjectileType
+	ID            uint16
+}
+
+var projectileID uint16 = 0
+
+func newProjectileID() uint16 {
+	projectileID++
+	return projectileID
+}
+
+func NewProjectileImageCache(projectileTypes []ProjectileType) (map[ProjectileType]*ebiten.Image, error) {
+	imgs := make(map[ProjectileType]*ebiten.Image, len(projectileTypes))
+	for _, projectileType := range projectileTypes {
+		img, _, err := ebitenutil.NewImageFromFileSystem(gameAssets.AssetsFS, projectileImgPaths[projectileType])
+		if err != nil {
+			return nil, err
+		}
+		imgs[projectileType] = img
+	}
+	return imgs, nil
+}
+
+var ProjectileSpriteSheet = spritesheet.NewSpriteSheet(FireballWidthInTiles, FireballHeightInTiles, FireballWidth, FireballHeight)
+
+func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64, projectileType ProjectileType) *Projectile {
+	ProjectileAnimations := map[shared.EntityState]*animations.Animation{
+		shared.FireballFly: animations.NewAnimation(0, 5, 1, FireballAnimSpeed),
+	}
+
+	vX := cursorX - (w.X + wizServer.HalfTile)
+	vY := cursorY - (w.Y + wizServer.HalfTile)
+	vlen := math.Hypot(vX, vY)
+	if vlen == 0 {
+		return &Projectile{}
+	}
+	normX := vX / vlen
+	normY := vY / vlen
+	rotation := math.Atan2(vY, vX)
+
+	scaledOffsetX := (FBInnerBallX - FBCenterX) * w.Combat.ProjectileScale()
+	scaledOffsetY := (FBInnerBallY - FBCenterY) * w.Combat.ProjectileScale()
+
+	rotatedOffsetX := (scaledOffsetX * normX) - (scaledOffsetY * normY)
+	rotatedOffsetY := (scaledOffsetX * normY) + (scaledOffsetY * normX)
+
+	if math.Abs(normX) > math.Abs(normY) {
+		if normX > 0 {
+			w.AttackDirection = shared.AttackingRight
+		} else {
+			w.AttackDirection = shared.AttackingLeft
+		}
+	} else {
+		if normY > 0 {
+			w.AttackDirection = shared.AttackingDown
+		} else {
+			w.AttackDirection = shared.AttackingUp
+		}
+	}
+
+	return &Projectile{
+		Sprite: shared.NewSprite(
+			img,
+			w.X+wizServer.HalfTile+normX*wizServer.HalfTile-normX*wizServer.HalfTile*w.Combat.ProjectileScale()-rotatedOffsetX,
+			w.Y+wizServer.HalfTile+normY*wizServer.HalfTile-normY*wizServer.HalfTile*w.Combat.ProjectileScale()-rotatedOffsetY,
+			normX*w.Combat.ProjectileSpeed(),
+			normY*w.Combat.ProjectileSpeed(),
+			ProjectileSpriteSheet,
+			ProjectileAnimations,
+			ProjectileAnimations[shared.FireballFly],
+			false,
+			false,
+			1.0,
+		),
+		Caster:        w,
+		Damage:        w.Combat.AttackPower(),
+		Speed:         w.Combat.ProjectileSpeed(),
+		Knockback:     w.Combat.Knockback(),
+		NormX:         normX,
+		NormY:         normY,
+		Radius:        FireballHitboxRadius,
+		ScaledRadius:  FireballHitboxRadius * w.Combat.ProjectileScale(),
+		Scale:         w.Combat.ProjectileScale(),
+		HitboxOffsetX: rotatedOffsetX,
+		HitboxOffsetY: rotatedOffsetY,
+		Rotation:      rotation,
+		CenterX:       FireballWidth / 2,
+		CenterY:       FireballHeight / 2,
+		TicksToLive:   int(w.Combat.AttackCooldown()),
+		ReflectCount:  0,
+		AlreadyHit:    make(map[any]struct{}),
+		Type:          projectileType,
+		ID:            newProjectileID(),
+	}
+}
+
+func (p *Projectile) Update() {
+	p.X += p.Dx
+	p.Y += p.Dy
+	p.TicksToLive -= 1
+}
+
+func (p *Projectile) Despawn() {
+	p.TicksToLive = 0
+}
