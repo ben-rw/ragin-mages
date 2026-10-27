@@ -27,9 +27,9 @@ func (w *WizArena) updateRoundStart() {
 	for _, wizard := range w.wizards {
 		wizard.Dx = 0
 		wizard.Dy = 0
-
-		w.updateRoundEndAnimations()
 	}
+
+	w.updateRoundEndAnimations()
 
 	w.camera.FollowTarget(
 		w.wizard.X,
