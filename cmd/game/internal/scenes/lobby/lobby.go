@@ -120,6 +120,19 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 				continue
 			}
 
+		case protocol.FadeMusic:
+			fadeMusicData, err := message.UnmarshalMessageData()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			data, ok := fadeMusicData.(*protocol.FadeMusicData)
+			if !ok {
+				log.Println("failed type assertion")
+			}
+
+			l.sceneChanging = data.SceneChanging
+
 		default:
 		}
 	}
@@ -133,6 +146,9 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) &&
 		l.Player.Data.Host == true {
 		l.sceneChanging = true
+		l.Conn.WriteMsg(protocol.FadeMusic, protocol.FadeMusicData{
+			SceneChanging: true,
+		})
 	}
 
 	// fade music before scene change
@@ -183,7 +199,6 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 
 func (l *Lobby) Draw(screen *ebiten.Image) {
 	l.lobbyImage.Clear()
-	// l.lobbyImage.Fill(shared.BackgroundColor)
 
 	opts := ebiten.DrawImageOptions{}
 	textOpts := text.DrawOptions{}

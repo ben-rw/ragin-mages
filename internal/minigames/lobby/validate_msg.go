@@ -7,9 +7,14 @@ import (
 
 func ValidateMsg(msg *protocol.Message, l *LobbyServer) error {
 	var data any
-	if msg.Type == protocol.PlayerUpdate {
+	switch msg.Type {
+	case protocol.PlayerUpdate:
 		l.Broadcast(msg)
 		return nil
+	case protocol.FadeMusic:
+		l.Broadcast(msg)
+		return nil
+	default:
 	}
 
 	log.Printf("couldn't validate msg data: %v\n", data)

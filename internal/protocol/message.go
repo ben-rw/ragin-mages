@@ -31,6 +31,7 @@ const (
 	RoundTimerUpdate     MessageType = "RoundTimerUpdate"
 	PhaseUpdate          MessageType = "PhaseUpdate"
 	GivePoints           MessageType = "GivePoints"
+	FadeMusic            MessageType = "FadeMusic"
 )
 
 type Message struct {
@@ -164,6 +165,10 @@ type GivePointsData struct {
 	AttackCooldown  float64 `json:"attack_cooldown"`
 }
 
+type FadeMusicData struct {
+	SceneChanging bool `json:"scene_changing"`
+}
+
 type Scene struct {
 	Type   SceneType
 	State  any
@@ -227,6 +232,8 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &PhaseUpdateData{}
 	case GivePoints:
 		v = &GivePointsData{}
+	case FadeMusic:
+		v = &FadeMusicData{}
 	case Unset:
 		return nil, errors.New("can't unmarshal message with type unset")
 	default:
