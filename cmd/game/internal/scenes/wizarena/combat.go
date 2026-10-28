@@ -1,6 +1,7 @@
 package wizarena
 
 import (
+	"log"
 	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
@@ -22,13 +23,19 @@ const (
 const (
 	BaseProjectileSpeed = 3.0
 	BaseProjectileScale = 0.5
-	BaseKnockback       = 2.0
+	BaseKnockback       = 3.0
 	BaseAttackCooldown  = 60.0 //determines how many ticks projectile will persist
-	PSpeedMult          = .5
-	PScaleMult          = .25
-	KnockbackMult       = .25
-	AttackCDMult        = .5
-	StandardMult        = 0.0
+
+	PSpeedMult    = .35
+	PScaleMult    = .15
+	KnockbackMult = .15
+	AttackCDMult  = .20
+	StandardMult  = 0.0
+
+	PSpeedCap    = 35
+	PScaleCap    = 15
+	KnockbackCap = 20
+	AttackCDCap  = 30
 )
 
 const (
@@ -233,23 +240,40 @@ func (wc *WizardCombat) BoostAttackCooldown(amount float64, mult float64) {
 		mult = AttackCDMult
 	}
 	wc.attackCooldown -= amount * mult
-	if wc.attackCooldown < 12 { // limit projectile spawning to ~5/sec
-		wc.attackCooldown = 12 // 12/60 gives a nice even .2 as the attackCD cap
-	}
 }
 
 // pass StandardMult unless stats have already had their corresponding mult applied
 func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
-	boosts := map[int]func(amount float64, mult float64){
-		0: wc.BoostProjectileSpeed,
-		1: wc.BoostProjectileScale,
-		2: wc.BoostKnockback,
-		3: func(amount float64, mult float64) {
-			wc.BoostAttackCooldown(amount, mult)
-		},
+	boosts := make([]int, 0, 4)
+
+	if wc.ProjectileSpeed() < PSpeedCap {
+		boosts = append(boosts, 0)
+	}
+	if wc.ProjectileScale() < PScaleCap {
+		boosts = append(boosts, 1)
+	}
+	if wc.Knockback() < KnockbackCap {
+		boosts = append(boosts, 2)
+	}
+	if wc.AttackCooldown() > AttackCDCap {
+		boosts = append(boosts, 3)
 	}
 
-	boosts[rand.Intn(len(boosts))](amount, mult)
+	log.Println(boosts)
+	if len(boosts) > 0 {
+		i := rand.Intn(len(boosts))
+		switch boosts[i] {
+		case 0:
+			wc.BoostProjectileSpeed(amount, mult)
+		case 1:
+			wc.BoostProjectileScale(amount, mult)
+		case 2:
+			wc.BoostKnockback(amount, mult)
+		case 3:
+			wc.BoostAttackCooldown(amount, mult)
+		default:
+		}
+	}
 }
 
 func (wc *WizardCombat) Attack() bool {
