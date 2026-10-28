@@ -1,6 +1,8 @@
 package wizarena
 
 import (
+	"log"
+
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
@@ -25,6 +27,7 @@ func (w *WizArena) WriteWizardStatUpdate() {
 		Knockback:       w.wizard.Combat.Knockback(),
 		Username:        w.wizard.Data.Username,
 	})
+	log.Printf("%+v", w.wizard.Combat.BasicCombat)
 }
 
 func (w *WizArena) WriteNewProjectile(cx, cy int) {

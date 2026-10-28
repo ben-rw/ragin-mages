@@ -3,7 +3,6 @@ package wizarena
 import (
 	"fmt"
 	"image/color"
-	"log"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
@@ -55,8 +54,6 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 		if wizard.Alpha < 1.0 {
 			opts.ColorScale.ScaleAlpha(wizard.Alpha)
 		}
-
-		log.Println(wizard.Data.Username)
 
 		screen.DrawImage(
 			w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],

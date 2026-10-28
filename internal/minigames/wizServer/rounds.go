@@ -81,7 +81,7 @@ func (w *WizardServer) syncScores() {
 func (w *WizardServer) checkRoundOver() bool {
 	if len(w.wizards) == 1 && len(w.deadWizards) == 1 {
 		return true
-	} else if len(w.wizards) > 1 && len(w.deadWizards) == len(w.wizards)-1 {
+	} else if len(w.wizards) > 1 && len(w.deadWizards) >= len(w.wizards)-1 {
 		return true
 	} else {
 		return false
@@ -145,6 +145,9 @@ func (w *WizardServer) gameStart() {
 }
 
 func (w *WizardServer) gameOver() {
+	clear(w.wizards)
+	clear(w.deadWizards)
+	clear(w.enemies)
 }
 
 func (w *WizardServer) waitForClients() {

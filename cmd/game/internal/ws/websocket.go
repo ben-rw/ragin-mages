@@ -134,8 +134,9 @@ func ConnectToWebsocket() (*Connection, string, error) {
 		return nil, "", err
 	}
 
-	incMsgs := make(chan protocol.Message, 20)
-	outMsgs := make(chan protocol.Message, 20)
+	// TODO: revisit buffer size
+	incMsgs := make(chan protocol.Message, 200)
+	outMsgs := make(chan protocol.Message, 200)
 	c := &Connection{
 		conn,
 		incMsgs,

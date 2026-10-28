@@ -90,6 +90,9 @@ func (w *WizArena) gameOver() {
 			},
 		)
 	}
+
+	clear(w.wizards)
+	clear(w.enemies)
 }
 
 func (w *WizArena) waitForScores() {
