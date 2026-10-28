@@ -18,12 +18,6 @@ func (w *WizArena) CheckEnemyHitWizard() {
 
 	for _, enemy := range w.enemies {
 		enemy.Combat.Update()
-		rect := image.Rect(
-			int(enemy.X),
-			int(enemy.Y),
-			int(enemy.X)+wizServer.TileSize,
-			int(enemy.Y)+wizServer.TileSize,
-		)
 
 		if enemy.Combat.Health() <= 0 {
 			enemy.Dx = 0
@@ -43,10 +37,18 @@ func (w *WizArena) CheckEnemyHitWizard() {
 
 			if enemy.DieAnim == false {
 				delete(w.enemies, enemy.ID)
+				continue
 			}
 		}
 
-		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 {
+		rect := image.Rect(
+			int(enemy.X),
+			int(enemy.Y),
+			int(enemy.X)+wizServer.TileSize,
+			int(enemy.Y)+wizServer.TileSize,
+		)
+
+		if rect.Overlaps(wizardRect) && w.wizard.Combat.IFrames() == 0 && enemy.DieAnim == false {
 			if enemy.Combat.Attack() {
 				w.wizard.Combat.Damage(enemy.Combat.AttackPower())
 				// w.wizard.Combat.LastHitBy = "" // prevent a player from getting credit for an enemy's kill
