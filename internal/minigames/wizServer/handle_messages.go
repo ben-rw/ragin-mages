@@ -2,6 +2,7 @@ package wizServer
 
 import (
 	"errors"
+	"log"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
@@ -41,67 +42,12 @@ func (w *WizardServer) handleWizardMovementUpdate(message *protocol.Message) err
 		w.wizards[data.Username].Dx = data.Dx
 		w.wizards[data.Username].Dy = data.Dy
 		w.Mu.Unlock()
+	} else if !ok {
+		log.Printf("not found in wizards list: %v", data.Username)
 	}
 
 	return nil
 }
-
-// func (w *WizardServer) handleEnemyMovementUpdate(message *protocol.Message) error {
-// enemyMovementUpdateData, err := message.UnmarshalMessageData()
-// if err != nil {
-// 	return err
-// }
-// data, ok := enemyMovementUpdateData.(*protocol.EnemyMovementUpdateData)
-// if !ok {
-// 	err = errors.New("failed type assertion")
-// 	return err
-// }
-//
-// if _, ok := w.enemies[data.ID]; ok {
-// 	w.enemies[data.ID].X = data.X
-// 	w.enemies[data.ID].Y = data.Y
-// 	w.enemies[data.ID].Dx = data.Dx
-// 	w.enemies[data.ID].Dy = data.Dy
-// }
-
-// 	w.Broadcast(message)
-//
-// 	return nil
-// }
-
-// func (w *WizardServer) handleWizArenaMovementUpdate(message *protocol.Message) error {
-// wizArenaMovementData, err := message.UnmarshalMessageData()
-// if err != nil {
-// 	return err
-// }
-// data, ok := wizArenaMovementData.(*protocol.WizArenaMovementData)
-// if !ok {
-// 	err = errors.New("failed type assertion")
-// 	return err
-// }
-//
-// for _, wizardData := range data.WizardsMovementData {
-// 	if _, ok := w.wizards[wizardData.Username]; ok {
-// 		w.wizards[wizardData.Username].X = wizardData.X
-// 		w.wizards[wizardData.Username].Y = wizardData.Y
-// 		w.wizards[wizardData.Username].Dx = wizardData.Dx
-// 		w.wizards[wizardData.Username].Dy = wizardData.Dy
-// 	}
-// }
-//
-// for _, enemyData := range data.EnemiesMovementData {
-// 	if _, ok := w.enemies[enemyData.ID]; ok {
-// 		w.enemies[enemyData.ID].X = enemyData.X
-// 		w.enemies[enemyData.ID].Y = enemyData.Y
-// 		w.enemies[enemyData.ID].Dx = enemyData.Dx
-// 		w.enemies[enemyData.ID].Dy = enemyData.Dy
-// 	}
-// }
-
-// 	w.Broadcast(message)
-//
-// 	return nil
-// }
 
 func (w *WizardServer) handleWizardStatUpdate(message *protocol.Message) error {
 	wizardStatUpdateData, err := message.UnmarshalMessageData()
@@ -120,6 +66,8 @@ func (w *WizardServer) handleWizardStatUpdate(message *protocol.Message) error {
 		if w.wizards[data.Username].Health <= 0 {
 			w.deadWizards[data.Username] = struct{}{}
 		}
+	} else if !ok {
+		log.Printf("not found in wizards list: %v", data.Username)
 	}
 	w.Mu.Unlock()
 
@@ -145,6 +93,8 @@ func (w *WizardServer) handleEnemyStatUpdate(message *protocol.Message) error {
 		if w.enemies[data.ID].Health <= 0 {
 			delete(w.enemies, data.ID)
 		}
+	} else if !ok {
+		log.Printf("not found in enemies list: %v", data.ID)
 	}
 	w.Mu.Unlock()
 
@@ -236,6 +186,8 @@ func (w *WizardServer) handleProjectileHitWizard(message *protocol.Message) erro
 		if w.wizards[data.VictimStatData.Username].Health <= 0 {
 			w.deadWizards[data.VictimStatData.Username] = struct{}{}
 		}
+	} else if !ok {
+		log.Printf("not found in wizards list: %v", data.VictimStatData.Username)
 	}
 	w.Mu.Unlock()
 
@@ -255,6 +207,7 @@ func (w *WizardServer) handleProjectileHitEnemy(message *protocol.Message) error
 		return err
 	}
 
+	found := false
 	w.Mu.Lock()
 	if _, ok := w.enemies[data.VictimStatData.ID]; ok {
 		w.enemies[data.VictimStatData.ID].KnockbackDx = data.VictimDx
@@ -263,10 +216,13 @@ func (w *WizardServer) handleProjectileHitEnemy(message *protocol.Message) error
 		if w.enemies[data.VictimStatData.ID].Health <= 0 {
 			delete(w.enemies, data.VictimStatData.ID)
 		}
+		found = true
+	} else if !ok {
+		log.Printf("not found in enemies list: %v", data.VictimStatData.ID)
 	}
 	w.Mu.Unlock()
 
-	if ok {
+	if found {
 		w.BroadcastExcludeSender(message, data.ShooterStatData.Username)
 	}
 

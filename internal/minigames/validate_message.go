@@ -2,6 +2,7 @@ package minigames
 
 import (
 	"errors"
+	"log"
 	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
@@ -33,6 +34,14 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 
 		switch scdata.SceneType {
 		case protocol.LobbyScene:
+			r.Mu.Lock()
+			if r.Scene.Type == protocol.LobbyScene {
+				r.Mu.Unlock()
+				log.Println("received scene change message with type LobbyScene, but active scene is already Lobby")
+				return nil
+			}
+			r.Mu.Unlock()
+
 			data := protocol.SceneChangeData{
 				SceneType: protocol.LobbyScene,
 			}
@@ -48,6 +57,14 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 			return nil
 
 		case protocol.MemoryScene:
+			r.Mu.Lock()
+			if r.Scene.Type == protocol.MemoryScene {
+				r.Mu.Unlock()
+				log.Println("received scene change message with type MemoryScene, but active scene is already Memory")
+				return nil
+			}
+			r.Mu.Unlock()
+
 			data := protocol.SceneChangeData{
 				SceneType: protocol.MemoryScene,
 			}
@@ -62,6 +79,14 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 			return nil
 
 		case protocol.WizardsScene:
+			r.Mu.Lock()
+			if r.Scene.Type == protocol.WizardsScene {
+				r.Mu.Unlock()
+				log.Println("received scene change message with type WizardsScene, but active scene is already Wizards")
+				return nil
+			}
+			r.Mu.Unlock()
+
 			data := protocol.SceneChangeData{
 				SceneType: protocol.WizardsScene,
 			}

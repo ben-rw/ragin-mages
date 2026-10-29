@@ -136,7 +136,6 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 		enemyImageCache:      enemyImgCache,
 		tilemapJSON:          tilemap,
 		tiles:                tiles,
-		camera:               nil,
 		colliders:            make([]image.Rectangle, 0, 972), // 972 colliders on map
 		chests:               make([]image.Rectangle, 0, 8),   // 8 chests on the map
 		openedChests:         make(map[OpenedChest]struct{}, 8),
@@ -184,6 +183,11 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 	// preload map images
 	w.staticTilemapTrapsUp = w.NewStaticTilemapTrapsUp()
 	w.staticTilemapTrapsDown = w.NewStaticTilemapTrapsDown()
+
+	w.camera = shared.NewCamera(
+		-(float64(w.tilemapJSON.Layers[0].Height)*wizServer.TileSize)+shared.ScreenWidth/2.0,
+		-(float64(w.tilemapJSON.Layers[0].Width)*wizServer.TileSize/2)+shared.ScreenHeight/2.0,
+	)
 
 	// tell server this client is ready
 	w.Conn.WriteMsg(protocol.ClientLoaded, &protocol.ClientLoadedData{

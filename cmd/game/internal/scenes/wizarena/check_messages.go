@@ -29,10 +29,8 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 			w.wizard = w.wizards[w.Player.Data.Username]
 			w.dynamicText = w.NewDynamicTextMap()
 
-			w.camera = shared.NewCamera(
-				-(w.wizard.X+wizServer.HalfTile)+shared.ScreenWidth/2.0,
-				-(w.wizard.Y+wizServer.HalfTile)+shared.ScreenHeight/2.0,
-			)
+			w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
+			w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
 
 		case protocol.PlayerUpdate:
 			err := w.HandlePlayerUpdate(message)

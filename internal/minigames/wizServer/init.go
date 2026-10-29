@@ -37,6 +37,7 @@ func Init(r *room.Room) *WizardServer {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	r.Scene.Cancel = cancel
 
 	players, err := r.GetPlayerList()
 	if err != nil {

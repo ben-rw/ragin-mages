@@ -1,7 +1,6 @@
 package wizarena
 
 import (
-	"log"
 	"math/rand"
 
 	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
@@ -259,7 +258,6 @@ func (wc *WizardCombat) RandomBoost(amount float64, mult float64) {
 		boosts = append(boosts, 3)
 	}
 
-	log.Println(boosts)
 	if len(boosts) > 0 {
 		i := rand.Intn(len(boosts))
 		switch boosts[i] {
