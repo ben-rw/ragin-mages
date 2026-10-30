@@ -161,7 +161,7 @@ func (w *WizArena) updatePlaying() {
 
 	// play background music
 	if !w.audioPlayer.IsPlaying() {
-		w.audioPlayer.SetVolume(0.2)
+		w.audioPlayer.SetVolume(0.1)
 		w.audioPlayer.SetBufferSize(8192)
 		w.audioPlayer.Play()
 	}

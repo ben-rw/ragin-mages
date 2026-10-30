@@ -40,7 +40,8 @@ type Message struct {
 }
 
 type JoinRequestData struct {
-	RoomID string `json:"room_id"`
+	Username string `json:"username"`
+	RoomID   string `json:"room_id"`
 }
 
 type PlayerData struct {
@@ -61,8 +62,13 @@ type PlayerUpdateData struct {
 	PlayerData *PlayerData `json:"player_data"`
 }
 
+const (
+	InitDone = iota
+	StateUpdated
+)
+
 type ClientLoadedData struct {
-	Loaded bool `json:"loaded"`
+	LoadStage int `json:"load_stage"`
 }
 
 type WizardMovementUpdateData struct {

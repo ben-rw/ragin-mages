@@ -156,7 +156,7 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 		// check that both music and images have finished fading
 		l.musicFadeFinished = sound.FadeOut(l.audioPlayer)
 	} else if !l.audioPlayer.IsPlaying() && !l.sceneChanging {
-		l.audioPlayer.SetVolume(0.2)
+		l.audioPlayer.SetVolume(0.1)
 		l.audioPlayer.SetBufferSize(8192)
 		l.audioPlayer.Play()
 	}

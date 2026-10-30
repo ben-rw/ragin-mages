@@ -82,8 +82,12 @@ func (r *Room) Broadcast(msg *protocol.Message) {
 	r.Mu.RUnlock()
 
 	for _, player := range playerList {
-		if player.Client != nil {
-			err := wsjson.Write(context.Background(), player.Client.Conn, msg)
+		player.Mu.RLock()
+		client := player.Client
+		player.Mu.RUnlock()
+
+		if client != nil {
+			err := wsjson.Write(context.Background(), client.Conn, msg)
 			if err != nil {
 				log.Println(err)
 			}
@@ -101,8 +105,13 @@ func (r *Room) BroadcastExcludeSender(msg *protocol.Message, senderName string) 
 		if player.Username == senderName {
 			continue
 		}
-		if player.Client != nil {
-			err := wsjson.Write(context.Background(), player.Client.Conn, msg)
+
+		player.Mu.RLock()
+		client := player.Client
+		player.Mu.RUnlock()
+
+		if client != nil {
+			err := wsjson.Write(context.Background(), client.Conn, msg)
 			if err != nil {
 				log.Println(err)
 			}
@@ -113,7 +122,7 @@ func (r *Room) BroadcastExcludeSender(msg *protocol.Message, senderName string) 
 func (r *Room) BroadcastMsg(mt protocol.MessageType, msgData any) {
 	msg, err := protocol.MarshalToMessage(mt, msgData)
 	if err != nil {
-		log.Println(err)
+		log.Printf("couldn't broadcast message of type %v: %v\n", mt, msgData)
 		return
 	}
 	r.Broadcast(msg)

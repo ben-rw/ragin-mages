@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
 )
 
 func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
@@ -13,12 +14,15 @@ func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
 
 	const tickRate = 60
 	ticker := time.NewTicker(time.Second / tickRate)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println(ctx.Err())
 			return
+		case player := <-w.playerJoined:
+			w.PlayerConnectedMidGame(player)
 		case <-ticker.C:
 			switch w.phase {
 			case Playing:
@@ -41,6 +45,37 @@ func (w *WizardServer) Update(ctx context.Context, cancel context.CancelFunc) {
 		}
 	}
 
+}
+
+func (w *WizardServer) PlayerConnectedMidGame(player *room.Player) {
+	if _, ok := w.wizards[player.Username]; !ok {
+		// create new wizard
+		w.wizards[player.Username] = NewWizard(player.Username)
+
+		// send other clients info about the new wizard
+		playerUpdateMsg := &protocol.PlayerUpdateData{
+			PlayerData: player.PlayerToPlayerData(),
+		}
+
+		pumsg, err := protocol.MarshalToMessage(protocol.PlayerUpdate, playerUpdateMsg)
+		if err != nil {
+			log.Printf("couldn't connect player %v mid-game, failed to marshal player update message: %v\n", player.Username, err)
+		}
+		w.BroadcastExcludeSender(pumsg, player.Username)
+	}
+
+	// send the connecting wizard's client the list of the room's players and identify the connecting wizard to themself
+	playerDataList, err := w.GetPlayerDataList()
+	if err != nil {
+		log.Printf("couldn't connect player %v mid-game, failed to get player data list: %v\n", player.Username, err)
+	}
+
+	joinResponseMessage := &protocol.JoinResponseData{
+		PlayerData: player.PlayerToPlayerData(),
+		PlayerList: playerDataList,
+	}
+
+	w.BroadcastMsg(protocol.JoinResponse, joinResponseMessage)
 }
 
 func (w *WizardServer) updatePlaying() {

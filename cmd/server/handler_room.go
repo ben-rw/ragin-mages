@@ -190,6 +190,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 		err := newRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
 			Username:    username,
+			Mu:          &sync.RWMutex{},
 			Score:       0,
 			Host:        true,
 			SpriteIndex: newRoom.AssignPlayerSprite(),
@@ -201,6 +202,7 @@ func (cfg *config) handlerServeTestRoom(w http.ResponseWriter, r *http.Request) 
 		err := currentRoom.AppendPlayer(&room.Player{
 			ID:          id.String(),
 			Username:    username,
+			Mu:          &sync.RWMutex{},
 			Score:       0,
 			Host:        false,
 			SpriteIndex: currentRoom.AssignPlayerSprite(),

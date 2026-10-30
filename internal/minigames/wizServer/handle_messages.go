@@ -5,7 +5,13 @@ import (
 	"log"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
 )
+
+func (w *WizardServer) handleJoinRequest(message *protocol.Message) error {
+
+	return nil
+}
 
 func (w *WizardServer) handleChestUpdate(message *protocol.Message) error {
 	// chestUpdateData, err := message.UnmarshalMessageData()
@@ -229,8 +235,26 @@ func (w *WizardServer) handleProjectileHitEnemy(message *protocol.Message) error
 	return nil
 }
 
-func (w *WizardServer) handleClientLoaded(message *protocol.Message) error {
-	w.clientLoadedCount.Add(1)
+func (w *WizardServer) handleClientLoaded(message *protocol.Message, c *room.Client) error {
+	clientLoaded, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := clientLoaded.(*protocol.ClientLoadedData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	switch data.LoadStage {
+	case protocol.InitDone:
+		c.Player.ClientInitDone = true
+	case protocol.StateUpdated:
+		c.Player.ClientStateUpdated = true
+	default:
+		log.Printf("unrecognized LoadState: %v\n", data.LoadStage)
+	}
+
 	return nil
 }
 

@@ -16,7 +16,7 @@ var minigameMap = map[int]protocol.SceneType{
 	0: protocol.WizardsScene,
 }
 
-func ValidateMessage(message *protocol.Message, r *room.Room) error {
+func ValidateMessage(message *protocol.Message, r *room.Room, c *room.Client) error {
 	if message.Type == protocol.SceneChange {
 		sceneChangeData, err := message.UnmarshalMessageData()
 		if err != nil {
@@ -104,7 +104,7 @@ func ValidateMessage(message *protocol.Message, r *room.Room) error {
 	} else {
 		switch r.Scene.Type {
 		case protocol.WizardsScene:
-			err := wizServer.ValidateMsg(message, r.Scene.State.(*wizServer.WizardServer))
+			err := wizServer.ValidateMsg(message, r.Scene.State.(*wizServer.WizardServer), c)
 			if err != nil {
 				return err
 			}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"image"
 	"log"
-	"sync/atomic"
 	"time"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -22,7 +21,7 @@ type WizardServer struct {
 	phaseTimer        time.Time
 	syncTimer         time.Time
 	chestRespawnTimer time.Time
-	clientLoadedCount atomic.Int32
+	playerJoined      chan *room.Player
 	phase             RoundPhase
 	round             uint8
 	enemyID           uint16
@@ -65,6 +64,7 @@ func Init(r *room.Room) *WizardServer {
 		enemyRespawnTimer: time.Now().Add(RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		tilemapJSON:       tilemap,
 		holes:             make([]image.Rectangle, 0, 2092), // 2092 holes on map
+		playerJoined:      make(chan *room.Player, 16),      // 8 players, doubled for headroom
 		phase:             WaitingForClients,
 		round:             1,
 		enemyID:           0,

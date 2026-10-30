@@ -4,10 +4,13 @@ import (
 	"log"
 
 	"github.com/ben-rw/ragin-mages/internal/protocol"
+	"github.com/ben-rw/ragin-mages/internal/room"
 )
 
-func ValidateMsg(msg *protocol.Message, w *WizardServer) error {
+func ValidateMsg(msg *protocol.Message, w *WizardServer, c *room.Client) error {
 	switch msg.Type {
+	case protocol.JoinRequest:
+		w.handleJoinRequest(msg)
 	case protocol.EnemyStatUpdate:
 		w.handleEnemyStatUpdate(msg)
 	case protocol.NewProjectile:
@@ -27,7 +30,7 @@ func ValidateMsg(msg *protocol.Message, w *WizardServer) error {
 	case protocol.ChestUpdate:
 		w.handleChestUpdate(msg)
 	case protocol.ClientLoaded:
-		w.handleClientLoaded(msg)
+		w.handleClientLoaded(msg, c)
 	case protocol.Reflecting:
 		w.handleReflecting(msg)
 	case protocol.GivePoints:

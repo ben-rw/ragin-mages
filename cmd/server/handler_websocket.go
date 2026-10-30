@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"sync"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
@@ -16,13 +17,11 @@ import (
 // send username to client, start read loop, remove client when read loop returns
 func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("roomID")
-	_, ok := cfg.RoomReg.Get(roomID)
+	currentRoom, ok := cfg.RoomReg.Get(roomID)
 	if !ok {
 		http.Error(w, "no active room with that room code", http.StatusBadRequest)
 		return
 	}
-
-	currentRoom := cfg.RoomReg.ActiveRooms[roomID]
 
 	userCookie, err := r.Cookie("username")
 	if err != nil {
@@ -68,28 +67,51 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 
 	var player *room.Player
 	if exists {
-		existingPlayer.Client = &client
+		existingPlayer.Mu.Lock()
 		client.Player = existingPlayer
+		existingPlayer.Client = &client
 		player = existingPlayer
+		existingPlayer.Mu.Unlock()
 	} else {
 		player = &room.Player{
 			ID:          id,
 			Username:    username,
+			Mu:          &sync.RWMutex{},
 			Score:       0,
 			Host:        host,
 			SpriteIndex: currentRoom.AssignPlayerSprite(),
 			Room:        currentRoom,
-			Client:      &client,
 		}
+		client.Player = player
+		player.Client = &client
+
 		err = currentRoom.AppendPlayer(player)
 		if err != nil {
 			log.Println(err)
 		}
-		client.Player = player
 	}
 
-	playerData := player.PlayerToPlayerData()
+	// send scene change message to get new client in the active scene
+	currentRoom.Mu.RLock()
+	scdata := &protocol.SceneChangeData{
+		SceneType: currentRoom.Scene.Type,
+	}
+	currentRoom.Mu.RUnlock()
 
+	scmsg, err := protocol.MarshalToMessage(protocol.SceneChange, scdata)
+	if err != nil {
+		log.Println(err)
+	}
+
+	ctx := context.Background()
+	err = wsjson.Write(ctx, conn, scmsg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	// send new player the list of players and identify the new player to themself
+	playerData := player.PlayerToPlayerData()
 	if !exists {
 		playerDataList = append(playerDataList, playerData)
 	}
@@ -104,7 +126,6 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	ctx := context.Background()
 	err = wsjson.Write(ctx, conn, msg)
 	if err != nil {
 		log.Println(err)
@@ -112,7 +133,12 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 
 	readLoop(currentRoom, &client)
-	player.Client = nil
+
+	player.Mu.Lock()
+	if player.Client == &client {
+		player.Client = nil
+	}
+	player.Mu.Unlock()
 }
 
 // read incoming messages, close dead connections, drop messages if buffer fills up
@@ -135,7 +161,7 @@ func readLoop(r *room.Room, c *room.Client) {
 			}
 		}
 
-		err = minigames.ValidateMessage(&msg, r)
+		err = minigames.ValidateMessage(&msg, r, c)
 		// if updateMsg.Type != protocol.Unset {
 		// 	log.Printf("msg: %v, updateMsg: %v\n", string(msg.Data), string(updateMsg.Data))
 		// }

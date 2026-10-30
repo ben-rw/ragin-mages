@@ -10,8 +10,10 @@ import (
 
 var FontSrc = getFontSrc()
 
+var GameFontPath = "assets/fonts/pico-8-mono.otf"
+
 func getFontSrc() *text.GoTextFaceSource {
-	fontBytes, err := gameAssets.AssetsFS.ReadFile("assets/fonts/pico-8-mono.otf")
+	fontBytes, err := gameAssets.AssetsFS.ReadFile(GameFontPath)
 	if err != nil {
 		log.Printf("error reading font file: %v\n", err)
 	}

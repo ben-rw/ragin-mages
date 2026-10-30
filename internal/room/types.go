@@ -1,19 +1,24 @@
 package room
 
 import (
+	"sync"
+
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/coder/websocket"
 )
 
 type Player struct {
-	Room        *Room
-	Client      *Client
-	ID          string
-	Username    string
-	Score       int
-	SpriteIndex int
-	X, Y        float64
-	Host        bool
+	Room               *Room
+	Client             *Client
+	Mu                 *sync.RWMutex
+	ID                 string
+	Username           string
+	Score              int
+	SpriteIndex        int
+	X, Y               float64
+	Host               bool
+	ClientInitDone     bool
+	ClientStateUpdated bool
 }
 
 type Client struct {

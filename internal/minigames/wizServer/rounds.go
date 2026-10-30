@@ -155,11 +155,37 @@ func (w *WizardServer) waitForClients() {
 	if err != nil {
 		log.Printf("error getting player list: %v\n", err)
 	}
-	if int(w.clientLoadedCount.Load()) >= (len(playerList)) {
+
+	// initDone := false
+	// for _, player := range playerList {
+	// 	if !player.ClientInitDone {
+	// 		initDone = false
+	// 		break
+	// 	}
+	// 	initDone = true
+	// }
+
+	// if initDone && !w.stateSnapshotSent {
+	// 	w.stateSnapshotSent = true
+	// 	// TODO: broadcast scene state snapshot, or need to tell everyone who they are? send to playerConnected???
+	// 	// send in the clientloaded handler instead??
+	// }
+	//
+	stateUpdated := false
+	for _, player := range playerList {
+		if !player.ClientStateUpdated {
+			stateUpdated = false
+			break
+		}
+		stateUpdated = true
+	}
+
+	if stateUpdated {
 		w.phaseTimer = time.Now()
 	}
 
 	if w.phaseTimer.IsZero() || time.Until(w.phaseTimer) <= 0 {
+
 		w.phase = GameStart
 		w.BroadcastMsg(protocol.PhaseUpdate, &protocol.PhaseUpdateData{
 			Phase: int(w.phase),
