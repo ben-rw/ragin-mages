@@ -8,23 +8,21 @@ import (
 	"github.com/ben-rw/ragin-mages/internal/room"
 )
 
-func (w *WizardServer) handleJoinRequest(message *protocol.Message) error {
-
-	return nil
-}
-
 func (w *WizardServer) handleChestUpdate(message *protocol.Message) error {
-	// chestUpdateData, err := message.UnmarshalMessageData()
-	// if err != nil {
-	// 	return err
-	// }
-	// data, ok := chestUpdateData.(*protocol.ChestUpdateData)
-	// if !ok {
-	// 	err = errors.New("failed type assertion")
-	// 	return err
-	// }
+	chestUpdateData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := chestUpdateData.(*protocol.ChestUpdateData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
 
-	// w.BroadcastMsg(protocol.ChestUpdate, protocol.ChestUpdateData{})
+	w.Mu.Lock()
+	w.openedChests[OpenedChest{data.X, data.Y}] = struct{}{}
+	w.Mu.Unlock()
+
 	w.Broadcast(message)
 
 	return nil
@@ -249,6 +247,7 @@ func (w *WizardServer) handleClientLoaded(message *protocol.Message, c *room.Cli
 	switch data.LoadStage {
 	case protocol.InitDone:
 		c.Player.ClientInitDone = true
+		w.SendStateSnapshot(c)
 	case protocol.StateUpdated:
 		c.Player.ClientStateUpdated = true
 	default:

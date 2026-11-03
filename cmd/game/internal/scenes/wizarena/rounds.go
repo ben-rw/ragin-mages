@@ -78,6 +78,8 @@ func (w *WizArena) gameStart() {
 }
 
 func (w *WizArena) gameOver() {
+	w.updateRoundEndAnimations()
+
 	if time.Until(w.phaseTimer) <= 2*time.Second {
 		_ = sound.FadeOut(w.audioPlayer)
 	}

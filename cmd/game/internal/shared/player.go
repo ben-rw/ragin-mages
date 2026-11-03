@@ -80,12 +80,7 @@ func NewPlayer(data *protocol.PlayerData, joinOrder int) *Player {
 			true,
 			1.0,
 		),
-		Data: &protocol.PlayerData{
-			Username:    data.Username,
-			Score:       data.Score,
-			Host:        data.Host,
-			SpriteIndex: data.SpriteIndex,
-		},
+		Data:    data,
 		NameTag: NewNameTag(startPosition.X, startPosition.Y),
 	}
 }

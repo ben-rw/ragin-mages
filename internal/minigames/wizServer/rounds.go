@@ -27,8 +27,8 @@ const (
 	RoundStartTime     = 1   // 1 seconds displaying round number
 	GameOverTime       = 4   // 8 (4 from RoundOver + 4 additional) seconds at the end of the game
 	GameStartTime      = 1
-	WaitForClientsTime = 5 // 5 seconds max waiting for clients to connect
-	SyncTime           = 5 // sync round timer every 5 seconds
+	WaitForClientsTime = 5  // 5 seconds max waiting for clients to connect
+	SyncTime           = 10 // sync round timer every 5 seconds
 	SyncScoresTime     = 2
 )
 
@@ -39,6 +39,7 @@ func (w *WizardServer) startNewRound() {
 	w.Mu.Lock()
 	w.enemies = make(map[uint16]*Enemy, 32)
 	w.deadWizards = make(map[string]struct{}, len(w.Players))
+	clear(w.openedChests)
 	w.Mu.Unlock()
 
 	w.phaseTimer = time.Now().Add(RoundTime * time.Second)
@@ -156,21 +157,6 @@ func (w *WizardServer) waitForClients() {
 		log.Printf("error getting player list: %v\n", err)
 	}
 
-	// initDone := false
-	// for _, player := range playerList {
-	// 	if !player.ClientInitDone {
-	// 		initDone = false
-	// 		break
-	// 	}
-	// 	initDone = true
-	// }
-
-	// if initDone && !w.stateSnapshotSent {
-	// 	w.stateSnapshotSent = true
-	// 	// TODO: broadcast scene state snapshot, or need to tell everyone who they are? send to playerConnected???
-	// 	// send in the clientloaded handler instead??
-	// }
-	//
 	stateUpdated := false
 	for _, player := range playerList {
 		if !player.ClientStateUpdated {

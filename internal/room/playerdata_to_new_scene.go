@@ -22,13 +22,13 @@ func (r *Room) SendAllPlayerDataToNewScene() {
 	}
 
 	for _, player := range playerList {
-		scenePlayerData := &protocol.JoinResponseData{
+		scenePlayerData := &protocol.LobbyStateSnapshotData{
 			PlayerData: player.PlayerToPlayerData(),
 			PlayerList: playerDataList,
 		}
 
 		if player.Client != nil {
-			msg, err := protocol.MarshalToMessage(protocol.JoinResponse, scenePlayerData)
+			msg, err := protocol.MarshalToMessage(protocol.LobbyStateSnapshot, scenePlayerData)
 			if err != nil {
 				log.Printf("couldn't marshal msg: %v\n", err)
 				continue

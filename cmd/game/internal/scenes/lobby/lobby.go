@@ -100,7 +100,7 @@ func NewLobby(c *ws.Connection, roomID string) *Lobby {
 func (l *Lobby) Update(messages []*protocol.Message) error {
 	for _, message := range messages {
 		switch message.Type {
-		case protocol.JoinResponse:
+		case protocol.LobbyStateSnapshot:
 			err := l.HandleJoinResponse(message)
 			if err != nil {
 				log.Println(err)

@@ -70,6 +70,13 @@ func (cfg *config) handlerCreateRoom(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "host",
+		Value:    "true",
+		Path:     "/room/" + roomID,
+		HttpOnly: true,
+	})
+
 	fmt.Printf("Creating new room at %v for %v\n", "/room/"+roomID, name)
 
 	http.Redirect(w, r, "/room/"+roomID, http.StatusSeeOther)
@@ -130,6 +137,13 @@ func (cfg *config) handlerJoinRoom(w http.ResponseWriter, r *http.Request) {
 		Name:     "id",
 		Value:    id.String(),
 		Path:     "/",
+		HttpOnly: true,
+	})
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "host",
+		Value:    "false",
+		Path:     "/room/" + roomID,
 		HttpOnly: true,
 	})
 

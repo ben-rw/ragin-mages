@@ -97,7 +97,7 @@ func ValidateMessage(message *protocol.Message, r *room.Room, c *room.Client) er
 
 			wizServer.Init(r)
 			r.Broadcast(msg)
-			r.SendAllPlayerDataToNewScene()
+			// r.SendAllPlayerDataToNewScene()
 
 			return nil
 		}

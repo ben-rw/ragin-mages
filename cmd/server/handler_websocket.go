@@ -7,6 +7,8 @@ import (
 	"sync"
 
 	"github.com/ben-rw/ragin-mages/internal/minigames"
+	"github.com/ben-rw/ragin-mages/internal/minigames/lobby"
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 	"github.com/ben-rw/ragin-mages/internal/room"
 	"github.com/coder/websocket"
@@ -39,6 +41,20 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 	}
 	id := idCookie.Value
 
+	hostCookie, err := r.Cookie("host")
+	if err != nil {
+		http.Error(w, "missing user session data", http.StatusUnauthorized)
+		log.Println(err)
+		return
+	}
+
+	var host bool
+	if hostCookie.Value == "true" {
+		host = true
+	} else {
+		host = false
+	}
+
 	conn, err := websocket.Accept(w, r, nil)
 	if err != nil {
 		http.Error(w, "couldn't upgrade connection to websocket", http.StatusInternalServerError)
@@ -55,11 +71,6 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 
-	var host bool
-	if len(playerDataList) == 0 {
-		host = true
-	}
-
 	existingPlayer, exists, err := checkForReconnect(currentRoom, id)
 	if err != nil {
 		log.Println(err)
@@ -71,16 +82,21 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		client.Player = existingPlayer
 		existingPlayer.Client = &client
 		player = existingPlayer
+		player.ClientInitDone = false
+		player.ClientStateUpdated = false
 		existingPlayer.Mu.Unlock()
 	} else {
 		player = &room.Player{
-			ID:          id,
-			Username:    username,
-			Mu:          &sync.RWMutex{},
-			Score:       0,
-			Host:        host,
-			SpriteIndex: currentRoom.AssignPlayerSprite(),
-			Room:        currentRoom,
+			ID:                 id,
+			Username:           username,
+			Mu:                 &sync.RWMutex{},
+			Score:              0,
+			Host:               host,
+			SpriteIndex:        currentRoom.AssignPlayerSprite(),
+			Room:               currentRoom,
+			Client:             &room.Client{},
+			ClientInitDone:     false,
+			ClientStateUpdated: false,
 		}
 		client.Player = player
 		player.Client = &client
@@ -110,30 +126,26 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// send new player the list of players and identify the new player to themself
 	playerData := player.PlayerToPlayerData()
 	if !exists {
 		playerDataList = append(playerDataList, playerData)
 	}
 
-	data := protocol.JoinResponseData{
-		PlayerData: playerData,
-		PlayerList: playerDataList,
+	// sync scene state
+	currentRoom.Mu.Lock()
+	sceneState := currentRoom.Scene.State
+	currentRoom.Mu.Unlock()
+
+	if wizServer, ok := sceneState.(*wizServer.WizardServer); ok {
+		wizServer.PlayerJoined(player, playerDataList)
+	} else if lobbyServer, ok := sceneState.(*lobby.LobbyServer); ok {
+		lobbyServer.PlayerJoined(player, playerDataList, playerData, exists)
 	}
 
-	msg, err := protocol.MarshalToMessage(protocol.JoinResponse, data)
-	if err != nil {
-		log.Println(err)
-	}
-
-	err = wsjson.Write(ctx, conn, msg)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+	// start read loop
 	readLoop(currentRoom, &client)
 
+	// nil obsolete clients
 	player.Mu.Lock()
 	if player.Client == &client {
 		player.Client = nil

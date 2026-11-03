@@ -17,7 +17,7 @@ func (r *Roster) HandleJoinResponse(message *protocol.Message) error {
 		return err
 	}
 
-	data, ok := joinResponseData.(*protocol.JoinResponseData)
+	data, ok := joinResponseData.(*protocol.LobbyStateSnapshotData)
 	if !ok {
 		err = errors.New("failed type assertion")
 		return err

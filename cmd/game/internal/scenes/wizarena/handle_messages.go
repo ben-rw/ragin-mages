@@ -4,9 +4,117 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
 	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
+
+func (w *WizArena) HandleWizStateSnapshot(message *protocol.Message) error {
+	wizStateSnapshotData, err := message.UnmarshalMessageData()
+	if err != nil {
+		return err
+	}
+	data, ok := wizStateSnapshotData.(*protocol.WizStateSnapshotData)
+	if !ok {
+		err = errors.New("failed type assertion")
+		return err
+	}
+
+	// sync player data
+	for i, wizardData := range data.WizardsData {
+		playerData := &protocol.PlayerData{
+			Score:       wizardData.Score,
+			SpriteIndex: wizardData.SpriteIndex,
+			Host:        wizardData.Host,
+			Username:    wizardData.Username,
+		}
+		if _, ok := w.Players[wizardData.Username]; ok {
+			w.Players[wizardData.Username].Data = playerData
+		} else {
+			w.Players[wizardData.Username] = shared.NewPlayer(playerData, i)
+		}
+
+		if _, ok := w.wizards[wizardData.Username]; !ok {
+			w.wizards[wizardData.Username] = NewWizard(w.Players[wizardData.Username])
+			w.wizards[wizardData.Username].JoinAnim = false
+		}
+		w.wizards[wizardData.Username].X = wizardData.X
+		w.wizards[wizardData.Username].Y = wizardData.Y
+		w.wizards[wizardData.Username].Dx = wizardData.Dx
+		w.wizards[wizardData.Username].Dy = wizardData.Dy
+		w.wizards[wizardData.Username].KnockbackDx = wizardData.KnockbackDx
+		w.wizards[wizardData.Username].KnockbackDy = wizardData.KnockbackDy
+		w.wizards[wizardData.Username].Noclip = wizardData.Noclip
+
+		if wizardData.AttackCooldown > 0 {
+			w.wizards[wizardData.Username].Combat.SetAttackCooldown(wizardData.AttackCooldown)
+		}
+		if wizardData.ProjectileSpeed > 0 {
+			w.wizards[wizardData.Username].Combat.SetProjectileSpeed(wizardData.ProjectileSpeed)
+		}
+		if wizardData.ProjectileScale > 0 {
+			w.wizards[wizardData.Username].Combat.SetProjectileScale(wizardData.ProjectileScale)
+		}
+		if wizardData.Knockback > 0 {
+			w.wizards[wizardData.Username].Combat.SetKnockback(wizardData.Knockback)
+		}
+		w.wizards[wizardData.Username].Combat.SetHealth(wizardData.Health)
+	}
+
+	w.Player = w.Players[data.PlayerData.Username]
+	w.wizard = w.wizards[data.PlayerData.Username]
+
+	w.dynamicText = w.NewDynamicTextMap()
+
+	w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
+	w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
+
+	// sync enemy data
+	for _, enemyData := range data.EnemiesData {
+		if _, ok := w.enemies[enemyData.ID]; ok {
+			w.enemies[enemyData.ID].X = enemyData.X
+			w.enemies[enemyData.ID].Y = enemyData.Y
+			w.enemies[enemyData.ID].FollowsPlayer = enemyData.FollowsPlayer
+		} else if !ok {
+			// add newly spawned enemies
+			w.enemies[enemyData.ID] = NewEnemy(
+				w.enemyImageCache[Skeleton],
+				Skeleton,
+				enemyData.FollowsPlayer,
+				enemyData.X,
+				enemyData.Y,
+				enemyData.ID,
+			)
+		}
+		w.enemies[enemyData.ID].Dx = enemyData.Dx
+		w.enemies[enemyData.ID].Dy = enemyData.Dy
+		w.enemies[enemyData.ID].KnockbackDx = enemyData.KnockbackDx
+		w.enemies[enemyData.ID].KnockbackDy = enemyData.KnockbackDy
+		w.enemies[enemyData.ID].Noclip = enemyData.Noclip
+		w.enemies[enemyData.ID].Combat.SetMoveSpeed(enemyData.MoveSpeed)
+		w.enemies[enemyData.ID].Combat.SetHealth(enemyData.Health)
+	}
+
+	// sync opened chests
+	for _, chestData := range data.ChestsData {
+		if _, ok := w.openedChests[wizServer.OpenedChest{X: chestData.X, Y: chestData.Y}]; !ok {
+			w.openedChests[wizServer.OpenedChest{X: chestData.X, Y: chestData.Y}] = struct{}{}
+		}
+	}
+
+	w.phase = wizServer.RoundPhase(data.Phase)
+	w.phaseTimer = time.Now().Add(time.Duration(data.PhaseTimer) * time.Millisecond)
+	w.round = data.Round + 1
+
+	// let the server know this client is up to date
+	w.Conn.WriteMsg(protocol.ClientLoaded, &protocol.ClientLoadedData{
+		LoadStage: protocol.StateUpdated,
+	})
+
+	w.backgroundAlpha = 0
+
+	return nil
+}
 
 func (w *WizArena) HandleWizardMovementUpdate(message *protocol.Message) error {
 	wizardMovementUpdateData, err := message.UnmarshalMessageData()
@@ -321,7 +429,7 @@ func (w *WizArena) HandleChestUpdate(message *protocol.Message) error {
 	if data.X == 0 && data.Y == 0 {
 		clear(w.openedChests)
 	} else {
-		w.openedChests[OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
+		w.openedChests[wizServer.OpenedChest{X: data.X, Y: data.Y}] = struct{}{}
 	}
 
 	return nil
@@ -370,6 +478,8 @@ func (w *WizArena) HandlePhaseUpdate(message *protocol.Message) error {
 			wizard.KnockbackDx = 0
 			wizard.KnockbackDy = 0
 		}
+	} else if w.phase == wizServer.GameOver {
+		w.phaseTimer = time.Now().Add(wizServer.GameOverTime * time.Second)
 	}
 
 	return nil

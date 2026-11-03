@@ -32,7 +32,7 @@ func NewMemory(c *ws.Connection, roomID string) *Memory {
 func (m *Memory) Update(messages []*protocol.Message) error {
 	for _, message := range messages {
 		switch message.Type {
-		case protocol.JoinResponse:
+		case protocol.LobbyStateSnapshot:
 			err := m.HandleJoinResponse(message)
 			if err != nil {
 				log.Println(err)

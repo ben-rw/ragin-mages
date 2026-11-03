@@ -3,34 +3,32 @@ package wizarena
 import (
 	"log"
 
-	"github.com/ben-rw/ragin-mages/cmd/game/internal/shared"
-	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
 func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 	for _, message := range messages {
 		switch message.Type {
-		case protocol.JoinResponse:
-			err := w.HandleJoinResponse(message)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			for _, player := range w.Players {
-				if _, ok := w.wizards[player.Data.Username]; !ok {
-					wizard := NewWizard(player)
-					wizard.JoinAnim = false
-					w.wizards[wizard.Data.Username] = wizard
-				}
-			}
-
-			w.wizard = w.wizards[w.Player.Data.Username]
-			w.dynamicText = w.NewDynamicTextMap()
-
-			w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
-			w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
+		// case protocol.LobbyStateSnapshot:
+		// 	err := w.HandleJoinResponse(message)
+		// 	if err != nil {
+		// 		log.Println(err)
+		// 		continue
+		// 	}
+		//
+		// 	for _, player := range w.Players {
+		// 		if _, ok := w.wizards[player.Data.Username]; !ok {
+		// 			wizard := NewWizard(player)
+		// 			wizard.JoinAnim = false
+		// 			w.wizards[wizard.Data.Username] = wizard
+		// 		}
+		// 	}
+		//
+		// 	w.wizard = w.wizards[w.Player.Data.Username]
+		// 	w.dynamicText = w.NewDynamicTextMap()
+		//
+		// 	w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
+		// 	w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
 
 		case protocol.PlayerUpdate:
 			err := w.HandlePlayerUpdate(message)
@@ -124,6 +122,12 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 			}
 		case protocol.GivePoints:
 			err := w.HandleGivePoints(message)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		case protocol.WizStateSnapshot:
+			err := w.HandleWizStateSnapshot(message)
 			if err != nil {
 				log.Println(err)
 				continue

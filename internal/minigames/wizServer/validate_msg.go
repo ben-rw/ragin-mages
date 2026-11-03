@@ -9,8 +9,6 @@ import (
 
 func ValidateMsg(msg *protocol.Message, w *WizardServer, c *room.Client) error {
 	switch msg.Type {
-	case protocol.JoinRequest:
-		w.handleJoinRequest(msg)
 	case protocol.EnemyStatUpdate:
 		w.handleEnemyStatUpdate(msg)
 	case protocol.NewProjectile:

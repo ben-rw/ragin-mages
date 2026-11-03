@@ -16,303 +16,309 @@ func (w *WizArena) Draw(screen *ebiten.Image) {
 	var opts ebiten.DrawImageOptions
 	var textOpts text.DrawOptions
 
-	opts.GeoM.Translate(w.camera.X, w.camera.Y)
-	if !w.trapsUp {
-		screen.DrawImage(w.staticTilemapTrapsDown, &opts)
+	if w.phase == wizServer.WaitingForClients {
+		opts.GeoM.Translate(shared.Center())
+		opts.GeoM.Translate(-float64(WaitingTextImg.Bounds().Dx())/2, -float64(WaitingTextImg.Bounds().Dy())/2)
+		screen.DrawImage(WaitingTextImg, &opts)
+		opts.GeoM.Reset()
 	} else {
-		screen.DrawImage(w.staticTilemapTrapsUp, &opts)
-	}
-	opts.GeoM.Reset()
-
-	for _, tile := range w.tiles["chests"] {
-		if _, ok := w.openedChests[OpenedChest{X: tile.X, Y: tile.Y}]; ok {
-			continue
-		}
-
-		if tile.Flips.HorizontalFlip ||
-			tile.Flips.VerticalFlip ||
-			tile.Flips.DiagonalFlip {
-			shared.FixRotatedTile(tile, &opts)
-		}
-
-		opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
-		opts.GeoM.Translate(w.camera.X, w.camera.Y)
-
-		screen.DrawImage(
-			tile.Img,
-			&opts,
-		)
-
-		opts.GeoM.Reset()
-	}
-
-	for _, wizard := range w.sortedWizards {
-		opts.GeoM.Translate(wizard.X, wizard.Y)
 
 		opts.GeoM.Translate(w.camera.X, w.camera.Y)
-
-		if wizard.Alpha < 1.0 {
-			opts.ColorScale.ScaleAlpha(wizard.Alpha)
+		if !w.trapsUp {
+			screen.DrawImage(w.staticTilemapTrapsDown, &opts)
+		} else {
+			screen.DrawImage(w.staticTilemapTrapsUp, &opts)
 		}
-
-		screen.DrawImage(
-			w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],
-			&opts,
-		)
-
-		opts.ColorScale.Reset()
 		opts.GeoM.Reset()
-	}
 
-	for _, wizard := range w.sortedWizards {
-		if wizard.Reflect.ActiveAnimation != nil {
-			opts.GeoM.Translate(-ReflectWidth/2, -ReflectHeight/2)
-			opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
+		for _, tile := range w.tiles["chests"] {
+			if _, ok := w.openedChests[wizServer.OpenedChest{X: tile.X, Y: tile.Y}]; ok {
+				continue
+			}
+
+			if tile.Flips.HorizontalFlip ||
+				tile.Flips.VerticalFlip ||
+				tile.Flips.DiagonalFlip {
+				shared.FixRotatedTile(tile, &opts)
+			}
+
+			opts.GeoM.Translate(float64(tile.X), float64(tile.Y))
 			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
 			screen.DrawImage(
-				w.reflectFrameCache[0][wizard.Reflect.ActiveAnimation.Frame()],
+				tile.Img,
 				&opts,
 			)
 
 			opts.GeoM.Reset()
 		}
-	}
 
-	for _, enemy := range w.sortedEnemies {
-		opts.GeoM.Translate(enemy.X, enemy.Y)
+		for _, wizard := range w.sortedWizards {
+			opts.GeoM.Translate(wizard.X, wizard.Y)
 
-		opts.GeoM.Translate(w.camera.X, w.camera.Y)
+			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
-		if enemy.Alpha < 1.0 {
-			opts.ColorScale.ScaleAlpha(enemy.Alpha)
-		}
+			if wizard.Alpha < 1.0 {
+				opts.ColorScale.ScaleAlpha(wizard.Alpha)
+			}
 
-		screen.DrawImage(
-			w.enemyFrameCache[enemy.Type][enemy.ActiveAnimation.Frame()],
-			&opts,
-		)
-
-		opts.ColorScale.Reset()
-		opts.GeoM.Reset()
-	}
-
-	for _, projectile := range w.sortedProjectiles {
-		opts.GeoM.Translate(-projectile.CenterX, -projectile.CenterY)
-
-		opts.GeoM.Scale(projectile.Scale, projectile.Scale)
-		opts.GeoM.Rotate(projectile.Rotation)
-
-		opts.GeoM.Translate(projectile.X, projectile.Y)
-		opts.GeoM.Translate(w.camera.X, w.camera.Y)
-
-		if projectile.Alpha < 1.0 {
-			opts.ColorScale.ScaleAlpha(projectile.Alpha)
-		}
-
-		screen.DrawImage(
-			w.projectileFrameCache[projectile.Type][projectile.ActiveAnimation.Frame()],
-			&opts,
-		)
-
-		opts.ColorScale.Reset()
-		opts.GeoM.Reset()
-	}
-
-	for i := range int(w.wizard.Combat.Health()) {
-		opts.GeoM.Translate(HealthHeartLocations[i]())
-		screen.DrawImage(w.heartImage, &opts)
-
-		opts.GeoM.Reset()
-	}
-
-	for _, wizard := range w.sortedWizards {
-		textOpts.PrimaryAlign = wizard.NameTag.LayoutOptions.PrimaryAlign
-
-		textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
-		textOpts.GeoM.Translate(w.camera.X, w.camera.Y)
-
-		if wizard.Alpha < 1.0 {
-			textOpts.ColorScale.ScaleAlpha(wizard.Alpha)
-		}
-
-		text.Draw(screen, wizard.Data.Username, wizard.NameTag.Face, &textOpts)
-
-		textOpts.ColorScale.Reset()
-		textOpts.GeoM.Reset()
-	}
-
-	if w.backgroundAlpha > 0 {
-		screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
-	}
-
-	if w.phase == wizServer.Playing || w.phase == wizServer.SyncScores {
-		textOpts.PrimaryAlign = text.AlignCenter
-		textOpts.GeoM.Translate(shared.TopCenterFurther())
-		text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
-		textOpts.GeoM.Reset()
-
-		if w.wizard.Combat.Dead {
-			opts.GeoM.Translate(shared.Center())
-			opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
-			screen.DrawImage(StaticTextMap[deadText], &opts)
-			opts.GeoM.Reset()
-		} else {
-			textOpts.PrimaryAlign = text.AlignStart
-			textOpts.GeoM.Translate(shared.Stat0BottomLeft())
-			text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
-			textOpts.GeoM.Reset()
-
-			textOpts.PrimaryAlign = text.AlignStart
-			textOpts.GeoM.Translate(shared.Stat1BottomLeft())
-			text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
-			textOpts.GeoM.Reset()
-
-			textOpts.PrimaryAlign = text.AlignStart
-			textOpts.GeoM.Translate(shared.Stat2BottomLeft())
-			text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
-			textOpts.GeoM.Reset()
-
-			textOpts.PrimaryAlign = text.AlignStart
-			textOpts.GeoM.Translate(shared.Stat3BottomLeft())
-			text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
-			textOpts.GeoM.Reset()
-
-			opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
-			opts.GeoM.Translate(shared.TopRightFurther())
-			screen.DrawImage(StaticTextMap[instructionText1], &opts)
-			opts.GeoM.Reset()
-
-			opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
-			opts.GeoM.Translate(shared.BottomRightFurther())
-			screen.DrawImage(StaticTextMap[instructionText2], &opts)
-			opts.GeoM.Reset()
-		}
-
-	} else if w.phase == wizServer.RoundStart || w.phase == wizServer.GameStart {
-		var roundImg *ebiten.Image
-		if w.round == 1 {
-			roundImg = Round1TextImg
-		} else if w.round == 2 {
-			roundImg = Round2TextImg
-		} else {
-			roundImg = Round3TextImg
-		}
-		opts.GeoM.Translate(shared.Center())
-		opts.GeoM.Translate(-float64(roundImg.Bounds().Dx())/2, -float64(roundImg.Bounds().Dy())/2)
-		screen.DrawImage(roundImg, &opts)
-		opts.GeoM.Reset()
-
-	} else if w.phase == wizServer.RoundOver || w.phase == wizServer.GameOver {
-		textOpts.PrimaryAlign = text.AlignCenter
-		textOpts.LineSpacing = 24
-		textOpts.GeoM.Translate(shared.TopCenter())
-		text.Draw(screen, w.scoreboard, fontFace16, &textOpts)
-		textOpts.GeoM.Reset()
-	} else if w.phase == wizServer.WaitingForClients {
-		opts.GeoM.Translate(shared.Center())
-		opts.GeoM.Translate(-float64(WaitingTextImg.Bounds().Dx())/2, -float64(WaitingTextImg.Bounds().Dy())/2)
-		screen.DrawImage(WaitingTextImg, &opts)
-		opts.GeoM.Reset()
-	}
-
-	if w.displayFPS {
-		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f FPS", ebiten.ActualFPS()), 6, 15)
-		ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f TPS", ebiten.ActualTPS()), 6, 25)
-	}
-
-	if w.debug {
-
-		if w.wizard.Combat.Reflecting() {
-			vector.StrokeCircle(
-				screen,
-				float32(w.wizard.X+wizServer.HalfTile+w.camera.X),
-				float32(w.wizard.Y+wizServer.HalfTile+w.camera.Y),
-				float32(w.wizard.HurtboxRadius)*2,
-				1.0,
-				color.RGBA{255, 0, 0, 255},
-				false,
-			)
-		}
-
-		for _, projectile := range w.sortedProjectiles {
-			opts.GeoM.Translate(-FBCenterX, -FBCenterY)
-			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
-			opts.GeoM.Rotate(projectile.Rotation)
-			opts.GeoM.Translate(projectile.X, projectile.Y)
-
-			hx, hy := opts.GeoM.Apply(FBInnerBallX, FBInnerBallY)
-			wizServer.CheckCollisionCircle(
-				hx,
-				hy,
-				projectile.ScaledRadius,
-				w.wizard.X+wizServer.HalfTile,
-				w.wizard.Y+wizServer.HalfTile,
-				w.wizard.HurtboxRadius,
+			screen.DrawImage(
+				w.wizardFrameCache[wizard.Data.SpriteIndex][wizard.ActiveAnimation.Frame()],
+				&opts,
 			)
 
-			vector.StrokeCircle(
-				screen,
-				float32(hx+w.camera.X),
-				float32(hy+w.camera.Y),
-				float32(projectile.ScaledRadius),
-				1.0,
-				color.RGBA{255, 0, 0, 255},
-				false,
-			)
+			opts.ColorScale.Reset()
 			opts.GeoM.Reset()
+		}
+
+		for _, wizard := range w.sortedWizards {
+			if wizard.Reflect.ActiveAnimation != nil {
+				opts.GeoM.Translate(-ReflectWidth/2, -ReflectHeight/2)
+				opts.GeoM.Translate(wizard.Reflect.X, wizard.Reflect.Y)
+				opts.GeoM.Translate(w.camera.X, w.camera.Y)
+
+				screen.DrawImage(
+					w.reflectFrameCache[0][wizard.Reflect.ActiveAnimation.Frame()],
+					&opts,
+				)
+
+				opts.GeoM.Reset()
+			}
 		}
 
 		for _, enemy := range w.sortedEnemies {
-			vector.StrokeCircle(
-				screen,
-				float32(enemy.X+wizServer.HalfTile+w.camera.X),
-				float32(enemy.Y+wizServer.HalfTile+w.camera.Y),
-				float32(enemy.HurtboxRadius),
-				1.0,
-				color.RGBA{255, 0, 0, 255},
-				false,
-			)
-		}
+			opts.GeoM.Translate(enemy.X, enemy.Y)
 
-		// for _, hole := range w.holes {
-		// 	vector.StrokeRect(
-		// 		screen,
-		// 		float32(hole.Min.X)+float32(w.camera.X),
-		// 		float32(hole.Min.Y)+float32(w.camera.Y),
-		// 		float32(hole.Dx()),
-		// 		float32(hole.Dy()),
-		// 		1.0,
-		// 		color.RGBA{0, 0, 255, 255},
-		// 		false,
-		// 	)
-		// }
+			opts.GeoM.Translate(w.camera.X, w.camera.Y)
 
-		for _, spike := range w.traps {
-			vector.StrokeRect(
-				screen,
-				float32(spike.Min.X)+float32(w.camera.X),
-				float32(spike.Min.Y)+float32(w.camera.Y),
-				float32(spike.Dx()),
-				float32(spike.Dy()),
-				1.0,
-				color.RGBA{0, 255, 0, 255},
-				false,
-			)
-		}
+			if enemy.Alpha < 1.0 {
+				opts.ColorScale.ScaleAlpha(enemy.Alpha)
+			}
 
-		for _, collider := range w.colliders {
-			vector.StrokeRect(
-				screen,
-				float32(collider.Min.X)+float32(w.camera.X),
-				float32(collider.Min.Y)+float32(w.camera.Y),
-				float32(collider.Dx()),
-				float32(collider.Dy()),
-				1.0,
-				color.RGBA{255, 0, 0, 255},
-				false,
+			screen.DrawImage(
+				w.enemyFrameCache[enemy.Type][enemy.ActiveAnimation.Frame()],
+				&opts,
 			)
+
+			opts.ColorScale.Reset()
 			opts.GeoM.Reset()
 		}
+
+		for _, projectile := range w.sortedProjectiles {
+			opts.GeoM.Translate(-projectile.CenterX, -projectile.CenterY)
+
+			opts.GeoM.Scale(projectile.Scale, projectile.Scale)
+			opts.GeoM.Rotate(projectile.Rotation)
+
+			opts.GeoM.Translate(projectile.X, projectile.Y)
+			opts.GeoM.Translate(w.camera.X, w.camera.Y)
+
+			if projectile.Alpha < 1.0 {
+				opts.ColorScale.ScaleAlpha(projectile.Alpha)
+			}
+
+			screen.DrawImage(
+				w.projectileFrameCache[projectile.Type][projectile.ActiveAnimation.Frame()],
+				&opts,
+			)
+
+			opts.ColorScale.Reset()
+			opts.GeoM.Reset()
+		}
+
+		if w.wizard.Combat.Health() > 0 {
+			for i := range int(w.wizard.Combat.Health()) {
+				opts.GeoM.Translate(HealthHeartLocations[i]())
+				screen.DrawImage(w.heartImage, &opts)
+
+				opts.GeoM.Reset()
+			}
+		}
+
+		for _, wizard := range w.sortedWizards {
+			textOpts.PrimaryAlign = wizard.NameTag.LayoutOptions.PrimaryAlign
+
+			textOpts.GeoM.Translate(wizard.NameTag.X, wizard.NameTag.Y)
+			textOpts.GeoM.Translate(w.camera.X, w.camera.Y)
+
+			if wizard.Alpha < 1.0 {
+				textOpts.ColorScale.ScaleAlpha(wizard.Alpha)
+			}
+
+			text.Draw(screen, wizard.Data.Username, wizard.NameTag.Face, &textOpts)
+
+			textOpts.ColorScale.Reset()
+			textOpts.GeoM.Reset()
+		}
+
+		if w.backgroundAlpha > 0 {
+			screen.Fill(color.RGBA{0, 0, 0, w.backgroundAlpha})
+		}
+
+		if w.phase == wizServer.Playing || w.phase == wizServer.SyncScores {
+			textOpts.PrimaryAlign = text.AlignCenter
+			textOpts.GeoM.Translate(shared.TopCenterFurther())
+			text.Draw(screen, w.roundTimerString, fontFace16, &textOpts)
+			textOpts.GeoM.Reset()
+
+			if w.wizard.Combat.Dead {
+				opts.GeoM.Translate(shared.Center())
+				opts.GeoM.Translate(-float64(StaticTextMap[deadText].Bounds().Dx())/2, -float64(StaticTextMap[deadText].Bounds().Dy())/2)
+				screen.DrawImage(StaticTextMap[deadText], &opts)
+				opts.GeoM.Reset()
+			} else {
+				textOpts.PrimaryAlign = text.AlignStart
+				textOpts.GeoM.Translate(shared.Stat0BottomLeft())
+				text.Draw(screen, w.dynamicText[AttackCooldown], fontFace8, &textOpts)
+				textOpts.GeoM.Reset()
+
+				textOpts.PrimaryAlign = text.AlignStart
+				textOpts.GeoM.Translate(shared.Stat1BottomLeft())
+				text.Draw(screen, w.dynamicText[ProjectileScale], fontFace8, &textOpts)
+				textOpts.GeoM.Reset()
+
+				textOpts.PrimaryAlign = text.AlignStart
+				textOpts.GeoM.Translate(shared.Stat2BottomLeft())
+				text.Draw(screen, w.dynamicText[ProjectileSpeed], fontFace8, &textOpts)
+				textOpts.GeoM.Reset()
+
+				textOpts.PrimaryAlign = text.AlignStart
+				textOpts.GeoM.Translate(shared.Stat3BottomLeft())
+				text.Draw(screen, w.dynamicText[Knockback], fontFace8, &textOpts)
+				textOpts.GeoM.Reset()
+
+				opts.GeoM.Translate(-float64(StaticTextMap[instructionText1].Bounds().Dx()), 0)
+				opts.GeoM.Translate(shared.TopRightFurther())
+				screen.DrawImage(StaticTextMap[instructionText1], &opts)
+				opts.GeoM.Reset()
+
+				opts.GeoM.Translate(-float64(StaticTextMap[instructionText2].Bounds().Dx()), 0)
+				opts.GeoM.Translate(shared.BottomRightFurther())
+				screen.DrawImage(StaticTextMap[instructionText2], &opts)
+				opts.GeoM.Reset()
+			}
+
+		} else if w.phase == wizServer.RoundStart || w.phase == wizServer.GameStart {
+			var roundImg *ebiten.Image
+			if w.round == 1 {
+				roundImg = Round1TextImg
+			} else if w.round == 2 {
+				roundImg = Round2TextImg
+			} else {
+				roundImg = Round3TextImg
+			}
+			opts.GeoM.Translate(shared.Center())
+			opts.GeoM.Translate(-float64(roundImg.Bounds().Dx())/2, -float64(roundImg.Bounds().Dy())/2)
+			screen.DrawImage(roundImg, &opts)
+			opts.GeoM.Reset()
+
+		} else if w.phase == wizServer.RoundOver || w.phase == wizServer.GameOver {
+			textOpts.PrimaryAlign = text.AlignCenter
+			textOpts.LineSpacing = 24
+			textOpts.GeoM.Translate(shared.TopCenter())
+			text.Draw(screen, w.scoreboard, fontFace16, &textOpts)
+			textOpts.GeoM.Reset()
+		}
+
+		if w.displayFPS {
+			ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f FPS", ebiten.ActualFPS()), 6, 15)
+			ebitenutil.DebugPrintAt(screen, fmt.Sprintf("%.0f TPS", ebiten.ActualTPS()), 6, 25)
+		}
+
+		if w.debug {
+
+			if w.wizard.Combat.Reflecting() {
+				vector.StrokeCircle(
+					screen,
+					float32(w.wizard.X+wizServer.HalfTile+w.camera.X),
+					float32(w.wizard.Y+wizServer.HalfTile+w.camera.Y),
+					float32(w.wizard.HurtboxRadius)*2,
+					1.0,
+					color.RGBA{255, 0, 0, 255},
+					false,
+				)
+			}
+
+			for _, projectile := range w.sortedProjectiles {
+				opts.GeoM.Translate(-FBCenterX, -FBCenterY)
+				opts.GeoM.Scale(projectile.Scale, projectile.Scale)
+				opts.GeoM.Rotate(projectile.Rotation)
+				opts.GeoM.Translate(projectile.X, projectile.Y)
+
+				hx, hy := opts.GeoM.Apply(FBInnerBallX, FBInnerBallY)
+				wizServer.CheckCollisionCircle(
+					hx,
+					hy,
+					projectile.ScaledRadius,
+					w.wizard.X+wizServer.HalfTile,
+					w.wizard.Y+wizServer.HalfTile,
+					w.wizard.HurtboxRadius,
+				)
+
+				vector.StrokeCircle(
+					screen,
+					float32(hx+w.camera.X),
+					float32(hy+w.camera.Y),
+					float32(projectile.ScaledRadius),
+					1.0,
+					color.RGBA{255, 0, 0, 255},
+					false,
+				)
+				opts.GeoM.Reset()
+			}
+
+			for _, enemy := range w.sortedEnemies {
+				vector.StrokeCircle(
+					screen,
+					float32(enemy.X+wizServer.HalfTile+w.camera.X),
+					float32(enemy.Y+wizServer.HalfTile+w.camera.Y),
+					float32(enemy.HurtboxRadius),
+					1.0,
+					color.RGBA{255, 0, 0, 255},
+					false,
+				)
+			}
+
+			// for _, hole := range w.holes {
+			// 	vector.StrokeRect(
+			// 		screen,
+			// 		float32(hole.Min.X)+float32(w.camera.X),
+			// 		float32(hole.Min.Y)+float32(w.camera.Y),
+			// 		float32(hole.Dx()),
+			// 		float32(hole.Dy()),
+			// 		1.0,
+			// 		color.RGBA{0, 0, 255, 255},
+			// 		false,
+			// 	)
+			// }
+
+			for _, spike := range w.traps {
+				vector.StrokeRect(
+					screen,
+					float32(spike.Min.X)+float32(w.camera.X),
+					float32(spike.Min.Y)+float32(w.camera.Y),
+					float32(spike.Dx()),
+					float32(spike.Dy()),
+					1.0,
+					color.RGBA{0, 255, 0, 255},
+					false,
+				)
+			}
+
+			for _, collider := range w.colliders {
+				vector.StrokeRect(
+					screen,
+					float32(collider.Min.X)+float32(w.camera.X),
+					float32(collider.Min.Y)+float32(w.camera.Y),
+					float32(collider.Dx()),
+					float32(collider.Dy()),
+					1.0,
+					color.RGBA{255, 0, 0, 255},
+					false,
+				)
+				opts.GeoM.Reset()
+			}
+		}
+
 	}
 }

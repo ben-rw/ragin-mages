@@ -62,17 +62,19 @@ func NewWizard(username string) *Wizard {
 	}
 }
 
-func (w *Wizard) startReflecting() bool {
-	w.Reflecting = true
-	w.ReflectFrames = ReflectFrames
-	return w.Reflecting
-}
+// TODO: move projectile/reflection simulation to server
 
-func (w *Wizard) updateWizard() {
-	if w.ReflectFrames > 0 {
-		w.ReflectFrames -= 1
-		if w.ReflectFrames <= 0 {
-			w.Reflecting = false
-		}
-	}
-}
+// func (w *Wizard) startReflecting() bool {
+// 	w.Reflecting = true
+// 	w.ReflectFrames = ReflectFrames
+// 	return w.Reflecting
+// }
+//
+// func (w *Wizard) updateWizard() {
+// 	if w.ReflectFrames > 0 {
+// 		w.ReflectFrames -= 1
+// 		if w.ReflectFrames <= 0 {
+// 			w.Reflecting = false
+// 		}
+// 	}
+// }

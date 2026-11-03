@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type MessageType string
@@ -12,7 +13,7 @@ type MessageType string
 const (
 	Unset                MessageType = "Unset"
 	JoinRequest          MessageType = "JoinRequest"
-	JoinResponse         MessageType = "JoinResponse"
+	LobbyStateSnapshot   MessageType = "LobbyStateSnapshot"
 	SceneChange          MessageType = "SceneChange"
 	PlayerUpdate         MessageType = "PlayerUpdate"
 	ClientLoaded         MessageType = "ClientLoaded"
@@ -32,6 +33,7 @@ const (
 	PhaseUpdate          MessageType = "PhaseUpdate"
 	GivePoints           MessageType = "GivePoints"
 	FadeMusic            MessageType = "FadeMusic"
+	WizStateSnapshot     MessageType = "WizStateSnapshot"
 )
 
 type Message struct {
@@ -53,7 +55,7 @@ type PlayerData struct {
 	Username    string  `json:"username"`
 }
 
-type JoinResponseData struct {
+type LobbyStateSnapshotData struct {
 	PlayerData *PlayerData   `json:"player_data"`
 	PlayerList []*PlayerData `json:"player_list"`
 }
@@ -171,6 +173,49 @@ type GivePointsData struct {
 	AttackCooldown  float64 `json:"attack_cooldown"`
 }
 
+type FullWizardData struct {
+	Username        string
+	X               float64
+	Y               float64
+	Dx              float64
+	Dy              float64
+	KnockbackDx     float64
+	KnockbackDy     float64
+	AttackCooldown  float64
+	ProjectileSpeed float64
+	ProjectileScale float64
+	Knockback       float64
+	Health          float64
+	SpriteIndex     int
+	Score           int
+	Noclip          bool
+	Host            bool
+}
+
+type FullEnemyData struct {
+	X             float64
+	Y             float64
+	Dx            float64
+	Dy            float64
+	KnockbackDx   float64
+	KnockbackDy   float64
+	Noclip        bool
+	MoveSpeed     float64
+	Health        float64
+	ID            uint16
+	FollowsPlayer bool
+}
+
+type WizStateSnapshotData struct {
+	PlayerData  *PlayerData
+	WizardsData []*FullWizardData
+	EnemiesData []*FullEnemyData
+	ChestsData  []*ChestUpdateData
+	PhaseTimer  int
+	Phase       int
+	Round       uint8
+}
+
 type FadeMusicData struct {
 	SceneChanging bool `json:"scene_changing"`
 }
@@ -200,8 +245,8 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 	switch m.Type {
 	case JoinRequest:
 		v = &JoinRequestData{}
-	case JoinResponse:
-		v = &JoinResponseData{}
+	case LobbyStateSnapshot:
+		v = &LobbyStateSnapshotData{}
 	case SceneChange:
 		v = &SceneChangeData{}
 	case PlayerUpdate:
@@ -240,15 +285,17 @@ func (m *Message) UnmarshalMessageData() (any, error) {
 		v = &GivePointsData{}
 	case FadeMusic:
 		v = &FadeMusicData{}
+	case WizStateSnapshot:
+		v = &WizStateSnapshotData{}
 	case Unset:
 		return nil, errors.New("can't unmarshal message with type unset")
 	default:
 		return nil, errors.New("unrecognized message format")
 	}
 
-	// if m.Type != WizArenaMovement && m.Type != WizardMovementUpdate {
-	// 	log.Printf("json: %s type: %v\n", m.Data, m.Type)
-	// }
+	if m.Type != WizArenaMovement && m.Type != WizardMovementUpdate {
+		log.Printf("json: %s type: %v\n", m.Data, m.Type)
+	}
 
 	err := json.Unmarshal(m.Data, v)
 	if err != nil {

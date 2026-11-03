@@ -2,11 +2,9 @@ package wizarena
 
 import (
 	"image"
-)
 
-type OpenedChest struct {
-	X, Y int
-}
+	"github.com/ben-rw/ragin-mages/internal/minigames/wizServer"
+)
 
 func (w *WizArena) CheckChestCollisions() {
 	for _, chest := range w.chests {
@@ -16,9 +14,9 @@ func (w *WizArena) CheckChestCollisions() {
 			int(w.wizard.X)+16,
 			int(w.wizard.Y)+16,
 		)) {
-			if _, ok := w.openedChests[OpenedChest{X: chest.Min.X, Y: chest.Min.Y}]; !ok {
+			if _, ok := w.openedChests[wizServer.OpenedChest{X: chest.Min.X, Y: chest.Min.Y}]; !ok {
 				w.wizard.Combat.RandomBoost(ChestBoost, StandardMult)
-				w.openedChests[OpenedChest{X: chest.Min.X, Y: chest.Min.Y}] = struct{}{}
+				w.openedChests[wizServer.OpenedChest{X: chest.Min.X, Y: chest.Min.Y}] = struct{}{}
 				w.WriteWizardStatUpdate()
 				w.WriteChestUpdate(chest.Min.X, chest.Min.Y)
 				w.dynamicText = w.NewDynamicTextMap()

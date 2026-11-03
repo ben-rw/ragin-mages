@@ -15,13 +15,13 @@ type WizardServer struct {
 	wizards           map[string]*Wizard
 	deadWizards       map[string]struct{}
 	enemies           map[uint16]*Enemy
+	openedChests      map[OpenedChest]struct{}
 	holes             []image.Rectangle
 	tilemapJSON       *TilemapJSON
 	enemyRespawnTimer time.Time
 	phaseTimer        time.Time
 	syncTimer         time.Time
 	chestRespawnTimer time.Time
-	playerJoined      chan *room.Player
 	phase             RoundPhase
 	round             uint8
 	enemyID           uint16
@@ -48,6 +48,8 @@ func Init(r *room.Room) *WizardServer {
 
 	for _, player := range players {
 		wizards[player.Username] = NewWizard(player.Username)
+		player.ClientInitDone = false
+		player.ClientStateUpdated = false
 	}
 
 	tilemap, err := NewTilemapJSON(TilemapPath)
@@ -60,11 +62,11 @@ func Init(r *room.Room) *WizardServer {
 		wizards:           wizards,
 		deadWizards:       deadWizards,
 		enemies:           make(map[uint16]*Enemy, 32), // 16 enemies spawn at at time, doubled for headroom
-		phaseTimer:        time.Now().Add(GameStartTime * time.Second),
+		openedChests:      make(map[OpenedChest]struct{}, 8),
+		phaseTimer:        time.Now().Add(WaitForClientsTime * time.Second),
 		enemyRespawnTimer: time.Now().Add(RoundStartEnemySpawnTimer * time.Second), // wait 5 seconds before spawning first group of enemies
 		tilemapJSON:       tilemap,
 		holes:             make([]image.Rectangle, 0, 2092), // 2092 holes on map
-		playerJoined:      make(chan *room.Player, 16),      // 8 players, doubled for headroom
 		phase:             WaitingForClients,
 		round:             1,
 		enemyID:           0,
