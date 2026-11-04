@@ -2,8 +2,8 @@ package shared
 
 import (
 	"errors"
+
 	"github.com/ben-rw/ragin-mages/internal/protocol"
-	"log"
 )
 
 type Roster struct {
@@ -36,15 +36,15 @@ func (r *Roster) HandleJoinResponse(message *protocol.Message) error {
 	return nil
 }
 
-func (r *Roster) HandlePlayerUpdate(message *protocol.Message) error {
+func (r *Roster) HandlePlayerUpdate(message *protocol.Message) (*Player, error) {
 	playerUpdateData, err := message.UnmarshalMessageData()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	data, ok := playerUpdateData.(*protocol.PlayerUpdateData)
 	if !ok {
 		err = errors.New("failed type assertion")
-		return err
+		return nil, err
 	}
 
 	if _, ok := r.Players[data.PlayerData.Username]; ok {
@@ -54,7 +54,5 @@ func (r *Roster) HandlePlayerUpdate(message *protocol.Message) error {
 		r.Players[data.PlayerData.Username] = player
 	}
 
-	log.Printf("updated: %v\n", *r.Players[data.PlayerData.Username].Data)
-
-	return nil
+	return r.Players[data.PlayerData.Username], nil
 }

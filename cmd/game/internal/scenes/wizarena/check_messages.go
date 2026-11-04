@@ -31,10 +31,16 @@ func (w *WizArena) CheckMessages(messages []*protocol.Message) {
 		// 	w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
 
 		case protocol.PlayerUpdate:
-			err := w.HandlePlayerUpdate(message)
+			player, err := w.HandlePlayerUpdate(message)
 			if err != nil {
 				log.Println(err)
 				continue
+			}
+
+			if _, ok := w.wizards[player.Data.Username]; !ok {
+				wizard := NewWizard(player)
+				wizard.JoinAnim = false
+				w.wizards[wizard.Data.Username] = wizard
 			}
 		case protocol.WizardMovementUpdate:
 			err := w.HandleWizardMovementUpdate(message)

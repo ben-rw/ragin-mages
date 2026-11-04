@@ -114,7 +114,7 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 			l.Conn.WriteMsg(protocol.PlayerUpdate, playerUpdateData)
 
 		case protocol.PlayerUpdate:
-			err := l.HandlePlayerUpdate(message)
+			_, err := l.HandlePlayerUpdate(message)
 			if err != nil {
 				log.Println(err)
 				continue

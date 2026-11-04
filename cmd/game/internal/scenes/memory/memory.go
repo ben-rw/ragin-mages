@@ -47,7 +47,7 @@ func (m *Memory) Update(messages []*protocol.Message) error {
 			m.Conn.WriteMsg(protocol.PlayerUpdate, playerUpdateData)
 
 		case protocol.PlayerUpdate:
-			err := m.HandlePlayerUpdate(message)
+			_, err := m.HandlePlayerUpdate(message)
 			if err != nil {
 				log.Println(err)
 				continue
