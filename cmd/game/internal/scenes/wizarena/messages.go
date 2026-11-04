@@ -27,11 +27,12 @@ func (w *WizArena) WriteWizardStatUpdate() {
 	})
 }
 
-func (w *WizArena) WriteNewProjectile(cx, cy int) {
+func (w *WizArena) WriteNewProjectile(cx, cy int, id uint16) {
 	w.Conn.WriteMsg(protocol.NewProjectile, &protocol.NewProjectileData{
-		CasterName: w.wizard.Data.Username,
-		CursorX:    cx,
-		CursorY:    cy,
+		CasterName:   w.wizard.Data.Username,
+		CursorX:      cx,
+		CursorY:      cy,
+		ProjectileID: id,
 	})
 }
 

@@ -151,6 +151,8 @@ func (cfg *config) handlerWebsocket(w http.ResponseWriter, r *http.Request) {
 		player.Client = nil
 	}
 	player.Mu.Unlock()
+
+	// TODO: remove disconnected players
 }
 
 // read incoming messages, close dead connections, drop messages if buffer fills up

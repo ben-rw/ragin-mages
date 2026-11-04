@@ -110,9 +110,10 @@ type WizArenaMovementData struct {
 }
 
 type NewProjectileData struct {
-	CasterName string `json:"caster_name"`
-	CursorX    int    `json:"cursor_x"`
-	CursorY    int    `json:"cursor_y"`
+	CasterName   string `json:"caster_name"`
+	CursorX      int    `json:"cursor_x"`
+	CursorY      int    `json:"cursor_y"`
+	ProjectileID uint16 `json:"projectile_id"`
 }
 
 type ProjectileReflectedData struct {

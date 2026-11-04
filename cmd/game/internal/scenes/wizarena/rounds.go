@@ -11,7 +11,6 @@ import (
 // reset enemies, projectiles, chests, timers, put players in a random spawn location
 func (w *WizArena) startNewRound() {
 	// wizard state is reset in HandlePhaseUpdate
-	w.round += 1
 	w.camera.DoneMoving = false
 
 	clear(w.openedChests)

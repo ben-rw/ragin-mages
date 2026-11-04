@@ -104,7 +104,8 @@ func (w *WizArena) HandleWizStateSnapshot(message *protocol.Message) error {
 
 	w.phase = wizServer.RoundPhase(data.Phase)
 	w.phaseTimer = time.Now().Add(time.Duration(data.PhaseTimer) * time.Millisecond)
-	w.round = data.Round + 1
+
+	w.round = data.Round
 
 	// let the server know this client is up to date
 	w.Conn.WriteMsg(protocol.ClientLoaded, &protocol.ClientLoadedData{
@@ -274,6 +275,8 @@ func (w *WizArena) HandleNewProjectile(message *protocol.Message) error {
 			float64(data.CursorY),
 			Fireball,
 		)
+		// overwrite id to match caster's ID
+		projectile.ID = data.ProjectileID
 		w.projectiles[projectile.ID] = projectile
 		wizard.Combat.Attack()
 		wizard.AttackAnim = true
@@ -316,9 +319,11 @@ func (w *WizArena) HandleProjectileReflected(message *protocol.Message) error {
 	}
 
 	if wizard, ok := w.wizards[data.ReflectorName]; ok {
-		wizard.ReflectProjectile(
-			w.projectiles[data.ProjectileID],
-		)
+		if w.projectiles[data.ProjectileID] != nil {
+			wizard.ReflectProjectile(
+				w.projectiles[data.ProjectileID],
+			)
+		}
 		wizard.Combat.ResetReflectCooldown()
 	}
 
@@ -467,6 +472,7 @@ func (w *WizArena) HandlePhaseUpdate(message *protocol.Message) error {
 	if w.phase == wizServer.SyncScores {
 		w.WriteWizardStatUpdate()
 		w.scoresUpdatedCount.Store(0)
+		w.round += 1
 	} else if w.phase == wizServer.RoundStart {
 		for _, wizard := range w.wizards {
 			wizard.Combat.LastHitBy = ""

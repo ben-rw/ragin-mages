@@ -22,7 +22,7 @@ func (w *WizArena) CheckProjectiles() {
 			float64(cY),
 			Fireball,
 		)
-		w.WriteNewProjectile(cX, cY)
+		w.WriteNewProjectile(cX, cY, projectile.ID)
 		w.projectiles[projectile.ID] = projectile
 	}
 

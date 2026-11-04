@@ -70,6 +70,10 @@ func (w *WizardServer) handleWizardStatUpdate(message *protocol.Message) error {
 		if w.wizards[data.Username].Health <= 0 {
 			w.deadWizards[data.Username] = struct{}{}
 		}
+		w.wizards[data.Username].AttackCooldown = data.AttackCooldown
+		w.wizards[data.Username].ProjectileSpeed = data.ProjectileSpeed
+		w.wizards[data.Username].ProjectileScale = data.ProjectileScale
+		w.wizards[data.Username].Knockback = data.Knockback
 	} else if !ok {
 		log.Printf("not found in wizards list: %v", data.Username)
 	}

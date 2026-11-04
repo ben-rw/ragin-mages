@@ -110,13 +110,16 @@ func (w *WizArena) updatePlaying() {
 			float64(w.tilemapJSON.Layers[0].Height)*16.0,
 		)
 
-		for _, wizard := range w.wizards {
+		w.wizard.Noclip = false
+	}
+
+	for _, wizard := range w.wizards {
+		if !wizard.Combat.Dead {
 			wizard.Combat.Update()
 			if wizard.Combat.IFrames() > 0 {
 				wizard.IFrameFlicker()
 			}
 		}
-		w.wizard.Noclip = false
 	}
 
 	// fade enemies in and ramp movement speed after spawn

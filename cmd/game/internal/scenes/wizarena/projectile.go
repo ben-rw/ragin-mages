@@ -147,7 +147,7 @@ func (w *WizardPlayer) NewProjectile(img *ebiten.Image, cursorX, cursorY float64
 		ReflectCount:  0,
 		AlreadyHit:    make(map[any]struct{}),
 		Type:          projectileType,
-		ID:            newProjectileID(),
+		ID:            uint16(w.Data.SpriteIndex<<13) | newProjectileID(),
 	}
 }
 
