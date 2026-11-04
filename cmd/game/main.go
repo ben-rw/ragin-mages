@@ -14,12 +14,14 @@ import (
 type Scene interface {
 	Update(messages []*protocol.Message) error
 	Draw(screen *ebiten.Image)
+	CleanUp()
 }
 
 type Game struct {
-	Conn   *ws.Connection
-	Scene  Scene
-	roomID string
+	Conn      *ws.Connection
+	Scene     Scene
+	sceneType protocol.SceneType
+	roomID    string
 }
 
 func (g *Game) Update() error {
@@ -36,7 +38,11 @@ func (g *Game) Update() error {
 				log.Println("failed type assertion")
 				continue
 			}
-			g.Scene = StartNewScene(data.SceneType, g.Conn, g.roomID)
+			if g.sceneType != data.SceneType {
+				g.Scene.CleanUp()
+				g.Scene = g.StartNewScene(data.SceneType, g.Conn, g.roomID)
+				g.sceneType = data.SceneType
+			}
 		}
 	}
 
@@ -60,9 +66,10 @@ func main() {
 	}
 
 	game := &Game{
-		Conn:   conn,
-		Scene:  lobby.NewLobby(conn, roomID),
-		roomID: roomID,
+		Conn:      conn,
+		Scene:     lobby.NewLobby(conn, roomID),
+		sceneType: protocol.LobbyScene,
+		roomID:    roomID,
 	}
 
 	if err := ebiten.RunGame(game); err != nil {

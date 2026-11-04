@@ -10,7 +10,7 @@ import (
 	"github.com/ben-rw/ragin-mages/internal/protocol"
 )
 
-func StartNewScene(sceneType protocol.SceneType, c *ws.Connection, roomID string) Scene {
+func (g *Game) StartNewScene(sceneType protocol.SceneType, c *ws.Connection, roomID string) Scene {
 	switch sceneType {
 	case protocol.LobbyScene:
 		return lobby.NewLobby(c, roomID)

@@ -145,7 +145,6 @@ func (l *Lobby) Update(messages []*protocol.Message) error {
 	// change scene when host presses enter
 	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) &&
 		l.Player.Data.Host == true {
-		l.sceneChanging = true
 		l.Conn.WriteMsg(protocol.FadeMusic, protocol.FadeMusicData{
 			SceneChanging: true,
 		})
@@ -276,4 +275,8 @@ func (l *Lobby) Draw(screen *ebiten.Image) {
 	screen.DrawImage(l.lobbyImage, &opts)
 
 	opts.GeoM.Reset()
+}
+
+func (l *Lobby) CleanUp() {
+	l.audioPlayer.Close()
 }

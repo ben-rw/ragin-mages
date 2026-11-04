@@ -144,3 +144,6 @@ func (m *Memory) getInLine(totalPlayers, eliminatedPlayers int) {
 	lineIndex := totalPlayers - eliminatedPlayers
 	m.ScriptedWalk(PlayerPositions[lineIndex].X, PlayerPositions[lineIndex].Y)
 }
+
+func (m *Memory) CleanUp() {
+}

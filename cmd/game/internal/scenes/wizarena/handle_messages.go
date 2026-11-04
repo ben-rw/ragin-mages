@@ -59,6 +59,9 @@ func (w *WizArena) HandleWizStateSnapshot(message *protocol.Message) error {
 			w.wizards[wizardData.Username].Combat.SetKnockback(wizardData.Knockback)
 		}
 		w.wizards[wizardData.Username].Combat.SetHealth(wizardData.Health)
+		if w.wizards[wizardData.Username].Combat.Health() <= 0 {
+			w.wizards[wizardData.Username].Combat.Dead = true
+		}
 	}
 
 	w.Player = w.Players[data.PlayerData.Username]
