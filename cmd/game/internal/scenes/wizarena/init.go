@@ -185,8 +185,8 @@ func NewWizArena(c MessageConn, roomID string) *WizArena {
 	w.staticTilemapTrapsDown = w.NewStaticTilemapTrapsDown()
 
 	w.camera = shared.NewCamera(
-		-(float64(w.tilemapJSON.Layers[0].Height)*wizServer.TileSize)+shared.ScreenWidth/2.0,
-		-(float64(w.tilemapJSON.Layers[0].Width)*wizServer.TileSize/2)+shared.ScreenHeight/2.0,
+		-(float64(w.tilemapJSON.Layers[0].Width)*wizServer.TileSize/2)+shared.ScreenWidth/2.0,
+		-(float64(w.tilemapJSON.Layers[0].Height)*wizServer.TileSize/2)+shared.ScreenHeight/2.0,
 	)
 
 	// tell server this client is ready

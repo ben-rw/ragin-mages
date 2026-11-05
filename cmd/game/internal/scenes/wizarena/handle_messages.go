@@ -69,8 +69,13 @@ func (w *WizArena) HandleWizStateSnapshot(message *protocol.Message) error {
 
 	w.dynamicText = w.NewDynamicTextMap()
 
-	w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
-	w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
+	if w.wizard.X == 0 && w.wizard.Y == 0 {
+		w.camera.X = -(float64(w.tilemapJSON.Layers[0].Width) * wizServer.TileSize / 2) + shared.ScreenWidth/2.0
+		w.camera.Y = -(float64(w.tilemapJSON.Layers[0].Height) * wizServer.TileSize / 2) + shared.ScreenHeight/2.0
+	} else {
+		w.camera.X = -(w.wizard.X + wizServer.HalfTile) + shared.ScreenWidth/2.0
+		w.camera.Y = -(w.wizard.Y + wizServer.HalfTile) + shared.ScreenHeight/2.0
+	}
 
 	// sync enemy data
 	for _, enemyData := range data.EnemiesData {
