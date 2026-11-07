@@ -1,10 +1,10 @@
 # Ragin' Mages
 
-Ragin' Mages is a multiplayer webgame inspired by the flash games of the early 2000s. Ragin' Mages is much more fun with friends, but you can still play solo.
+Ragin' Mages is a multiplayer webgame inspired by the flash games of the early 2000s. Up to 8 players can play together in one room. Ragin' Mages is much more fun with friends, but you can play solo too!
 
 # How to Play
 
-1. Go to [raginmages.xyz](raginmages.xyz) in your browser.
+1. Go to [raginmages.xyz](https://raginmages.xyz/) in your browser.
 2. Create a room, or join a room created by another player with their room code.
 3. When everyone is ready, the host can start the game by pressing Enter. 
 4. Have fun! :)
